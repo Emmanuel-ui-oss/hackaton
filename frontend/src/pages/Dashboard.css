@@ -1,109 +1,106 @@
-.stats-grid {
+.ticker-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
-.stat-card {
+.ticker-card {
   background: var(--bg-card);
-  border-radius: var(--radius);
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
   border: 1px solid var(--border);
-  transition: all var(--transition);
+  border-radius: var(--radius);
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color var(--transition);
 }
-.stat-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+.ticker-card:hover { border-color: var(--border-light); }
 
-.stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  flex-shrink: 0;
+.ticker-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
 }
 
-.stat-value {
-  font-size: 1.5rem;
+.ticker-value {
+  font-size: 1.6rem;
   font-weight: 800;
   color: var(--text);
+  font-family: var(--font-mono);
   line-height: 1;
 }
 
-.stat-label {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin-top: 4px;
+.ticker-icon {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  font-size: 1.8rem;
+  opacity: 0.1;
 }
 
-.weather-bar {
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  color: #fff;
-  padding: 12px 20px;
-  border-radius: var(--radius);
+.weather-strip {
   display: flex;
-  gap: 24px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  margin-bottom: 24px;
+  gap: 16px;
+  padding: 8px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
   flex-wrap: wrap;
 }
 
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+.ws-item {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
 }
 
-.mini-chart {
+.ws-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dash-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.mc-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 140px;
   padding: 8px 0;
 }
 
-.mini-chart-title {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  margin-bottom: 16px;
-  font-weight: 600;
-}
+.mc-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
+.mc-bar { width: 100%; border-radius: 2px; min-height: 4px; align-self: flex-end; }
+.mc-label { font-size: 0.6rem; color: var(--text-muted); text-align: center; text-transform: uppercase; font-weight: 600; letter-spacing: 0.3px; }
 
-.mini-chart-bars {
+.dash-ticker-card { max-height: 260px; }
+.ticker-line {
   display: flex;
-  align-items: flex-end;
   gap: 8px;
-  height: 160px;
-}
-
-.mini-chart-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  height: 100%;
-}
-
-.mini-chart-bar {
-  width: 100%;
-  border-radius: 4px 4px 0 0;
-  min-height: 4px;
-  transition: height 0.5s ease;
-  align-self: flex-end;
-}
-
-.mini-chart-label {
+  padding: 4px 0;
   font-size: 0.7rem;
-  color: var(--text-muted);
-  text-align: center;
-  text-transform: uppercase;
-  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
 }
+.ticker-line:last-child { border-bottom: none; }
+.ticker-time { color: var(--text-muted); white-space: nowrap; }
+.ticker-msg { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 @media (max-width: 768px) {
-  .dashboard-grid { grid-template-columns: 1fr; }
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .dash-row { grid-template-columns: 1fr; }
+  .ticker-grid { grid-template-columns: repeat(2, 1fr); }
+  .ticker-value { font-size: 1.3rem; }
 }

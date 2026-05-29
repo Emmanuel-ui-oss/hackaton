@@ -5,35 +5,38 @@ import api from '../services/api'
 import Loading from '../components/common/Loading'
 import './Mapa.css'
 
-const NIVEL_COLORS = { CRITICO: '#d32f2f', ALTO: '#ff6f00', MEDIO: '#fbc02d', BAJO: '#388e3c' }
+const NIVEL_STYLES = {
+  CRITICO: { color: '#ff1744', fill: 'rgba(255,23,68,0.15)', border: 'rgba(255,23,68,0.3)' },
+  ALTO: { color: '#ffab00', fill: 'rgba(255,171,0,0.12)', border: 'rgba(255,171,0,0.3)' },
+  MEDIO: { color: '#2979ff', fill: 'rgba(41,121,255,0.12)', border: 'rgba(41,121,255,0.3)' },
+  BAJO: { color: '#00c853', fill: 'rgba(0,200,83,0.12)', border: 'rgba(0,200,83,0.3)' },
+}
 
-function createIcon(emoji, bg = '#0054a6') {
+function divIcon(html, size = 28) {
   return L.divIcon({
-    html: `<div style="background:${bg};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3)">${emoji}</div>`,
-    className: '',
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--bg-elevated);border:2px solid var(--border);font-size:${size*0.4}px;box-shadow:0 2px 8px rgba(0,0,0,0.4)">${html}</div>`,
+    className: '', iconSize: [size, size], iconAnchor: [size/2, size/2],
   })
 }
+
+const DARK_TILE = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+const DARK_ATTR = '&copy; <a href="https://carto.com/">CARTO</a>'
 
 export default function Mapa() {
   const mapRef = useRef(null)
   const mapInstance = useRef(null)
   const layersRef = useRef({})
   const [loading, setLoading] = useState(true)
-  const [toggles, setToggles] = useState({ zonas: true, reportes: true, transporte: true, favoritos: true, alertas: true, calor: false })
-  const [userLoc, setUserLoc] = useState(null)
+  const [toggles, setToggles] = useState({ zonas: true, reportes: true, transporte: true, calor: false })
   const [events, setEvents] = useState([])
 
   useEffect(() => {
     if (mapInstance.current) return
     const map = L.map(mapRef.current, { center: [6.2442, -75.5812], zoom: 12, zoomControl: false })
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map)
+    L.tileLayer(DARK_TILE, { maxZoom: 19, attribution: DARK_ATTR }).addTo(map)
     L.control.zoom({ position: 'bottomright' }).addTo(map)
     mapInstance.current = map
-
     setTimeout(() => map.invalidateSize(), 200)
-
     return () => { map.remove(); mapInstance.current = null }
   }, [])
 
@@ -46,35 +49,43 @@ export default function Mapa() {
       api.get('/api/v1/zonas-riesgo'),
       api.get('/api/v1/reportes'),
       api.get('/api/v1/lineas-transporte'),
-      api.get('/api/v1/favoritos'),
-      api.get('/api/v1/alertas?no_leidas=true'),
       api.get('/api/v1/eventos/near?lat=6.2442&lng=-75.5812&radio_km=20'),
-    ]).then(([zonasRes, reportesRes, lineasRes, favoritosRes, alertasRes, eventosRes]) => {
+    ]).then(([zonasRes, reportesRes, lineasRes, eventosRes]) => {
       if (!mapInstance.current) return
+
       Object.values(layersRef.current).forEach(l => l.forEach(ll => map.removeLayer(ll)))
-      layersRef.current = { zonas: [], reportes: [], transporte: [], favoritos: [], alertas: [], calor: [] }
+      layersRef.current = { zonas: [], reportes: [], transporte: [], calor: [] }
 
       const zonas = zonasRes.data || []
       const reportes = reportesRes.data || []
       const lineas = lineasRes.data || []
-      const favoritos = favoritosRes.data || []
-      const alertas = alertasRes.data || []
       const eventos = eventosRes.data?.eventos || []
 
       zonas.forEach(z => {
-        const color = NIVEL_COLORS[z.nivel] || '#999'
+        const style = NIVEL_STYLES[z.nivel] || NIVEL_STYLES.MEDIO
         const circle = L.circle([z.latitud, z.longitud], {
           radius: z.radio_metros || 500,
-          color, fillColor: color, fillOpacity: 0.15, weight: 2,
-        }).bindPopup(`<b>${z.nombre}</b><br>${z.nivel} - ${z.tipo_riesgo}<br>${z.comuna}`)
+          color: style.color,
+          fillColor: style.border,
+          fillOpacity: 0.3,
+          weight: 1.5,
+        })
+        circle.bindPopup(`
+          <div style="font-family:system-ui;color:#e0e0e0">
+            <b style="color:#fff">${z.nombre}</b><br>
+            <span style="color:${style.color}">${z.nivel}</span> · ${z.tipo_riesgo}<br>
+            ${z.comuna}
+          </div>
+        `)
         layersRef.current.zonas.push(circle)
         if (toggles.zonas) circle.addTo(map)
       })
 
       reportes.forEach(r => {
         const m = L.marker([r.latitud, r.longitud], {
-          icon: createIcon(['accidente', 'bloqueo'].includes(r.tipo) ? '🚗' : r.tipo === 'robo' ? '🔒' : '⚠️', '#0288d1'),
-        }).bindPopup(`<b>${r.tipo}</b><br>${r.descripcion}<br>👍 ${r.votos_positivos} 👎 ${r.votos_negativos}`)
+          icon: divIcon(r.tipo === 'accidente' ? '💥' : r.tipo === 'bloqueo' ? '🚧' : '⚠️', 24),
+        })
+        m.bindPopup(`<div style="color:#e0e0e0;font-size:12px"><b style="color:#fff">${r.tipo}</b><br>${r.descripcion?.slice(0,80)}</div>`)
         layersRef.current.reportes.push(m)
         if (toggles.reportes) m.addTo(map)
       })
@@ -86,12 +97,11 @@ export default function Mapa() {
             const paradas = paradasRes.data || []
             if (paradas.length < 2) continue
             const coords = paradas.map(p => [p.latitud, p.longitud])
-            const polyline = L.polyline(coords, { color: l.color || '#0054a6', weight: 3, opacity: 0.7 })
+            const polyline = L.polyline(coords, { color: l.color || '#2979ff', weight: 2, opacity: 0.4 })
             layersRef.current.transporte.push(polyline)
             if (toggles.transporte) polyline.addTo(map)
             paradas.forEach(p => {
-              const m = L.circleMarker([p.latitud, p.longitud], { radius: 4, color: '#fff', fillColor: l.color || '#0054a6', fillOpacity: 1, weight: 2 })
-                .bindPopup(`<b>${p.nombre}</b><br>${l.nombre}`)
+              const m = L.circleMarker([p.latitud, p.longitud], { radius: 3, color: '#fff', fillColor: l.color || '#2979ff', fillOpacity: 0.8, weight: 1 })
               layersRef.current.transporte.push(m)
               if (toggles.transporte) m.addTo(map)
             })
@@ -100,92 +110,61 @@ export default function Mapa() {
       }
       loadLineas()
 
-      favoritos.forEach(f => {
-        const m = L.marker([f.latitud, f.longitud], { icon: createIcon('⭐', '#fbc02d') })
-          .bindPopup(`<b>${f.nombre}</b><br>${f.direccion || ''}`)
-        layersRef.current.favoritos.push(m)
-        if (toggles.favoritos) m.addTo(map)
-      })
-
-      alertas.forEach(a => {
-        if (!a.zona_riesgo) return
-        const color = NIVEL_COLORS[a.zona_riesgo.nivel] || '#999'
-        const m = L.circleMarker([a.zona_riesgo.latitud, a.zona_riesgo.longitud], {
-          radius: 10, color, fillColor: color, fillOpacity: 0.5, weight: 2,
-        }).bindPopup(`<b>🔔 Alerta</b><br>${a.mensaje}`)
-        layersRef.current.alertas.push(m)
-        if (toggles.alertas) m.addTo(map)
-      })
-
       setEvents(eventos)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [toggles])
 
-  const toggleLayer = (key) => {
-    setToggles(prev => ({ ...prev, [key]: !prev[key] }))
-  }
+  const toggleLayer = (key) => setToggles(p => ({ ...p, [key]: !p[key] }))
 
   const locateMe = () => {
     if (!mapInstance.current) return
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords
-          setUserLoc({ lat: latitude, lng: longitude })
-          mapInstance.current.setView([latitude, longitude], 15)
-          L.marker([latitude, longitude], { icon: createIcon('📍', '#3cac4e') })
-            .addTo(mapInstance.current)
-            .bindPopup('<b>Tu ubicación</b>').openPopup()
-        },
-        () => alert('No se pudo obtener tu ubicación')
-      )
-    } else {
-      alert('Geolocalización no soportada')
-    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords
+        mapInstance.current.setView([latitude, longitude], 15)
+        L.marker([latitude, longitude], { icon: divIcon('📍', 32) })
+          .addTo(mapInstance.current).bindPopup('<b>Tu ubicación</b>').openPopup()
+      },
+      () => alert('No se pudo obtener ubicación')
+    )
   }
 
   return (
     <div className="page" style={{ padding: 0 }}>
-      <div className="mapa-container">
-        <div className="mapa-toolbar">
-          <div className="mapa-toolbar-left">
-            <h2 className="page-title" style={{ fontSize: '1.2rem' }}>🗺️ Mapa Interactivo</h2>
+      <div className="mapa-wrap">
+        <div className="mapa-bar">
+          <div className="mapa-bar-left">
+            <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>🗺️ Map</h2>
           </div>
-          <div className="mapa-toolbar-right">
-            <button className="btn btn-ghost btn-sm" onClick={locateMe}>📍 Mi ubicación</button>
-            <button className="btn btn-ghost btn-sm" onClick={() => mapInstance.current?.setView([6.2442, -75.5812], 12)}>🎯 Centrar</button>
+          <div className="mapa-bar-right">
+            <button className="btn btn-ghost btn-sm" onClick={locateMe}>📍</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => mapInstance.current?.setView([6.2442, -75.5812], 12)}>🎯</button>
           </div>
         </div>
-
         <div className="mapa-layers">
-          {Object.entries({ zonas: 'Zonas', reportes: 'Reportes', transporte: 'Transporte', favoritos: 'Favoritos', alertas: 'Alertas', calor: 'Calor' }).map(([key, label]) => (
-            <label key={key} className="mapa-layer-item" onClick={() => toggleLayer(key)}>
-              <input type="checkbox" checked={toggles[key]} onChange={() => {}} />
-              <span>{label}</span>
+          {[{k:'zonas',l:'Zonas'},{k:'reportes',l:'Reportes'},{k:'transporte',l:'Transporte'},{k:'calor',l:'Calor'}].map(({k,l}) => (
+            <label key={k} className={`mapa-tag ${toggles[k] ? 'active' : ''}`} onClick={() => toggleLayer(k)}>
+              {l}
             </label>
           ))}
         </div>
-
         <div ref={mapRef} className="mapa-leaflet" />
         {loading && <div className="mapa-loading"><div className="spinner" /></div>}
-
         <div className="mapa-legend">
-          {Object.entries(NIVEL_COLORS).map(([nivel, color]) => (
-            <div key={nivel} className="mapa-legend-item">
-              <span style={{ background: color }} />
-              {nivel}
+          {Object.entries(NIVEL_STYLES).map(([n, s]) => (
+            <div key={n} className="mapa-legend-item">
+              <span style={{ background: s.color }} />{n}
             </div>
           ))}
         </div>
-
         {events.length > 0 && (
           <div className="mapa-events">
-            <div className="mapa-events-title">Eventos cercanos ({events.length})</div>
-            {events.slice(0, 3).map(e => (
+            <div className="mapa-events-title">Eventos ({events.length})</div>
+            {events.slice(0, 4).map(e => (
               <div key={e.id} className="mapa-event-item">
                 <span className={`badge badge-${e.nivel?.toLowerCase()}`}>{e.nivel}</span>
-                {e.titulo}
+                {e.titulo?.slice(0, 25)}
               </div>
             ))}
           </div>

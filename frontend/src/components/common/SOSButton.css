@@ -1,0 +1,110 @@
+.sos-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff1744, #d50000);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 20px rgba(255, 23, 68, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  animation: sosPulse 2s infinite;
+}
+
+.sos-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 28px rgba(255, 23, 68, 0.5);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.sos-btn:active {
+  transform: scale(0.95);
+}
+
+.sos-active {
+  width: 100px;
+  height: 100px;
+  animation: sosPulseActive 1s infinite;
+  box-shadow: 0 0 40px rgba(255, 23, 68, 0.6), 0 0 80px rgba(255, 23, 68, 0.2);
+}
+
+.sos-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.sos-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.sos-text {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.sos-contacts {
+  font-size: 0.5rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+}
+
+.sos-pulse {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 23, 68, 0.3);
+  animation: sosRipple 1.5s infinite;
+}
+
+.sos-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes sosPulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(255, 23, 68, 0.3); }
+  50% { box-shadow: 0 4px 30px rgba(255, 23, 68, 0.5); }
+}
+
+@keyframes sosPulseActive {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 40px rgba(255, 23, 68, 0.6); }
+  50% { transform: scale(1.05); box-shadow: 0 0 60px rgba(255, 23, 68, 0.8); }
+}
+
+@keyframes sosRipple {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 768px) {
+  .sos-btn {
+    bottom: 80px;
+    right: 16px;
+    width: 56px;
+    height: 56px;
+  }
+  .sos-active {
+    width: 80px;
+    height: 80px;
+  }
+}

@@ -1,17 +1,16 @@
 import { useState } from 'react'
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { useTheme } from '../../contexts/ThemeContext'
 import { useSocket } from '../../contexts/SocketContext'
 import Sidebar from './Sidebar'
 import BottomNav from './BottomNav'
+import SOSButton from '../common/SOSButton'
 import Toast from '../common/Toast'
 import { useToast } from '../../contexts/ToastContext'
 import './Layout.css'
 
 export default function Layout() {
   const { user, logout } = useAuth()
-  const { theme, toggleTheme } = useTheme()
   const { connected } = useSocket()
   const { toasts } = useToast()
   const navigate = useNavigate()
@@ -31,12 +30,9 @@ export default function Layout() {
             <button className="menu-toggle" onClick={() => setSidebarOpen(true)}>
               ☰
             </button>
-            <span className="connection-dot ${connected ? 'online' : 'offline'}" />
+            <div className={`connection-dot ${connected ? 'online' : 'offline'}`} />
           </div>
           <div className="topbar-right">
-            <button className="btn btn-ghost btn-sm" onClick={toggleTheme}>
-              {theme === 'dark' ? '☀️' : '🌙'}
-            </button>
             <div className="topbar-user" onClick={() => navigate('/perfil')}>
               <div className="topbar-avatar">
                 {user?.username?.[0]?.toUpperCase()}
@@ -52,6 +48,7 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+      <SOSButton />
       <BottomNav />
       <Toast toasts={toasts} />
     </div>

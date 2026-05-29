@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { useTheme } from '../contexts/ThemeContext'
 import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
 
 export default function Perfil() {
   const { user, logout } = useAuth()
-  const { theme, toggleTheme } = useTheme()
   const { success } = useToast()
   const navigate = useNavigate()
 
@@ -51,12 +49,6 @@ export default function Perfil() {
           <div className="form-group">
             <label className="form-label">Email</label>
             <input className="form-input" value={user?.email || ''} disabled />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0' }}>
-            <span style={{ fontWeight: 600, color: 'var(--text)' }}>Tema {theme === 'dark' ? 'oscuro' : 'claro'}</span>
-            <button className="btn btn-ghost btn-sm" onClick={toggleTheme}>
-              {theme === 'dark' ? '☀️ Modo claro' : '🌙 Modo oscuro'}
-            </button>
           </div>
         </div>
 

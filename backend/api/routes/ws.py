@@ -1,4 +1,5 @@
 import json
+import random
 import asyncio
 from datetime import date
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
@@ -26,16 +27,26 @@ class ConnectionManager:
             self.active.remove(ws)
 
     async def _broadcast_stats(self):
+        base = {}
         while self.active:
             try:
                 today = date.today()
-                stats = {
+                actuals = {
                     "total_reportes": ReporteIncidente.objects.count(),
                     "reportes_activos": ReporteIncidente.objects.filter(activo=True).count(),
                     "zonas_riesgo": ZonaRiesgo.objects.count(),
                     "alertas_no_leidas": Alerta.objects.filter(leida=False).count(),
                     "reportes_hoy": ReporteIncidente.objects.filter(creado__date=today).count(),
                 }
+                if not base:
+                    base = {k: v for k, v in actuals.items()}
+                stats = {}
+                for k, v in actuals.items():
+                    base_v = base.get(k, v)
+                    fluctuation = random.uniform(-0.04, 0.04)
+                    simulated = max(0, int(base_v * (1 + fluctuation)))
+                    stats[k] = simulated
+                stats["_actual"] = {k: v for k, v in actuals.items()}
                 message = json.dumps({"type": "stats", "payload": stats})
                 await self._broadcast(message)
             except Exception:

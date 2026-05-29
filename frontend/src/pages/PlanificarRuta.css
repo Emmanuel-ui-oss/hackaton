@@ -1,0 +1,106 @@
+.ruta-wrap {
+  position: relative;
+  height: calc(100vh - var(--navbar-height));
+  display: flex;
+  flex-direction: column;
+}
+
+.ruta-bar {
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+
+.ruta-inputs {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.ruta-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 0.75rem;
+  color: var(--text);
+  font-family: var(--font-mono);
+  outline: none;
+  transition: border-color var(--transition);
+}
+.ruta-input:focus { border-color: var(--blue); }
+.ruta-input::placeholder { color: var(--text-muted); font-size: 0.7rem; }
+
+.ruta-map { flex: 1; z-index: 1; }
+
+.ruta-loading {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(13,13,13,0.6);
+  z-index: 10;
+}
+
+.ruta-marker {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0;
+}
+.ruta-marker-o { background: #2979ff; border: 2px solid rgba(41,121,255,0.4); }
+.ruta-marker-d { background: #ff1744; border: 2px solid rgba(255,23,68,0.4); }
+
+.ruta-info {
+  position: absolute;
+  bottom: 24px; left: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  z-index: 10;
+  min-width: 160px;
+  backdrop-filter: blur(8px);
+}
+
+.ri-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0;
+  font-size: 0.72rem;
+  border-bottom: 1px solid var(--border);
+}
+.ri-row:last-of-type { border-bottom: none; }
+.ri-label { color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.3px; font-size: 0.6rem; }
+.ri-value { color: var(--text); font-weight: 700; font-family: var(--font-mono); }
+
+.ri-legend {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.ri-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.ri-legend-item span { width: 6px; height: 6px; border-radius: 50%; }
+
+@media (max-width: 768px) {
+  .ruta-wrap { height: calc(100vh - var(--navbar-height) - 56px); }
+  .ruta-info { left: 8px; right: 8px; bottom: 12px; }
+}
