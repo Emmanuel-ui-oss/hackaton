@@ -3,26 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Transporte y Riesgos - Medellín</title>
+<title>Medellín Movilidata OS</title>
+<meta name="description" content="Plataforma Unificada de Movilidad Inteligente para Medellín">
+<meta name="theme-color" content="#0054a6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Movilidata">
+<link rel="manifest" href="/static/manifest.json">
+<link rel="apple-touch-icon" href="/static/img/icon-192.png">
 <link rel="stylesheet" href="/static/css/base.css">
 <link rel="stylesheet" href="/static/lib/leaflet/leaflet.css">
 </head>
 <body>
 <header id="header">
   <div class="header-inner">
-    <h1>Transporte y Riesgos</h1>
-    <span class="subtitle">Medellín</span>
+    <svg class="logo" viewBox="0 0 40 40" width="36" height="36" fill="none">
+      <rect width="40" height="40" rx="8" fill="currentColor"/>
+      <path d="M12 20l6-8 6 8-6 8z" fill="#fff" opacity=".9"/>
+      <circle cx="20" cy="20" r="4" fill="#fff"/>
+      <path d="M8 28h24v2H8zm0-18h24v2H8z" fill="#fff" opacity=".6"/>
+    </svg>
+    <div>
+      <h1>Medellín Movilidata OS</h1>
+      <span class="subtitle">Plataforma Unificada de Movilidad Inteligente</span>
+    </div>
     <nav id="nav"></nav>
     <div id="user-info"></div>
   </div>
 </header>
 <main id="main"></main>
 <footer>
-  <p>Transporte y Riesgos Medellín &mdash; 2025</p>
+  <p>Medellín Movilidata OS &mdash; HackData CTGI SENA 2026</p>
 </footer>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="/static/lib/leaflet/leaflet.js"></script>
 <script src="/static/js/api.js"></script>
 <script src="/static/js/mapa.js"></script>
 <script src="/static/js/app.js"></script>
+<script src="/static/sw-register.js"></script>
 </body>
 </html>
