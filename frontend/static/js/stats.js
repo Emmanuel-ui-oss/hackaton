@@ -13,8 +13,10 @@ let chartTipo = null, chartEstado = null
 function renderStats(data) {
     document.getElementById('statReportes').textContent = data.total_reportes || 0;
     document.getElementById('statHoy').textContent = data.reportes_hoy || 0;
-    document.getElementById('statZonas').textContent = data.total_zonas || 0;
-    document.getElementById('statZonasActivas').textContent = data.zonas_activas || 0;
+
+    const z = data.zonas || {};
+    document.getElementById('statZonas').textContent = z.total || 0;
+    document.getElementById('statZonasActivas').textContent = z.activas || 0;
 
     const tipos = data.por_tipo || []
     if (chartTipo) { chartTipo.destroy() }
@@ -76,4 +78,28 @@ function renderStats(data) {
             <span class="meta">${new Date(r.creado).toLocaleString('es-CO')}</span>
         </div>
     `).join('') || '<p style="color:var(--text-light);font-size:0.85rem">Sin reportes recientes</p>';
+
+    const inf = data.infraestructura || {};
+    const ev = data.eventos || {};
+    const al = data.alertas || {};
+
+    let extraHtml = '<div class="stats-charts" style="margin-top:1rem">';
+    extraHtml += '<div class="chart-box"><h3>Infraestructura</h3>';
+    extraHtml += `<p>Categorías de riesgo: <strong>${inf.categorias_riesgo || 0}</strong></p>`;
+    extraHtml += `<p>Líneas de transporte: <strong>${inf.lineas_transporte || 0}</strong></p>`;
+    extraHtml += `<p>Paradas: <strong>${inf.paradas || 0}</strong></p>`;
+    extraHtml += '</div>';
+    extraHtml += '<div class="chart-box"><h3>Alertas & Eventos</h3>';
+    extraHtml += `<p>Alertas totales: <strong>${al.total || 0}</strong></p>`;
+    extraHtml += `<p>Alertas no leídas: <strong>${al.no_leidas || 0}</strong></p>`;
+    extraHtml += `<p>Eventos de riesgo: <strong>${ev.activos || 0} activos / ${ev.total || 0} total</strong></p>`;
+    extraHtml += '</div>';
+    extraHtml += '</div>';
+
+    const existing = document.querySelector('.extra-stats');
+    if (existing) existing.remove();
+    const div = document.createElement('div');
+    div.className = 'extra-stats';
+    div.innerHTML = extraHtml;
+    document.querySelector('.stats-charts').after(div);
 }

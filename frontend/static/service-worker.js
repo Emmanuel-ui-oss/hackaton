@@ -1,15 +1,15 @@
-const CACHE_NAME = 'movilidata-v1'
+const CACHE_NAME = 'movilidata-v2'
 const STATIC_FILES = [
   '/',
   '/static/manifest.json',
-  '/static/css/base.css',
+  '/static/css/app.css',
   '/static/js/api.js',
+  '/static/js/auth.js',
+  '/static/js/router.js',
+  '/static/js/map.js',
+  '/static/js/report.js',
+  '/static/js/stats.js',
   '/static/js/app.js',
-  '/static/js/mapa.js',
-  '/static/lib/leaflet/leaflet.js',
-  '/static/lib/leaflet/leaflet.css',
-  '/static/lib/leaflet/images/marker-icon.png',
-  '/static/lib/leaflet/images/marker-shadow.png',
   '/static/img/icon-192.png',
   '/static/img/icon-512.png',
 ]

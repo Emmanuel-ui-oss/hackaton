@@ -1,13 +1,17 @@
 import csv
 import io
 import json
-from datetime import datetime
+import math
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from django.db.models import Count, Q
+from django.utils import timezone
 from fastapi.responses import StreamingResponse
 
-from apps.core.models import ReporteIncidente, ZonaRiesgo, EventoRiesgo
+from apps.core.models import (
+    ReporteIncidente, ZonaRiesgo, EventoRiesgo, CategoriaRiesgo,
+    Alerta, LineaTransporte, Parada,
+)
 from api.dependencies import get_current_user
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
@@ -74,31 +78,27 @@ def import_items(file: UploadFile = File(...), user=Depends(get_current_user)):
 
 @router.get("/items/stats")
 def get_stats(user=Depends(get_current_user)):
+    now = timezone.now()
     total_reportes = ReporteIncidente.objects.count()
-    reportes_hoy = ReporteIncidente.objects.filter(
-        creado__date=datetime.now().date()
-    ).count()
+    reportes_hoy = ReporteIncidente.objects.filter(creado__date=now.date()).count()
 
     por_tipo = (
         ReporteIncidente.objects.values("tipo")
         .annotate(count=Count("id"))
         .order_by("-count")
     )
-
     por_estado = (
         ReporteIncidente.objects.values("estado")
         .annotate(count=Count("id"))
         .order_by("-count")
     )
-
     ultimos = (
         ReporteIncidente.objects.select_related("usuario")
         .order_by("-creado")[:5]
     )
     ultimos_data = [
         {
-            "id": r.id,
-            "tipo": r.tipo,
+            "id": r.id, "tipo": r.tipo,
             "usuario": r.usuario.username,
             "creado": r.creado.isoformat(),
         }
@@ -107,6 +107,28 @@ def get_stats(user=Depends(get_current_user)):
 
     total_zonas = ZonaRiesgo.objects.count()
     zonas_activas = ZonaRiesgo.objects.filter(activo=True).count()
+    zonas_por_nivel = list(
+        ZonaRiesgo.objects.values("nivel").annotate(total=Count("id")).order_by("nivel")
+    )
+
+    total_eventos = EventoRiesgo.objects.count()
+    eventos_activos = EventoRiesgo.objects.filter(activo=True).count()
+    eventos_por_tipo = list(
+        EventoRiesgo.objects.values("tipo").annotate(total=Count("id")).order_by("-total")
+    )
+    eventos_por_nivel = list(
+        EventoRiesgo.objects.values("nivel").annotate(total=Count("id")).order_by("nivel")
+    )
+    eventos_por_fuente = list(
+        EventoRiesgo.objects.values("fuente").annotate(total=Count("id")).order_by("-total")
+    )
+
+    alertas_no_leidas = Alerta.objects.filter(leida=False).count()
+    total_alertas = Alerta.objects.count()
+
+    categorias = CategoriaRiesgo.objects.count()
+    lineas = LineaTransporte.objects.count()
+    paradas = Parada.objects.count()
 
     return {
         "total_reportes": total_reportes,
@@ -114,8 +136,27 @@ def get_stats(user=Depends(get_current_user)):
         "por_tipo": list(por_tipo),
         "por_estado": list(por_estado),
         "ultimos": ultimos_data,
-        "total_zonas": total_zonas,
-        "zonas_activas": zonas_activas,
+        "zonas": {
+            "total": total_zonas,
+            "activas": zonas_activas,
+            "por_nivel": zonas_por_nivel,
+        },
+        "eventos": {
+            "total": total_eventos,
+            "activos": eventos_activos,
+            "por_tipo": eventos_por_tipo,
+            "por_nivel": eventos_por_nivel,
+            "por_fuente": eventos_por_fuente,
+        },
+        "alertas": {
+            "total": total_alertas,
+            "no_leidas": alertas_no_leidas,
+        },
+        "infraestructura": {
+            "categorias_riesgo": categorias,
+            "lineas_transporte": lineas,
+            "paradas": paradas,
+        },
     }
 
 
@@ -171,21 +212,25 @@ def search_items(
     return {"results": results, "total": len(results)}
 
 
+from pydantic import BaseModel
+
+
+class ReporteCreate(BaseModel):
+    tipo: str = "otro"
+    descripcion: str = ""
+    ubicacion: str = ""
+    latitud: float = 0
+    longitud: float = 0
+
+
 @router.post("/reportes", status_code=201)
-def crear_reporte(
-    tipo: str = "otro",
-    descripcion: str = "",
-    ubicacion: str = "",
-    latitud: float = 0,
-    longitud: float = 0,
-    user=Depends(get_current_user),
-):
+def crear_reporte(data: ReporteCreate, user=Depends(get_current_user)):
     reporte = ReporteIncidente.objects.create(
-        tipo=tipo,
-        descripcion=descripcion,
-        ubicacion=ubicacion or f"{latitud},{longitud}",
-        latitud=latitud,
-        longitud=longitud,
+        tipo=data.tipo,
+        descripcion=data.descripcion,
+        ubicacion=data.ubicacion or f"{data.latitud},{data.longitud}",
+        latitud=data.latitud,
+        longitud=data.longitud,
         usuario=user,
         estado="pendiente",
     )
@@ -211,7 +256,7 @@ def eventos_cercanos(
     qs = EventoRiesgo.objects.filter(
         activo=True,
     ).filter(
-        Q(expira_en__isnull=True) | Q(expira_en__gte=datetime.now())
+        Q(expira_en__isnull=True) | Q(expira_en__gte=timezone.now())
     )
 
     if fuente:

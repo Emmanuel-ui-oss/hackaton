@@ -88,7 +88,7 @@ Proporcionar a ciudadanos, conductores y autoridades una herramienta integral pa
 |----------------|-----------|
 | ![Zonas](backend/static/img/screenshot-zonas.png) | ![Transporte](backend/static/img/screenshot-lineas.png) |
 
-> **Nota:** Las capturas se generan al ejecutar la aplicación. Reemplazar con imágenes reales después del primer despliegue.
+> **Nota:** Agregar capturas reales de la aplicación después del despliegue.
 
 ---
 
@@ -96,8 +96,8 @@ Proporcionar a ciudadanos, conductores y autoridades una herramienta integral pa
 
 ### Requisitos
 - Python 3.12+
-- MySQL 8.0+
-- Node.js (opcional, solo para desarrollo frontend)
+- MySQL 8.0+ (o usar SQLite por defecto)
+- Node.js (opcional)
 
 ### Paso a paso
 
@@ -108,28 +108,24 @@ cd hackaton
 
 # 2. Configurar variables de entorno
 cp .env.example .env
-# Editar .env con credenciales de base de datos
 
-# 3. Crear base de datos
-mysql -u root -p -e "CREATE DATABASE transporte_riesgos CHARACTER SET utf8mb4"
-
-# 4. Instalar dependencias
+# 3. Instalar dependencias
 cd backend
 pip install -r requirements.txt
 
-# 5. Ejecutar migraciones
-python manage.py migrate
+# 4. Ejecutar migraciones
+py manage.py migrate
 
-# 6. Poblar base de datos
-python seed.py
+# 5. Poblar base de datos con datos de Medellín
+py seed.py
 
-# 7. Iniciar servidor
-python -m uvicorn api.main:app --host 0.0.0.0 --port 8000
+# 6. Iniciar servidor
+py -m uvicorn api.main:app --host 0.0.0.0 --port 8000
 ```
 
 ### Acceso
 - **Frontend:** http://localhost:8000/
-- **API Docs:** http://localhost:8000/docs
+- **API Docs (Swagger):** http://localhost:8000/docs
 - **Admin Django:** http://localhost:8000/admin/
 
 ### Usuarios por defecto
@@ -143,9 +139,6 @@ python -m uvicorn api.main:app --host 0.0.0.0 --port 8000
 ```bash
 docker-compose up --build
 ```
-
-### En Windows (un clic)
-Ejecutar `iniciar.bat` desde el explorador de archivos.
 
 ---
 
@@ -173,25 +166,37 @@ hackaton/
 ├── backend/
 │   ├── api/
 │   │   ├── routes/          # Endpoints REST
-│   │   ├── schemas/         # Pydantic models
+│   │   │   ├── auth.py      # Autenticación JWT
+│   │   │   └── v1/
+│   │   │       ├── items.py  # CRUD reportes
+│   │   │       ├── extras.py # Eventos, stats
+│   │   │       └── predict.py # ML endpoints
+│   │   ├── ml/              # Módulos ML
+│   │   │   ├── congestion.py # Predicción congestión
+│   │   │   ├── clustering.py # DBSCAN zonas críticas
+│   │   │   └── routes.py    # Rutas seguras
 │   │   ├── main.py          # FastAPI entry point
-│   │   ├── dependencies.py  # JWT auth
-│   │   ├── pagination.py    # Paginación reutilizable
-│   │   └── exception_handlers.py
+│   │   └── dependencies.py  # JWT auth middleware
 │   ├── apps/core/
-│   │   ├── models.py        # 22 modelos Django
-│   │   └── admin.py         # Django admin config
-│   ├── config/              # Django settings
-│   ├── static/
-│   │   ├── css/base.css     # Estilos
-│   │   ├── js/              # app.js, api.js, mapa.js
-│   │   ├── lib/leaflet/     # Leaflet offline
-│   │   ├── img/             # Iconos PWA
-│   │   ├── manifest.json    # PWA manifest
-│   │   └── service-worker.js
-│   ├── tests/               # 67 pruebas
-│   ├── seed.py              # Datos semilla
-│   └── requirements.txt
+│   │   ├── models.py        # 13 modelos Django
+│   │   ├── admin.py         # Django admin
+│   │   └── management/commands/
+│   │       └── ingest_external.py
+│   ├── scripts/
+│   │   ├── seed.py          # Datos semilla
+│   │   └── ingest_external.py # Ingesta APIs
+│   └── config/              # Django settings
+├── frontend/
+│   ├── index.html           # SPA principal
+│   └── static/
+│       ├── css/app.css      # Estilos
+│       ├── js/              # Módulos JS (SPA)
+│       ├── manifest.json    # PWA manifest
+│       └── service-worker.js
+├── docs/                    # Documentación
+│   ├── api.md               # API reference
+│   ├── architecture.md      # Arquitectura
+│   └── data-sources.md      # Fuentes de datos
 ├── Dockerfile
 ├── docker-compose.yml
 └── README.md
@@ -201,57 +206,47 @@ hackaton/
 
 ## 🧠 Funcionalidades
 
-### ✅ Dashboard
-- Estadísticas generales (zonas, reportes, líneas, alertas)
-- Gráfico de zonas por nivel de riesgo
-- Búsqueda global en toda la plataforma
-- Indicador de conectividad (online/offline)
-
-### ✅ Mapa Interactivo
+### 🗺️ Mapa Interactivo
+- Eventos de riesgo geolocalizados (SIMUR, DAGRD, usuario)
 - Zonas de riesgo coloreadas por nivel (CRÍTICO, ALTO, MEDIO, BAJO)
-- Reportes comunitarios con íconos por tipo (accidente, robo, bloqueo...)
-- Líneas de transporte con polyíneas de colores y paradas
-- Alertas activas con marcadores pulsantes
-- Favoritos del usuario
+- Cálculo de distancia desde la ubicación del usuario
+- Sidebar con detalle de eventos
 - Leyenda interactiva
 - Geolocalización del usuario
-- Checkboxes para ocultar/mostrar capas
+- Actualización automática cada 60s
 
-### ✅ Zonas de Riesgo
-- Lista con filtros por comuna y nivel
-- Mini-mapa con círculos de riesgo
+### 📊 Dashboard con Analytics
+- Estadísticas generales (reportes, zonas, eventos)
+- Gráfico donut de tipos de incidente
+- Gráfico de barras por estado
+- Últimos reportes en tiempo real
+- Resumen de infraestructura y alertas
 
-### ✅ Reportes Comunitarios
-- Crear reportes con ubicación
-- Votación positiva/negativa
-- Ocultamiento automático por votos negativos
-- Sistema de tabs (listar/crear)
+### 🤖 Predicción ML (Nuevo)
+- **Predicción de congestión vehicular** por hora y comuna
+- **Pronóstico de 24 horas** con niveles de congestión
+- **Detección de zonas críticas** con DBSCAN clustering
+- **Evaluación de rutas seguras** con peligros cercanos
 
-### ✅ Transporte Público
-- 8 líneas (Metro, Metroplús, Tranvía, Cable, Buses)
+### 🚨 Gestión de Riesgos
+- Eventos de riesgo con niveles (bajo, medio, alto, crítico)
+- Alertas personalizadas por usuario
+- Reportes comunitarios con votación
+- Categorías de riesgo configurables
+
+### 🚇 Transporte Público
+- 8 líneas (Metro, Metroplús, Tranvía, Cable)
 - Paradas ordenadas por recorrido
-- Mini-mapa con polyíneas
+- Rutas y tiempos estimados
 
-### ✅ Alertas de Riesgo
-- Filtro de no leídas
-- Marcación individual como leída
-- Asociadas a zonas de riesgo
-
-### ✅ Favoritos y Contactos
-- CRUD completo
-- Botón SOS con notificación a contactos
-
-### ✅ Historial de Viajes
-- Registro de origen, destino, distancia, tiempo, costo
-
-### ✅ Autenticación
+### 🔐 Autenticación
 - JWT con 7 días de expiración
 - Registro e inicio de sesión
 - Protección por bearer token
 
-### ✅ PWA
+### 📱 PWA
 - Instalable en dispositivos móviles
-- Service Worker con estrategia Cache First para estáticos
+- Service Worker con estrategia Cache First
 - Network First para API con fallback a caché
 - Iconos y manifest
 
@@ -261,12 +256,31 @@ hackaton/
 
 | Rol | Integrante |
 |-----|-----------|
-| 🧑‍💻 Backend Developer | — |
+| 🧑‍💻 Backend Developer | Emmanuel Restrepo |
 | 💻 Frontend Developer | — |
 | 🎨 UX/UI Designer | — |
 | 🎬 Diseñador Audiovisual & Branding | — |
 
 > *Completar con los nombres del equipo.*
+
+---
+
+## 📚 Documentación Técnica
+
+- [API Reference](docs/api.md) — Documentación completa de endpoints
+- [Arquitectura](docs/architecture.md) — Diagrama, tecnologías y flujo de datos
+- [Fuentes de Datos](docs/data-sources.md) — APIs externas y datasets utilizados
+
+---
+
+## 🧠 Endpoints ML Disponibles
+
+| Endpoint | Descripción | Ejemplo |
+|----------|-------------|---------|
+| `GET /api/v1/predict/congestion` | Predicción por hora y comuna | `/predict/congestion?hora=8&comuna=Comuna%2010%20-%20La%20Candelaria` |
+| `GET /api/v1/predict/congestion/forecast` | Pronóstico 24h | `/predict/congestion/forecast?comuna=El%20Poblado` |
+| `GET /api/v1/predict/zonas-criticas` | Clustering DBSCAN | `/predict/zonas-criticas?eps=0.008&min_samples=3` |
+| `GET /api/v1/predict/ruta-segura` | Evaluación de ruta | `/predict/ruta-segura?origen_lat=6.2476&origen_lng=-75.5658&dest_lat=6.2150&dest_lng=-75.5600` |
 
 ---
 

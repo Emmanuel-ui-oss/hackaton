@@ -9,7 +9,7 @@ django.setup()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.routes import auth
-from api.routes.v1 import items, extras
+from api.routes.v1 import items, extras, predict
 
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
@@ -29,6 +29,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(items.router, prefix="/api/v1", tags=["Items"])
 app.include_router(extras.router, prefix="/api/v1", tags=["Extras"])
+app.include_router(predict.router, prefix="/api/v1", tags=["Predicción ML"])
 
 app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR / "static")), name="static")
 
