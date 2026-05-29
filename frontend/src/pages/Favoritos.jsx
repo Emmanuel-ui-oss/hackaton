@@ -66,7 +66,7 @@ export default function Favoritos() {
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 4 }}>{f.direccion}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>{f.latitud?.toFixed(4)}, {f.longitud?.toFixed(4)}</div>
                 </div>
-                <button className="btn btn-sm btn-ghost" onClick={() => handleDelete(f.id)} style={{ color: 'var(--danger)' }}>🗑</button>
+                <button className="btn btn-sm btn-ghost" onClick={() => handleDelete(f.id)} style={{ color: 'var(--red)' }}>🗑</button>
               </div>
             </div>
           ))}

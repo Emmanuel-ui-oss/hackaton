@@ -25,7 +25,7 @@ export default function Perfil() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24 }}>
           <div style={{
             width: 72, height: 72, borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+            background: 'linear-gradient(135deg, var(--blue), var(--green))',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '2rem', color: '#fff', fontWeight: 800,
           }}>

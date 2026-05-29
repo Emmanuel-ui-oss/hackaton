@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--primary-dark) 0%, #0a1628 100%);
+  background: linear-gradient(135deg, #0d0d0d 0%, #0a1628 100%);
   padding: 20px;
 }
 
@@ -13,7 +13,7 @@
   padding: 40px;
   width: 100%;
   max-width: 420px;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.4);
 }
 
 .auth-brand {
@@ -24,7 +24,7 @@
 .auth-brand-icon {
   width: 64px;
   height: 64px;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  background: linear-gradient(135deg, var(--blue), var(--green));
   border-radius: 16px;
   display: flex;
   align-items: center;

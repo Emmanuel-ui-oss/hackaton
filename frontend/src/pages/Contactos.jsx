@@ -101,7 +101,7 @@ export default function Contactos() {
                   {c.email && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>✉️ {c.email}</div>}
                   {c.relacion && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>👤 {c.relacion}</div>}
                 </div>
-                <button className="btn btn-sm btn-ghost" onClick={() => handleDelete(c.id)} style={{ color: 'var(--danger)' }}>🗑</button>
+                <button className="btn btn-sm btn-ghost" onClick={() => handleDelete(c.id)} style={{ color: 'var(--red)' }}>🗑</button>
               </div>
             </div>
           ))}

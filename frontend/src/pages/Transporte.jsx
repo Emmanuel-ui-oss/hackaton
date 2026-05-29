@@ -53,7 +53,7 @@ export default function Transporte() {
               <div
                 key={l.id}
                 className="card"
-                style={{ cursor: 'pointer', padding: 16, borderLeft: `4px solid ${l.color || '#0054a6'}`, ...(selected?.id === l.id ? { borderColor: 'var(--primary)' } : {}) }}
+                style={{ cursor: 'pointer', padding: 16, borderLeft: `4px solid ${l.color || '#2979ff'}`, ...(selected?.id === l.id ? { borderColor: 'var(--blue)' } : {}) }}
                 onClick={() => selectLinea(l)}
               >
                 <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{l.nombre}</div>
@@ -73,7 +73,7 @@ export default function Transporte() {
                 <div key={p.id} className="card" style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{
                     width: 28, height: 28, borderRadius: '50%',
-                    background: selected.color || '#0054a6', color: '#fff',
+                    background: selected.color || '#2979ff', color: '#fff',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontWeight: 700, fontSize: '0.8rem', flexShrink: 0,
                   }}>{i + 1}</div>

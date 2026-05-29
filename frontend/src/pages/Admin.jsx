@@ -79,7 +79,7 @@ export default function Admin() {
                   <td>{z.comuna}</td>
                   <td><span className={`badge badge-${z.nivel?.toLowerCase()}`}>{z.nivel}</span></td>
                   <td>{z.tipo_riesgo}</td>
-                  <td>{z.activo ? <span style={{ color: 'var(--secondary)', fontWeight: 600 }}>Activo</span> : <span style={{ color: 'var(--text-muted)' }}>Inactivo</span>}</td>
+                  <td>{z.activo ? <span style={{ color: 'var(--green)', fontWeight: 600 }}>Activo</span> : <span style={{ color: 'var(--text-muted)' }}>Inactivo</span>}</td>
                   <td>
                     <button className={`btn btn-sm ${z.activo ? 'btn-ghost' : 'btn-primary'}`} onClick={() => toggleZona(z)}>
                       {z.activo ? 'Desactivar' : 'Activar'}
@@ -110,7 +110,7 @@ export default function Admin() {
                   <td><span className="badge badge-info">{r.tipo}</span></td>
                   <td>{r.usuario_username}</td>
                   <td style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descripcion}</td>
-                  <td>{r.activo ? <span style={{ color: 'var(--secondary)', fontWeight: 600 }}>Visible</span> : <span style={{ color: 'var(--text-muted)' }}>Oculto</span>}</td>
+                  <td>{r.activo ? <span style={{ color: 'var(--green)', fontWeight: 600 }}>Visible</span> : <span style={{ color: 'var(--text-muted)' }}>Oculto</span>}</td>
                   <td>
                     <button className={`btn btn-sm ${r.activo ? 'btn-ghost' : 'btn-primary'}`} onClick={() => toggleReporte(r)}>
                       {r.activo ? 'Ocultar' : 'Mostrar'}
