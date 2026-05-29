@@ -1,135 +1,95 @@
 from django.contrib import admin
-from .models import (
-    Categoria, Vehiculo, Conductor, Ruta, Item, Incidente, Poliza,
-    Comentario, MatrizRiesgo, ZonaRiesgo, ReporteIncidenteComunitario,
-    VotoReporte, Favorito, ContactoEmergencia, EventoSOS,
-    LineaTransporte, Parada, HorarioTransporte, Alerta, HistorialViaje,
+
+from apps.core.models import (
+    CategoriaRiesgo,
+    ZonaRiesgo,
+    ReporteIncidente,
+    VotoReporte,
+    ContactoEmergencia,
+    EventoRiesgo,
+    LogAuditoria,
 )
 
 
-@admin.register(Categoria)
-class CategoriaAdmin(admin.ModelAdmin):
-    list_display = ["nombre", "descripcion"]
-    search_fields = ["nombre"]
-
-
-@admin.register(Vehiculo)
-class VehiculoAdmin(admin.ModelAdmin):
-    list_display = ["placa", "marca", "modelo", "tipo", "estado", "año"]
-    list_filter = ["tipo", "estado", "marca"]
-    search_fields = ["placa", "marca"]
-
-
-@admin.register(Conductor)
-class ConductorAdmin(admin.ModelAdmin):
-    list_display = ["nombre", "documento", "licencia", "telefono", "activo"]
-    list_filter = ["activo"]
-    search_fields = ["nombre", "documento"]
-
-
-@admin.register(Ruta)
-class RutaAdmin(admin.ModelAdmin):
-    list_display = ["origen", "destino", "comuna_origen", "comuna_destino", "nivel_riesgo", "accesible"]
-    list_filter = ["nivel_riesgo", "accesible"]
-    search_fields = ["origen", "destino"]
-
-
-@admin.register(Item)
-class ItemAdmin(admin.ModelAdmin):
-    list_display = ["codigo", "descripcion", "estado", "valor", "creado_por", "creado"]
-    list_filter = ["estado", "categoria"]
-    search_fields = ["codigo", "descripcion"]
-    date_hierarchy = "creado"
-
-
-@admin.register(Incidente)
-class IncidenteAdmin(admin.ModelAdmin):
-    list_display = ["tipo", "fecha", "item", "costo_danos", "reportado_por"]
-    list_filter = ["tipo"]
-    date_hierarchy = "fecha"
-
-
-@admin.register(Poliza)
-class PolizaAdmin(admin.ModelAdmin):
-    list_display = ["numero", "tipo", "aseguradora", "prima", "activa", "vigencia_desde", "vigencia_hasta"]
-    list_filter = ["tipo", "activa", "aseguradora"]
-
-
-@admin.register(Comentario)
-class ComentarioAdmin(admin.ModelAdmin):
-    list_display = ["contenido", "autor", "item", "creado"]
-    date_hierarchy = "creado"
-
-
-@admin.register(MatrizRiesgo)
-class MatrizRiesgoAdmin(admin.ModelAdmin):
-    list_display = ["ruta", "factor", "probabilidad", "impacto", "nivel"]
-    list_filter = ["factor", "nivel"]
+@admin.register(CategoriaRiesgo)
+class CategoriaRiesgoAdmin(admin.ModelAdmin):
+    list_display = ("nombre", "nivel", "color")
+    list_filter = ("nivel",)
+    search_fields = ("nombre",)
 
 
 @admin.register(ZonaRiesgo)
 class ZonaRiesgoAdmin(admin.ModelAdmin):
-    list_display = ["nombre", "comuna", "tipo_riesgo", "nivel", "activa"]
-    list_filter = ["tipo_riesgo", "nivel", "comuna"]
-    search_fields = ["nombre", "comuna"]
+    list_display = ("nombre", "comuna", "categoria", "activo")
+    list_filter = ("categoria", "comuna", "activo")
+    search_fields = ("nombre", "comuna")
+    actions = ["activar_zonas", "desactivar_zonas"]
+
+    @admin.action(description="Activar zonas seleccionadas")
+    def activar_zonas(self, request, queryset):
+        queryset.update(activo=True)
+
+    @admin.action(description="Desactivar zonas seleccionadas")
+    def desactivar_zonas(self, request, queryset):
+        queryset.update(activo=False)
 
 
-@admin.register(ReporteIncidenteComunitario)
-class ReporteIncidenteComunitarioAdmin(admin.ModelAdmin):
-    list_display = ["tipo", "usuario", "activo", "votos_positivos", "votos_negativos", "creado"]
-    list_filter = ["tipo", "activo"]
-    date_hierarchy = "creado"
+@admin.register(ReporteIncidente)
+class ReporteIncidenteAdmin(admin.ModelAdmin):
+    list_display = ("tipo", "usuario", "ubicacion", "estado", "creado")
+    list_filter = ("tipo", "estado", "creado")
+    search_fields = ("descripcion", "ubicacion")
+    actions = ["aprobar_reportes", "ocultar_reportes"]
+
+    @admin.action(description="Aprobar reportes seleccionados")
+    def aprobar_reportes(self, request, queryset):
+        queryset.update(estado="aprobado")
+
+    @admin.action(description="Ocultar reportes seleccionados")
+    def ocultar_reportes(self, request, queryset):
+        queryset.update(estado="oculto")
 
 
 @admin.register(VotoReporte)
 class VotoReporteAdmin(admin.ModelAdmin):
-    list_display = ["usuario", "reporte", "positivo"]
-    list_filter = ["positivo"]
-
-
-@admin.register(Favorito)
-class FavoritoAdmin(admin.ModelAdmin):
-    list_display = ["nombre", "usuario", "direccion"]
-    search_fields = ["nombre"]
+    list_display = ("usuario", "reporte", "voto", "creado")
+    list_filter = ("voto",)
 
 
 @admin.register(ContactoEmergencia)
 class ContactoEmergenciaAdmin(admin.ModelAdmin):
-    list_display = ["nombre", "usuario", "telefono", "email"]
+    list_display = ("usuario", "nombre", "telefono")
+    search_fields = ("nombre", "telefono")
 
 
-@admin.register(EventoSOS)
-class EventoSOSAdmin(admin.ModelAdmin):
-    list_display = ["usuario", "activo", "timestamp", "cerrado"]
-    list_filter = ["activo"]
+@admin.register(EventoRiesgo)
+class EventoRiesgoAdmin(admin.ModelAdmin):
+    list_display = ("titulo", "tipo", "nivel", "fuente", "activo", "expira_en", "creado")
+    list_filter = ("tipo", "nivel", "fuente", "activo")
+    search_fields = ("titulo", "descripcion")
+    actions = ["marcar_activo", "marcar_inactivo"]
+
+    @admin.action(description="Marcar eventos como activos")
+    def marcar_activo(self, request, queryset):
+        queryset.update(activo=True)
+
+    @admin.action(description="Marcar eventos como inactivos")
+    def marcar_inactivo(self, request, queryset):
+        queryset.update(activo=False)
 
 
-@admin.register(LineaTransporte)
-class LineaTransporteAdmin(admin.ModelAdmin):
-    list_display = ["codigo", "nombre", "tipo", "color", "activa"]
-    list_filter = ["tipo"]
+@admin.register(LogAuditoria)
+class LogAuditoriaAdmin(admin.ModelAdmin):
+    list_display = ("usuario", "accion", "modelo", "timestamp")
+    list_filter = ("accion", "timestamp")
+    search_fields = ("usuario__username", "accion")
+    readonly_fields = ("usuario", "accion", "modelo", "id_objeto", "detalles", "timestamp")
 
+    def has_add_permission(self, request):
+        return False
 
-@admin.register(Parada)
-class ParadaAdmin(admin.ModelAdmin):
-    list_display = ["nombre", "linea", "orden"]
-    list_filter = ["linea"]
-    ordering = ["linea", "orden"]
+    def has_change_permission(self, request, obj=None):
+        return False
 
-
-@admin.register(HorarioTransporte)
-class HorarioTransporteAdmin(admin.ModelAdmin):
-    list_display = ["linea", "dia_semana", "hora_inicio", "hora_fin", "frecuencia_min"]
-    list_filter = ["linea", "dia_semana"]
-
-
-@admin.register(Alerta)
-class AlertaAdmin(admin.ModelAdmin):
-    list_display = ["usuario", "nivel", "leida", "creado"]
-    list_filter = ["nivel", "leida"]
-
-
-@admin.register(HistorialViaje)
-class HistorialViajeAdmin(admin.ModelAdmin):
-    list_display = ["usuario", "origen_nombre", "destino_nombre", "distancia_km", "creado"]
-    date_hierarchy = "creado"
+    def has_delete_permission(self, request, obj=None):
+        return False

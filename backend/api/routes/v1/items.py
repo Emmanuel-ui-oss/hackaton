@@ -1,150 +1,132 @@
-from fastapi import APIRouter, HTTPException, status, Depends
-from django.db import transaction
-from apps.core.models import Item, Comentario, Categoria, Vehiculo, Conductor, Ruta
-from api.schemas.item import (
-    ItemCreate, ItemUpdate, ItemSchema, ComentarioCreate, ComentarioSchema
-)
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from pydantic import BaseModel
+from typing import Optional
+from django.db.models import Q
+
+from apps.core.models import CategoriaRiesgo, ZonaRiesgo
 from api.dependencies import get_current_user
-from api.pagination import Pagination, paginated_response as paginated
-from django.contrib.auth.models import User
 
-router = APIRouter(prefix="/api/v1", tags=["items"])
+router = APIRouter()
 
 
-def _item_to_schema(item: Item) -> ItemSchema:
-    comentarios = [
-        ComentarioSchema(
-            id=c.id,
-            contenido=c.contenido,
-            autor_username=c.autor.username,
-            creado=c.creado,
-        )
-        for c in item.comentarios.all()
-    ]
-    return ItemSchema(
-        id=item.id,
-        codigo=item.codigo,
-        descripcion=item.descripcion,
-        valor=float(item.valor),
-        peso_kg=float(item.peso_kg),
-        estado=item.estado,
-        origen=item.origen or "",
-        destino=item.destino or "",
-        categoria=item.categoria,
-        vehiculo=item.vehiculo,
-        conductor=item.conductor,
-        ruta=item.ruta,
-        creado_por_username=item.creado_por.username,
-        creado=item.creado,
-        actualizado=item.actualizado,
-        comentarios=comentarios,
+class CategoriaOut(BaseModel):
+    id: int
+    nombre: str
+    nivel: str
+    color: str
+
+    class Config:
+        from_attributes = True
+
+
+class ZonaRiesgoOut(BaseModel):
+    id: int
+    nombre: str
+    comuna: str
+    categoria: CategoriaOut
+    latitud: float
+    longitud: float
+    radio_metros: int
+    activo: bool
+
+    class Config:
+        from_attributes = True
+
+
+class ZonaRiesgoCreate(BaseModel):
+    nombre: str
+    comuna: str = ""
+    categoria_id: int
+    latitud: float
+    longitud: float
+    radio_metros: int = 500
+
+
+class ZonaRiesgoUpdate(BaseModel):
+    nombre: Optional[str] = None
+    comuna: Optional[str] = None
+    categoria_id: Optional[int] = None
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
+    radio_metros: Optional[int] = None
+    activo: Optional[bool] = None
+
+
+@router.get("/categorias", response_model=list[CategoriaOut])
+def list_categorias():
+    return list(CategoriaRiesgo.objects.all())
+
+
+@router.get("/zonas-riesgo", response_model=list[ZonaRiesgoOut])
+def list_zonas(
+    activo: Optional[bool] = None,
+    categoria_id: Optional[int] = None,
+    comuna: Optional[str] = None,
+    search: Optional[str] = Query(None, min_length=2),
+    user=Depends(get_current_user),
+):
+    qs = ZonaRiesgo.objects.select_related("categoria").all()
+    if activo is not None:
+        qs = qs.filter(activo=activo)
+    if categoria_id:
+        qs = qs.filter(categoria_id=categoria_id)
+    if comuna:
+        qs = qs.filter(comuna__icontains=comuna)
+    if search:
+        qs = qs.filter(Q(nombre__icontains=search) | Q(comuna__icontains=search))
+    return list(qs)
+
+
+@router.get("/zonas-riesgo/{zona_id}", response_model=ZonaRiesgoOut)
+def get_zona(zona_id: int, user=Depends(get_current_user)):
+    zona = ZonaRiesgo.objects.select_related("categoria").filter(id=zona_id).first()
+    if not zona:
+        raise HTTPException(status_code=404, detail="Zona no encontrada")
+    return zona
+
+
+@router.post("/zonas-riesgo", response_model=ZonaRiesgoOut, status_code=status.HTTP_201_CREATED)
+def create_zona(data: ZonaRiesgoCreate, user=Depends(get_current_user)):
+    if not user.is_staff:
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    cat = CategoriaRiesgo.objects.filter(id=data.categoria_id).first()
+    if not cat:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+    zona = ZonaRiesgo.objects.create(
+        nombre=data.nombre,
+        comuna=data.comuna,
+        categoria=cat,
+        latitud=data.latitud,
+        longitud=data.longitud,
+        radio_metros=data.radio_metros,
     )
+    return zona
 
 
-@router.get("/items")
-def list_items(pagination: Pagination = Depends(), user: User = Depends(get_current_user)):
-    qs = Item.objects.all().select_related(
-        "categoria", "vehiculo", "conductor", "ruta", "creado_por"
-    ).prefetch_related("comentarios__autor")
-    items, meta = pagination.apply(qs)
-    return paginated([_item_to_schema(i) for i in items], meta)
+@router.put("/zonas-riesgo/{zona_id}", response_model=ZonaRiesgoOut)
+def update_zona(zona_id: int, data: ZonaRiesgoUpdate, user=Depends(get_current_user)):
+    if not user.is_staff:
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    zona = ZonaRiesgo.objects.filter(id=zona_id).first()
+    if not zona:
+        raise HTTPException(status_code=404, detail="Zona no encontrada")
+    update_data = data.model_dump(exclude_unset=True)
+    if "categoria_id" in update_data:
+        cat = CategoriaRiesgo.objects.filter(id=update_data.pop("categoria_id")).first()
+        if not cat:
+            raise HTTPException(status_code=404, detail="Categoría no encontrada")
+        zona.categoria = cat
+    for field, value in update_data.items():
+        setattr(zona, field, value)
+    zona.save()
+    return zona
 
 
-@router.post("/items", response_model=ItemSchema, status_code=201)
-def create_item(data: ItemCreate, user: User = Depends(get_current_user)):
-    with transaction.atomic():
-        categoria = Categoria.objects.filter(id=data.categoria_id).first() if data.categoria_id else None
-        vehiculo = Vehiculo.objects.filter(id=data.vehiculo_id).first() if data.vehiculo_id else None
-        conductor = Conductor.objects.filter(id=data.conductor_id).first() if data.conductor_id else None
-        ruta = Ruta.objects.filter(id=data.ruta_id).first() if data.ruta_id else None
-
-        item = Item.objects.create(
-            codigo=data.codigo,
-            descripcion=data.descripcion,
-            valor=data.valor,
-            peso_kg=data.peso_kg,
-            estado=data.estado,
-            origen=data.origen,
-            destino=data.destino,
-            categoria=categoria,
-            vehiculo=vehiculo,
-            conductor=conductor,
-            ruta=ruta,
-            creado_por=user,
-        )
-    return _item_to_schema(item)
-
-
-@router.get("/items/{item_id}", response_model=ItemSchema)
-def get_item(item_id: int, user: User = Depends(get_current_user)):
-    try:
-        item = Item.objects.select_related(
-            "categoria", "vehiculo", "conductor", "ruta", "creado_por"
-        ).prefetch_related("comentarios__autor").get(id=item_id)
-    except Item.DoesNotExist:
-        raise HTTPException(status_code=404, detail="Item no encontrado")
-    return _item_to_schema(item)
-
-
-@router.put("/items/{item_id}", response_model=ItemSchema)
-def update_item(item_id: int, data: ItemUpdate, user: User = Depends(get_current_user)):
-    try:
-        item = Item.objects.get(id=item_id)
-    except Item.DoesNotExist:
-        raise HTTPException(status_code=404, detail="Item no encontrado")
-
-    with transaction.atomic():
-        if data.descripcion is not None:
-            item.descripcion = data.descripcion
-        if data.valor is not None:
-            item.valor = data.valor
-        if data.peso_kg is not None:
-            item.peso_kg = data.peso_kg
-        if data.estado is not None:
-            item.estado = data.estado
-        if data.origen is not None:
-            item.origen = data.origen
-        if data.destino is not None:
-            item.destino = data.destino
-        if data.categoria_id is not None:
-            item.categoria = Categoria.objects.filter(id=data.categoria_id).first()
-        if data.vehiculo_id is not None:
-            item.vehiculo = Vehiculo.objects.filter(id=data.vehiculo_id).first()
-        if data.conductor_id is not None:
-            item.conductor = Conductor.objects.filter(id=data.conductor_id).first()
-        if data.ruta_id is not None:
-            item.ruta = Ruta.objects.filter(id=data.ruta_id).first()
-        item.save()
-
-    return _item_to_schema(Item.objects.select_related(
-        "categoria", "vehiculo", "conductor", "ruta", "creado_por"
-    ).prefetch_related("comentarios__autor").get(id=item_id))
-
-
-@router.delete("/items/{item_id}", status_code=204)
-def delete_item(item_id: int, user: User = Depends(get_current_user)):
-    try:
-        item = Item.objects.get(id=item_id)
-        item.delete()
-    except Item.DoesNotExist:
-        raise HTTPException(status_code=404, detail="Item no encontrado")
-
-
-@router.post("/items/{item_id}/comentarios", response_model=ComentarioSchema, status_code=201)
-def create_comentario(item_id: int, data: ComentarioCreate, user: User = Depends(get_current_user)):
-    try:
-        item = Item.objects.get(id=item_id)
-    except Item.DoesNotExist:
-        raise HTTPException(status_code=404, detail="Item no encontrado")
-
-    comentario = Comentario.objects.create(
-        contenido=data.contenido,
-        autor=user,
-        item=item,
-    )
-    return ComentarioSchema(
-        id=comentario.id,
-        contenido=comentario.contenido,
-        autor_username=comentario.autor.username,
-        creado=comentario.creado,
-    )
+@router.delete("/zonas-riesgo/{zona_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_zona(zona_id: int, user=Depends(get_current_user)):
+    if not user.is_staff:
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    zona = ZonaRiesgo.objects.filter(id=zona_id).first()
+    if not zona:
+        raise HTTPException(status_code=404, detail="Zona no encontrada")
+    zona.delete()

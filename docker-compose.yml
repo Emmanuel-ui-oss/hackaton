@@ -1,14 +1,24 @@
-version: "3.8"
-
 services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - media_data:/app/media
+    restart: unless-stopped
+
   db:
     image: mysql:8.0
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: transporte_riesgos
     ports:
-      - "3307:3306"
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-hackathon_db}
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -17,27 +27,6 @@ services:
       timeout: 5s
       retries: 5
 
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    ports:
-      - "8000:8000"
-    environment:
-      DB_HOST: db
-      DB_PORT: "3306"
-      DB_USER: root
-      DB_PASSWORD: root
-      DB_NAME: transporte_riesgos
-      DJANGO_SECRET_KEY: django-insecure-prod-change-me
-      DJANGO_DEBUG: "false"
-      DJANGO_ALLOWED_HOSTS: "*"
-      SERVER_PORT: "8000"
-    depends_on:
-      db:
-        condition: service_healthy
-    entrypoint: ["/bin/bash", "/app/entrypoint.sh"]
-
 volumes:
   mysql_data:
+  media_data:

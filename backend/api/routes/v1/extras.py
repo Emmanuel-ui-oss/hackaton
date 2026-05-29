@@ -1,393 +1,245 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Query
-from django.db import transaction
-from django.contrib.auth.models import User
-from typing import List, Optional
-from datetime import datetime, timedelta
+import csv
+import io
+import json
+from datetime import datetime
 
-from django.db import models as dmodels
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
+from django.db.models import Count, Q
+from fastapi.responses import StreamingResponse
 
-from apps.core.models import (
-    ZonaRiesgo, ReporteIncidenteComunitario, VotoReporte,
-    Favorito, ContactoEmergencia, EventoSOS,
-    LineaTransporte, Parada, HorarioTransporte,
-    Alerta, HistorialViaje, Ruta
-)
-from api.schemas.item import (
-    ZonaRiesgoCreate, ZonaRiesgoSchema,
-    ReporteComunitarioCreate, ReporteComunitarioSchema,
-    VotoCreate, FavoritoCreate, FavoritoSchema,
-    ContactoEmergenciaCreate, ContactoEmergenciaSchema,
-    EventoSOSSchema, LineaTransporteSchema, ParadaSchema,
-    HorarioSchema, AlertaSchema, HistorialViajeSchema, RutaSchema
-)
+from apps.core.models import ReporteIncidente, ZonaRiesgo, EventoRiesgo
 from api.dependencies import get_current_user
-from api.pagination import Pagination, paginated_response as paginated
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-router = APIRouter(prefix="/api/v1", tags=["extras"])
+security = HTTPBearer(auto_error=False)
 
-
-# ──────────────────────────────────────────────
-# ZONAS DE RIESGO (RF-01, RF-03, RF-10, RF-11)
-# ──────────────────────────────────────────────
-
-@router.get("/zonas-riesgo")
-def listar_zonas_riesgo(
-    pagination: Pagination = Depends(),
-    comuna: Optional[str] = None,
-    tipo: Optional[str] = None,
-    nivel: Optional[str] = None,
-    activa: Optional[bool] = None,
-    user: User = Depends(get_current_user)
-):
-    qs = ZonaRiesgo.objects.all()
-    if comuna:
-        qs = qs.filter(comuna__icontains=comuna)
-    if tipo:
-        qs = qs.filter(tipo_riesgo=tipo)
-    if nivel:
-        qs = qs.filter(nivel=nivel)
-    if activa is not None:
-        qs = qs.filter(activa=activa)
-    items, meta = pagination.apply(qs)
-    return paginated(list(items), meta)
+router = APIRouter()
 
 
-@router.post("/zonas-riesgo", response_model=ZonaRiesgoSchema, status_code=201)
-def crear_zona_riesgo(data: ZonaRiesgoCreate, user: User = Depends(get_current_user)):
-    zona = ZonaRiesgo.objects.create(**data.model_dump())
-    return zona
+@router.get("/items/export/csv")
+def export_csv(user=Depends(get_current_user)):
+    if not user.is_staff:
+        raise HTTPException(status_code=403, detail="Solo administradores")
 
+    reportes = ReporteIncidente.objects.select_related("usuario").all()
 
-@router.get("/zonas-riesgo/{zona_id}", response_model=ZonaRiesgoSchema)
-def obtener_zona_riesgo(zona_id: int, user: User = Depends(get_current_user)):
-    try:
-        return ZonaRiesgo.objects.get(id=zona_id)
-    except ZonaRiesgo.DoesNotExist:
-        raise HTTPException(status_code=404, detail="Zona de riesgo no encontrada")
-
-
-# ──────────────────────────────────────────────
-# REPORTES COMUNITARIOS (RF-05, CU-02, RF-18)
-# ──────────────────────────────────────────────
-
-@router.get("/reportes")
-def listar_reportes(
-    pagination: Pagination = Depends(),
-    tipo: Optional[str] = None,
-    activo: Optional[bool] = None,
-    user: User = Depends(get_current_user)
-):
-    qs = ReporteIncidenteComunitario.objects.select_related("usuario").all()
-    if tipo:
-        qs = qs.filter(tipo=tipo)
-    if activo is not None:
-        qs = qs.filter(activo=activo)
-    items, meta = pagination.apply(qs)
-    result = []
-    for r in items:
-        result.append(ReporteComunitarioSchema(
-            id=r.id, tipo=r.tipo, descripcion=r.descripcion,
-            ubicacion_texto=r.ubicacion_texto, latitud=float(r.latitud),
-            longitud=float(r.longitud), foto_url=r.foto_url,
-            activo=r.activo, votos_positivos=r.votos_positivos,
-            votos_negativos=r.votos_negativos,
-            usuario_username=r.usuario.username, creado=r.creado
-        ))
-    return paginated(result, meta)
-
-
-@router.post("/reportes", response_model=ReporteComunitarioSchema, status_code=201)
-def crear_reporte(data: ReporteComunitarioCreate, user: User = Depends(get_current_user)):
-    reporte = ReporteIncidenteComunitario.objects.create(
-        usuario=user, **data.model_dump()
-    )
-    return ReporteComunitarioSchema(
-        id=reporte.id, tipo=reporte.tipo, descripcion=reporte.descripcion,
-        ubicacion_texto=reporte.ubicacion_texto, latitud=float(reporte.latitud),
-        longitud=float(reporte.longitud), foto_url=reporte.foto_url,
-        activo=reporte.activo, votos_positivos=reporte.votos_positivos,
-        votos_negativos=reporte.votos_negativos,
-        usuario_username=reporte.usuario.username, creado=reporte.creado
-    )
-
-
-@router.post("/reportes/{reporte_id}/votar", response_model=ReporteComunitarioSchema)
-def votar_reporte(reporte_id: int, data: VotoCreate, user: User = Depends(get_current_user)):
-    try:
-        reporte = ReporteIncidenteComunitario.objects.select_related("usuario").get(id=reporte_id)
-    except ReporteIncidenteComunitario.DoesNotExist:
-        raise HTTPException(status_code=404, detail="Reporte no encontrado")
-
-    voto, created = VotoReporte.objects.get_or_create(
-        usuario=user, reporte=reporte,
-        defaults={"positivo": data.positivo}
-    )
-    if not created:
-        if voto.positivo != data.positivo:
-            if voto.positivo:
-                reporte.votos_positivos = max(0, reporte.votos_positivos - 1)
-            else:
-                reporte.votos_negativos = max(0, reporte.votos_negativos - 1)
-            voto.positivo = data.positivo
-            voto.save()
-        else:
-            raise HTTPException(status_code=400, detail="Ya votaste este reporte")
-
-    if data.positivo:
-        reporte.votos_positivos += 1
-    else:
-        reporte.votos_negativos += 1
-
-    total_votos = reporte.votos_positivos + reporte.votos_negativos
-    if total_votos >= 5 and (reporte.votos_negativos / total_votos) > 0.6:
-        reporte.activo = False
-
-    reporte.save()
-
-    return ReporteComunitarioSchema(
-        id=reporte.id, tipo=reporte.tipo, descripcion=reporte.descripcion,
-        ubicacion_texto=reporte.ubicacion_texto, latitud=float(reporte.latitud),
-        longitud=float(reporte.longitud), foto_url=reporte.foto_url,
-        activo=reporte.activo, votos_positivos=reporte.votos_positivos,
-        votos_negativos=reporte.votos_negativos,
-        usuario_username=reporte.usuario.username, creado=reporte.creado
-    )
-
-
-# ──────────────────────────────────────────────
-# FAVORITOS / DESTINOS FRECUENTES (RF-13)
-# ──────────────────────────────────────────────
-
-@router.get("/favoritos")
-def listar_favoritos(pagination: Pagination = Depends(), user: User = Depends(get_current_user)):
-    qs = Favorito.objects.filter(usuario=user)
-    items, meta = pagination.apply(qs)
-    return paginated(items, meta)
-
-
-@router.post("/favoritos", response_model=FavoritoSchema, status_code=201)
-def crear_favorito(data: FavoritoCreate, user: User = Depends(get_current_user)):
-    fav = Favorito.objects.create(usuario=user, **data.model_dump())
-    return fav
-
-
-@router.delete("/favoritos/{fav_id}", status_code=204)
-def eliminar_favorito(fav_id: int, user: User = Depends(get_current_user)):
-    try:
-        fav = Favorito.objects.get(id=fav_id, usuario=user)
-        fav.delete()
-    except Favorito.DoesNotExist:
-        raise HTTPException(status_code=404, detail="Favorito no encontrado")
-
-
-# ──────────────────────────────────────────────
-# CONTACTOS DE EMERGENCIA (RF-14)
-# ──────────────────────────────────────────────
-
-@router.get("/contactos-emergencia")
-def listar_contactos(pagination: Pagination = Depends(), user: User = Depends(get_current_user)):
-    qs = ContactoEmergencia.objects.filter(usuario=user)
-    items, meta = pagination.apply(qs)
-    return paginated(items, meta)
-
-
-@router.post("/contactos-emergencia", response_model=ContactoEmergenciaSchema, status_code=201)
-def crear_contacto(data: ContactoEmergenciaCreate, user: User = Depends(get_current_user)):
-    c = ContactoEmergencia.objects.create(usuario=user, **data.model_dump())
-    return c
-
-
-@router.delete("/contactos-emergencia/{contacto_id}", status_code=204)
-def eliminar_contacto(contacto_id: int, user: User = Depends(get_current_user)):
-    try:
-        c = ContactoEmergencia.objects.get(id=contacto_id, usuario=user)
-        c.delete()
-    except ContactoEmergencia.DoesNotExist:
-        raise HTTPException(status_code=404, detail="Contacto no encontrado")
-
-
-# ──────────────────────────────────────────────
-# BOTÓN SOS (RF-14, CU-03)
-# ──────────────────────────────────────────────
-
-@router.post("/sos/activar", response_model=EventoSOSSchema, status_code=201)
-def activar_sos(lat: float = Query(...), lng: float = Query(...), user: User = Depends(get_current_user)):
-    contactos = list(ContactoEmergencia.objects.filter(usuario=user).values("nombre", "telefono"))
-    evento = EventoSOS.objects.create(
-        usuario=user, latitud=lat, longitud=lng,
-        contactos_notificados=contactos
-    )
-    return EventoSOSSchema(
-        id=evento.id, latitud=float(evento.latitud),
-        longitud=float(evento.longitud), activo=evento.activo,
-        contactos_notificados=evento.contactos_notificados,
-        timestamp=evento.timestamp
-    )
-
-
-@router.post("/sos/{sos_id}/cerrar")
-def cerrar_sos(sos_id: int, user: User = Depends(get_current_user)):
-    try:
-        evento = EventoSOS.objects.get(id=sos_id, usuario=user, activo=True)
-        evento.activo = False
-        evento.cerrado = datetime.now()
-        evento.save()
-        return {"detail": "SOS desactivado"}
-    except EventoSOS.DoesNotExist:
-        raise HTTPException(status_code=404, detail="Evento SOS no encontrado o ya cerrado")
-
-
-# ──────────────────────────────────────────────
-# LÍNEAS DE TRANSPORTE PÚBLICO (RF-06, RF-16)
-# ──────────────────────────────────────────────
-
-@router.get("/lineas-transporte")
-def listar_lineas(pagination: Pagination = Depends(), tipo: Optional[str] = None, user: User = Depends(get_current_user)):
-    qs = LineaTransporte.objects.all()
-    if tipo:
-        qs = qs.filter(tipo=tipo)
-    items, meta = pagination.apply(qs)
-    return paginated(items, meta)
-
-
-@router.get("/lineas-transporte/{linea_id}/paradas", response_model=List[ParadaSchema])
-def listar_paradas(linea_id: int, user: User = Depends(get_current_user)):
-    try:
-        linea = LineaTransporte.objects.get(id=linea_id)
-    except LineaTransporte.DoesNotExist:
-        raise HTTPException(status_code=404, detail="Línea no encontrada")
-    return list(Parada.objects.filter(linea=linea, activa=True).order_by("orden"))
-
-
-@router.get("/lineas-transporte/{linea_id}/horarios", response_model=List[HorarioSchema])
-def listar_horarios(linea_id: int, dia: Optional[int] = None, user: User = Depends(get_current_user)):
-    try:
-        linea = LineaTransporte.objects.get(id=linea_id)
-    except LineaTransporte.DoesNotExist:
-        raise HTTPException(status_code=404, detail="Línea no encontrada")
-    qs = HorarioTransporte.objects.filter(linea=linea)
-    if dia is not None:
-        qs = qs.filter(dia_semana=dia)
-    return list(qs)
-
-
-# ──────────────────────────────────────────────
-# ALERTAS DE RIESGO (RF-08, CU-04)
-# ──────────────────────────────────────────────
-
-@router.get("/alertas")
-def listar_alertas(pagination: Pagination = Depends(), no_leidas: Optional[bool] = None, user: User = Depends(get_current_user)):
-    qs = Alerta.objects.filter(usuario=user).select_related("zona_riesgo")
-    if no_leidas:
-        qs = qs.filter(leida=False)
-    qs = qs.order_by("-creado")
-    items, meta = pagination.apply(qs)
-    result = []
-    for a in items:
-        result.append(AlertaSchema(
-            id=a.id,
-            zona_riesgo=a.zona_riesgo,
-            mensaje=a.mensaje,
-            nivel=a.nivel,
-            leida=a.leida,
-            creado=a.creado
-        ))
-    return paginated(result, meta)
-
-
-@router.post("/alertas/{alerta_id}/leer")
-def marcar_alerta_leida(alerta_id: int, user: User = Depends(get_current_user)):
-    try:
-        alerta = Alerta.objects.get(id=alerta_id, usuario=user)
-        alerta.leida = True
-        alerta.save()
-        return {"detail": "Alerta marcada como leída"}
-    except Alerta.DoesNotExist:
-        raise HTTPException(status_code=404, detail="Alerta no encontrada")
-
-
-# ──────────────────────────────────────────────
-# HISTORIAL DE VIAJES (RF-07)
-# ──────────────────────────────────────────────
-
-@router.get("/historial-viajes")
-def listar_historial(pagination: Pagination = Depends(), user: User = Depends(get_current_user)):
-    qs = HistorialViaje.objects.filter(usuario=user).select_related("ruta")
-    items, meta = pagination.apply(qs)
-    result = []
-    for h in items:
-        result.append(HistorialViajeSchema(
-            id=h.id, origen_nombre=h.origen_nombre,
-            destino_nombre=h.destino_nombre,
-            distancia_km=float(h.distancia_km) if h.distancia_km else None,
-            tiempo_min=h.tiempo_min, ruta=h.ruta,
-            costo_estimado=float(h.costo_estimado) if h.costo_estimado else None,
-            creado=h.creado
-        ))
-    return paginated(result, meta)
-
-
-# ──────────────────────────────────────────────
-# BÚSQUEDA GLOBAL (RF-20, RF-25)
-# ──────────────────────────────────────────────
-
-@router.get("/search")
-def busqueda_global(q: str = Query(min_length=2), user: User = Depends(get_current_user)):
-    zonas = list(ZonaRiesgo.objects.filter(
-        dmodels.Q(nombre__icontains=q) | dmodels.Q(comuna__icontains=q) | dmodels.Q(descripcion__icontains=q)
-    ).values("id", "nombre", "tipo_riesgo", "nivel", "comuna")[:10])
-
-    reportes = list(ReporteIncidenteComunitario.objects.filter(
-        dmodels.Q(descripcion__icontains=q) | dmodels.Q(ubicacion_texto__icontains=q)
-    ).values("id", "tipo", "descripcion", "activo")[:10])
-
-    rutas = list(Ruta.objects.filter(
-        dmodels.Q(origen__icontains=q) | dmodels.Q(destino__icontains=q)
-    ).values("id", "origen", "destino", "nivel_riesgo")[:10])
-
-    return {"zonas_riesgo": zonas, "reportes": reportes, "rutas": rutas}
-
-
-# ──────────────────────────────────────────────
-# EXPORT / IMPORT / STATS (Rol 3)
-# ──────────────────────────────────────────────
-
-@router.get("/export-csv")
-def export_csv(modelo: str = Query(...), user: User = Depends(get_current_user)):
-    import csv, io
-    modelos = {
-        "zonas": ZonaRiesgo,
-        "reportes": ReporteIncidenteComunitario,
-        "rutas": Ruta,
-        "lineas": LineaTransporte,
-    }
-    if modelo not in modelos:
-        raise HTTPException(status_code=400, detail="Modelo no válido")
-    qs = modelos[modelo].objects.all()
-    if not qs:
-        return {"detail": "Sin datos"}
     output = io.StringIO()
     writer = csv.writer(output)
-    fields = [f.name for f in qs.model._meta.fields]
-    writer.writerow(fields)
-    for obj in qs:
-        writer.writerow([getattr(obj, f) for f in fields])
-    return {"csv": output.getvalue()}
+    writer.writerow(["ID", "Tipo", "Descripción", "Ubicación", "Latitud", "Longitud", "Usuario", "Estado", "Creado"])
+
+    for r in reportes:
+        writer.writerow([r.id, r.tipo, r.descripcion, r.ubicacion, r.latitud, r.longitud, r.usuario.username, r.estado, r.creado.isoformat()])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=reportes.csv"},
+    )
 
 
-@router.get("/stats")
-def stats(user: User = Depends(get_current_user)):
-    from django.db.models import Count
+@router.post("/items/import")
+def import_items(file: UploadFile = File(...), user=Depends(get_current_user)):
+    if not user.is_staff:
+        raise HTTPException(status_code=403, detail="Solo administradores")
+
+    content = file.file.read().decode("utf-8")
+    try:
+        data = json.loads(content)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="JSON inválido")
+
+    if not isinstance(data, list):
+        raise HTTPException(status_code=400, detail="Debe ser un array de objetos")
+
+    creados = 0
+    errores = []
+    for i, item in enumerate(data):
+        try:
+            ReporteIncidente.objects.create(
+                tipo=item.get("tipo", "otro"),
+                descripcion=item.get("descripcion", ""),
+                ubicacion=item.get("ubicacion", ""),
+                latitud=item.get("latitud", 0),
+                longitud=item.get("longitud", 0),
+                usuario=user,
+                estado="pendiente",
+            )
+            creados += 1
+        except Exception as e:
+            errores.append({"index": i, "error": str(e)})
+
+    return {"creados": creados, "errores": errores}
+
+
+@router.get("/items/stats")
+def get_stats(user=Depends(get_current_user)):
+    total_reportes = ReporteIncidente.objects.count()
+    reportes_hoy = ReporteIncidente.objects.filter(
+        creado__date=datetime.now().date()
+    ).count()
+
+    por_tipo = (
+        ReporteIncidente.objects.values("tipo")
+        .annotate(count=Count("id"))
+        .order_by("-count")
+    )
+
+    por_estado = (
+        ReporteIncidente.objects.values("estado")
+        .annotate(count=Count("id"))
+        .order_by("-count")
+    )
+
+    ultimos = (
+        ReporteIncidente.objects.select_related("usuario")
+        .order_by("-creado")[:5]
+    )
+    ultimos_data = [
+        {
+            "id": r.id,
+            "tipo": r.tipo,
+            "usuario": r.usuario.username,
+            "creado": r.creado.isoformat(),
+        }
+        for r in ultimos
+    ]
+
+    total_zonas = ZonaRiesgo.objects.count()
+    zonas_activas = ZonaRiesgo.objects.filter(activo=True).count()
+
     return {
-        "zonas_riesgo": ZonaRiesgo.objects.count(),
-        "zonas_por_nivel": dict(ZonaRiesgo.objects.values_list("nivel").annotate(total=Count("id"))),
-        "reportes_comunitarios": ReporteIncidenteComunitario.objects.count(),
-        "reportes_activos": ReporteIncidenteComunitario.objects.filter(activo=True).count(),
-        "reportes_por_tipo": dict(ReporteIncidenteComunitario.objects.values_list("tipo").annotate(total=Count("id"))),
-        "lineas_transporte": LineaTransporte.objects.count(),
-        "paradas": Parada.objects.count(),
-        "alertas_enviadas": Alerta.objects.count(),
-        "eventos_sos": EventoSOS.objects.count(),
-        "rutas": Ruta.objects.count(),
-        "favoritos": Favorito.objects.count(),
+        "total_reportes": total_reportes,
+        "reportes_hoy": reportes_hoy,
+        "por_tipo": list(por_tipo),
+        "por_estado": list(por_estado),
+        "ultimos": ultimos_data,
+        "total_zonas": total_zonas,
+        "zonas_activas": zonas_activas,
     }
+
+
+@router.post("/upload")
+async def upload_file(file: UploadFile = File(...), user=Depends(get_current_user)):
+    import aiofiles
+    from pathlib import Path
+
+    upload_dir = Path("media/uploads")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    file_path = upload_dir / file.filename
+    async with aiofiles.open(file_path, "wb") as f:
+        content = await file.read()
+        await f.write(content)
+
+    return {
+        "filename": file.filename,
+        "size": len(content),
+        "url": f"/media/uploads/{file.filename}",
+    }
+
+
+@router.get("/search")
+def search_items(
+    q: str = Query(..., min_length=2),
+    tipo: str = None,
+    estado: str = None,
+    user=Depends(get_current_user),
+):
+    qs = ReporteIncidente.objects.select_related("usuario").all()
+    qs = qs.filter(
+        Q(descripcion__icontains=q) | Q(ubicacion__icontains=q)
+    )
+    if tipo:
+        qs = qs.filter(tipo=tipo)
+    if estado:
+        qs = qs.filter(estado=estado)
+
+    results = [
+        {
+            "id": r.id,
+            "tipo": r.tipo,
+            "descripcion": r.descripcion[:100],
+            "ubicacion": r.ubicacion,
+            "usuario": r.usuario.username,
+            "estado": r.estado,
+            "creado": r.creado.isoformat(),
+        }
+        for r in qs[:50]
+    ]
+
+    return {"results": results, "total": len(results)}
+
+
+@router.post("/reportes", status_code=201)
+def crear_reporte(
+    tipo: str = "otro",
+    descripcion: str = "",
+    ubicacion: str = "",
+    latitud: float = 0,
+    longitud: float = 0,
+    user=Depends(get_current_user),
+):
+    reporte = ReporteIncidente.objects.create(
+        tipo=tipo,
+        descripcion=descripcion,
+        ubicacion=ubicacion or f"{latitud},{longitud}",
+        latitud=latitud,
+        longitud=longitud,
+        usuario=user,
+        estado="pendiente",
+    )
+    return {
+        "id": reporte.id,
+        "tipo": reporte.tipo,
+        "mensaje": "Reporte creado correctamente",
+    }
+
+
+@router.get("/eventos/near")
+def eventos_cercanos(
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+    radio_km: float = Query(5.0, ge=0.1, le=100),
+    fuente: str = None,
+    nivel: str = None,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    from django.db.models import Q
+    import math
+
+    qs = EventoRiesgo.objects.filter(
+        activo=True,
+    ).filter(
+        Q(expira_en__isnull=True) | Q(expira_en__gte=datetime.now())
+    )
+
+    if fuente:
+        qs = qs.filter(fuente=fuente)
+    if nivel:
+        qs = qs.filter(nivel=nivel)
+
+    eventos = []
+    for e in qs:
+        dlat = math.radians(e.latitud - lat)
+        dlng = math.radians(e.longitud - lng)
+        a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat)) * math.cos(math.radians(e.latitud)) * math.sin(dlng / 2) ** 2
+        dist_km = 6371 * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+        if dist_km <= radio_km:
+            eventos.append({
+                "id": e.id,
+                "tipo": e.tipo,
+                "nivel": e.nivel,
+                "fuente": e.fuente,
+                "titulo": e.titulo,
+                "descripcion": e.descripcion,
+                "latitud": e.latitud,
+                "longitud": e.longitud,
+                "radio_impacto_metros": e.radio_impacto_metros,
+                "distancia_km": round(dist_km, 2),
+                "expira_en": e.expira_en.isoformat() if e.expira_en else None,
+                "creado": e.creado.isoformat(),
+            })
+
+    return {"eventos": eventos, "total": len(eventos), "centro": {"lat": lat, "lng": lng, "radio_km": radio_km}}

@@ -2,15 +2,22 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    DJANGO_SETTINGS_MODULE=config.settings
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    default-libmysqlclient-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY backend/ .
+COPY . .
+
+RUN mkdir -p /app/media/uploads /app/staticfiles
 
 EXPOSE 8000
 
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+CMD ["/entrypoint.sh"]
