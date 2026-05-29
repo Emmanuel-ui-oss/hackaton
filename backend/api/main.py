@@ -15,7 +15,7 @@ from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-app = FastAPI(title="Transporte y Riesgos - Medellín", docs_url="/docs")
+app = FastAPI(title="Medellín Movilidata OS", docs_url="/docs")
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend"
 

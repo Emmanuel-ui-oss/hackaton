@@ -1,16 +1,18 @@
 :root {
-    --primary: #E53935;
-    --primary-dark: #C62828;
+    --primary: #E30613;
+    --primary-dark: #B0050E;
     --primary-light: #FFEBEE;
-    --secondary: #1565C0;
-    --success: #2E7D32;
-    --warning: #F57F17;
-    --bg: #F5F5F5;
+    --secondary: #0054A6;
+    --secondary-light: #0066CC;
+    --accent: #F58220;
+    --success: #00A650;
+    --warning: #F58220;
+    --bg: #F0F2F5;
     --bg-card: #FFFFFF;
-    --text: #212121;
-    --text-light: #757575;
-    --text-muted: #9E9E9E;
-    --border: #E0E0E0;
+    --text: #1A1A2E;
+    --text-light: #666;
+    --text-muted: #999;
+    --border: #DEE2E6;
     --radius: 8px;
     --radius-lg: 12px;
     --shadow: 0 2px 8px rgba(0,0,0,0.08);
@@ -31,9 +33,17 @@ h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
 /* Nav */
 #topnav {
     position: fixed; top: 0; left: 0; right: 0; height: var(--nav-height);
-    background: var(--bg-card); border-bottom: 1px solid var(--border);
-    z-index: 1000; box-shadow: var(--shadow);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    border-bottom: none;
+    z-index: 1000; box-shadow: var(--shadow-lg);
 }
+.nav-brand { font-weight: 700; font-size: 1.05rem; white-space: nowrap; color: #fff !important; letter-spacing: 0.5px; }
+.nav-links a { color: rgba(255,255,255,0.9); }
+.nav-links a:hover, .nav-links a.active { background: rgba(255,255,255,0.2); color: #fff; }
+.nav-btn { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.6); color: #fff !important; }
+.nav-btn:hover { background: rgba(255,255,255,0.35); }
+.nav-btn-outline { background: transparent; color: #fff !important; }
+.nav-btn-outline:hover { background: rgba(255,255,255,0.15); }
 .nav-inner {
     max-width: 1400px; margin: 0 auto; padding: 0 1rem;
     display: flex; align-items: center; height: 100%; gap: 1.5rem;
@@ -130,6 +140,11 @@ select.form-input { appearance: auto; }
 .stat-card {
     background: var(--bg-card); border-radius: var(--radius-lg);
     box-shadow: var(--shadow); padding: 1.25rem; text-align: center;
+    position: relative; overflow: hidden;
+}
+.stat-card::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
 }
 .stat-number { font-size: 2rem; font-weight: 700; color: var(--primary); }
 .stat-label { font-size: 0.8rem; color: var(--text-light); margin-top: 0.25rem; }

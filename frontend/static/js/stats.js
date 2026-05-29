@@ -8,31 +8,66 @@ async function loadStats() {
     }
 }
 
+let chartTipo = null, chartEstado = null
+
 function renderStats(data) {
     document.getElementById('statReportes').textContent = data.total_reportes || 0;
     document.getElementById('statHoy').textContent = data.reportes_hoy || 0;
     document.getElementById('statZonas').textContent = data.total_zonas || 0;
     document.getElementById('statZonasActivas').textContent = data.zonas_activas || 0;
 
-    const maxTipo = Math.max(...(data.por_tipo?.map(t => t.count) || [1]));
-    const tipoEl = document.getElementById('chartTipo');
-    tipoEl.innerHTML = (data.por_tipo || []).map(t => `
-        <div class="chart-item">
-            <span>${t.tipo}</span>
-            <span><strong>${t.count}</strong></span>
-        </div>
-        <div class="chart-bar" style="width:${(t.count / maxTipo) * 100}%"></div>
-    `).join('') || '<p style="color:var(--text-light);font-size:0.85rem">Sin datos</p>';
+    const tipos = data.por_tipo || []
+    if (chartTipo) { chartTipo.destroy() }
+    const ctxTipo = document.getElementById('chartTipo')
+    if (tipos.length) {
+      ctxTipo.innerHTML = '<canvas height="180"></canvas>'
+      chartTipo = new Chart(ctxTipo.querySelector('canvas'), {
+        type: 'doughnut',
+        data: {
+          labels: tipos.map(t => t.tipo),
+          datasets: [{
+            data: tipos.map(t => t.count),
+            backgroundColor: ['#E53935','#F57F17','#FBC02D','#1565C0','#2E7D32','#9E9E9E'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }
+        }
+      })
+    } else {
+      ctxTipo.innerHTML = '<p style="color:var(--text-light);font-size:0.85rem">Sin datos</p>'
+    }
 
-    const maxEstado = Math.max(...(data.por_estado?.map(e => e.count) || [1]));
-    const estadoEl = document.getElementById('chartEstado');
-    estadoEl.innerHTML = (data.por_estado || []).map(e => `
-        <div class="chart-item">
-            <span>${e.estado}</span>
-            <span><strong>${e.count}</strong></span>
-        </div>
-        <div class="chart-bar" style="width:${(e.count / maxEstado) * 100}%"></div>
-    `).join('') || '<p style="color:var(--text-light);font-size:0.85rem">Sin datos</p>';
+    const estados = data.por_estado || []
+    if (chartEstado) { chartEstado.destroy() }
+    const ctxEstado = document.getElementById('chartEstado')
+    if (estados.length) {
+      ctxEstado.innerHTML = '<canvas height="180"></canvas>'
+      chartEstado = new Chart(ctxEstado.querySelector('canvas'), {
+        type: 'bar',
+        data: {
+          labels: estados.map(e => e.estado),
+          datasets: [{
+            label: 'Reportes',
+            data: estados.map(e => e.count),
+            backgroundColor: ['#1565C0','#F57F17','#2E7D32','#E53935','#9E9E9E'],
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { display: false } },
+            x: { grid: { display: false } }
+          }
+        }
+      })
+    } else {
+      ctxEstado.innerHTML = '<p style="color:var(--text-light);font-size:0.85rem">Sin datos</p>'
+    }
 
     const ultimosEl = document.getElementById('ultimosReportes');
     ultimosEl.innerHTML = (data.ultimos || []).map(r => `

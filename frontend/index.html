@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte y Riesgos - Medellín</title>
+    <title>Medellín Movilidata OS</title>
+    <meta name="description" content="Plataforma Unificada de Movilidad Inteligente para Medellín">
+    <meta name="theme-color" content="#0054a6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Movilidata">
+    <link rel="manifest" href="static/manifest.json">
+    <link rel="apple-touch-icon" href="static/img/icon-192.png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="static/css/app.css">
 </head>
@@ -11,7 +18,7 @@
 
     <nav id="topnav">
         <div class="nav-inner">
-            <a href="#" class="nav-brand" data-view="mapa">🚌 Riesgos Medellín</a>
+            <a href="#" class="nav-brand" data-view="mapa">🚦 Movilidata</a>
             <div class="nav-links" id="navLinks">
                 <a href="#" data-view="mapa">Mapa</a>
                 <a href="#" data-view="reportar" id="navReport" style="display:none">Reportar</a>
@@ -51,7 +58,7 @@
         <div id="view-login" class="view">
             <div class="auth-page">
                 <div class="auth-card">
-                    <h2>🚌 Transporte y Riesgos</h2>
+                    <h2>🚦 Medellín Movilidata OS</h2>
                     <div class="auth-tabs">
                         <button class="auth-tab active" data-tab="login">Ingresar</button>
                         <button class="auth-tab" data-tab="register">Registrarse</button>
@@ -166,6 +173,7 @@
 
     <div class="toast" id="toast"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="static/js/api.js"></script>
     <script src="static/js/auth.js"></script>
@@ -174,5 +182,6 @@
     <script src="static/js/report.js"></script>
     <script src="static/js/stats.js"></script>
     <script src="static/js/app.js"></script>
+    <script src="static/sw-register.js"></script>
 </body>
 </html>
