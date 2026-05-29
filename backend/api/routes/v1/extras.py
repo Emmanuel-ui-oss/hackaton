@@ -383,6 +383,7 @@ def stats(user: User = Depends(get_current_user)):
         "zonas_por_nivel": dict(ZonaRiesgo.objects.values_list("nivel").annotate(total=Count("id"))),
         "reportes_comunitarios": ReporteIncidenteComunitario.objects.count(),
         "reportes_activos": ReporteIncidenteComunitario.objects.filter(activo=True).count(),
+        "reportes_por_tipo": dict(ReporteIncidenteComunitario.objects.values_list("tipo").annotate(total=Count("id"))),
         "lineas_transporte": LineaTransporte.objects.count(),
         "paradas": Parada.objects.count(),
         "alertas_enviadas": Alerta.objects.count(),

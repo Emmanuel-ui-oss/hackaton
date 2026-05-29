@@ -232,20 +232,16 @@ async function dashboardPage(main){
     <div class="card stat-card"><div class="num">${stats.rutas}</div><div class="label">Rutas</div></div>
     <div class="card stat-card"><div class="num">${stats.favoritos}</div><div class="label">Favoritos</div></div>
   </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+    <div class="card"><h3>Zonas por nivel de riesgo</h3><canvas id="chart-riesgo" height="200"></canvas></div>
+    <div class="card"><h3>Reportes por tipo</h3><canvas id="chart-reportes" height="200"></canvas></div>
+  </div>
   <div class="card">
     <h3>Conexion al servidor</h3>
     <p style="font-size:.85rem">
       Accede desde otros dispositivos con alguna de estas direcciones:<br>
       ${info.network.ips.map(ip=>`<a href="http://${ip}:${info.network.port}" target="_blank" style="display:inline-block;margin:4px 8px 4px 0;padding:4px 12px;background:var(--secondary);color:#fff;border-radius:4px;text-decoration:none;font-family:monospace">http://${ip}:${info.network.port}</a>`).join('')}
     </p>
-  </div>
-  <div class="card">
-    <h3>Zonas por nivel de riesgo</h3>
-    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:.5rem">
-      ${Object.entries(stats.zonas_por_nivel||{}).map(([k,v])=>
-        `<div><span class="badge badge-${k}">${k}</span> ${v} zona${v!==1?'s':''}</div>`
-      ).join('')}
-    </div>
   </div>
   <div class="card">
     <h3>Buscar</h3>
@@ -255,6 +251,46 @@ async function dashboardPage(main){
     </div>
     <div id="search-results"></div>
   </div>`
+
+  const niveles=stats.zonas_por_nivel||{}
+  new Chart($('chart-riesgo'),{
+    type:'doughnut',
+    data:{
+      labels:['CRÍTICO','ALTO','MEDIO','BAJO'],
+      datasets:[{
+        data:[niveles.CRITICO||0,niveles.ALTO||0,niveles.MEDIO||0,niveles.BAJO||0],
+        backgroundColor:['#8b0000','#e30613','#f58220','#00a650'],
+        borderWidth:0
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}
+    }
+  })
+
+  const tiposReporte = ['ACCIDENTE','BLOQUEO','ROBO','INUNDACION','DESLIZAMIENTO','OTRO']
+  new Chart($('chart-reportes'),{
+    type:'bar',
+    data:{
+      labels:tiposReporte.map(t=>t.charAt(0)+t.slice(1).toLowerCase()),
+      datasets:[{
+        label:'Reportes',
+        data:tiposReporte.map(t=>stats.reportes_por_tipo?.[t]||0),
+        backgroundColor:['#e30613','#f58220','#8b0000','#0054a6','#00a650','#999'],
+        borderRadius:4
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{beginAtZero:true,grid:{display:false}},
+        x:{grid:{display:false}}
+      }
+    }
+  })
+
   qs('#search-btn').addEventListener('click',async()=>{
     const q=$('search-q').value;if(!q)return
     const r=await api.search(q)
