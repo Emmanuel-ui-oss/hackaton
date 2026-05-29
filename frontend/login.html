@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOMA — Iniciar sesión</title>
+    <meta name="description" content="Inicia sesión en LOMA para acceder al mapa seguro de Medellín.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="static/css/landing.css">
+</head>
+<body>
+
+    <div class="auth-page">
+
+        <!-- Logo / volver -->
+        <a href="principal.html" class="auth-logo" id="logo-back" style="margin-bottom: 32px; display: block;">
+            LOMA
+        </a>
+
+        <div class="auth-card">
+
+            <h1 class="auth-title">Bienvenido de vuelta</h1>
+            <p class="auth-subtitle">Ingresa tus datos para continuar</p>
+
+            <form id="form-login" novalidate>
+
+                <!-- Correo -->
+                <div class="form-group">
+                    <label class="form-label" for="login-email">Correo electrónico</label>
+                    <div class="form-input-icon">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input
+                            type="email"
+                            id="login-email"
+                            class="form-input"
+                            placeholder="tu@correo.com"
+                            autocomplete="email"
+                            required>
+                    </div>
+                </div>
+
+                <!-- Contraseña -->
+                <div class="form-group">
+                    <label class="form-label" for="login-password">Contraseña</label>
+                    <div class="form-input-icon">
+                        <i class="fa-solid fa-lock"></i>
+                        <input
+                            type="password"
+                            id="login-password"
+                            class="form-input"
+                            placeholder="••••••••"
+                            autocomplete="current-password"
+                            required>
+                    </div>
+                    <a href="#" class="form-forgot" id="btn-forgot">¿Olvidaste tu contraseña?</a>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" class="btn btn-primary btn-full" id="btn-login" style="margin-top: 8px;">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    Iniciar sesión
+                </button>
+
+                <!-- Mensaje de error (oculto por defecto) -->
+                <div id="login-error" style="
+                    display: none;
+                    margin-top: 14px;
+                    background: #FEF2F2;
+                    border: 1px solid #FECACA;
+                    border-radius: 10px;
+                    padding: 12px 14px;
+                    font-size: 0.87rem;
+                    color: var(--danger-red);
+                    text-align: center;
+                ">
+                    <i class="fa-solid fa-circle-exclamation me-1"></i>
+                    <span id="login-error-msg">Correo o contraseña incorrectos.</span>
+                </div>
+
+                <div class="form-divider">o continúa con</div>
+
+                <!-- OAuth placeholder -->
+                <button type="button" class="btn btn-outline btn-full" id="btn-google" style="margin-bottom: 10px;">
+                    <i class="fa-brands fa-google"></i>
+                    Google
+                    <!-- TODO: integrar OAuth con Google -->
+                </button>
+
+            </form>
+
+            <p class="form-footer-link">
+                ¿No tienes cuenta? <a href="register.html" id="link-to-register">Regístrate gratis</a>
+            </p>
+
+        </div>
+
+        <!-- Volver al mapa sin sesión -->
+        <p style="margin-top: 20px; font-size: 0.84rem; color: var(--slate-500);">
+            <a href="index.html" style="color: var(--teal-accent); font-weight: 600;">
+                <i class="fa-solid fa-map" style="margin-right: 4px;"></i>
+                Explorar el mapa sin cuenta
+            </a>
+        </p>
+
+    </div>
+
+    <script src="static/js/landing.js"></script>
+</body>
+</html>

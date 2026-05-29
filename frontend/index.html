@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LOMA - Inicio</title>
+    <meta name="description" content="LOMA: navegación urbana segura en Medellín. Rutas inteligentes, alertas en tiempo real y botón SOS.">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <!-- Estilos propios -->
+    <link rel="stylesheet" href="static/css/main.css">
+</head>
+<body>
+
+    <!-- =============================================
+         VISTA: MAPA (activa por defecto)
+         ============================================= -->
+    <section id="view-mapa" class="app-view active">
+
+        <!-- Fondo del mapa -->
+        <div id="map-view"></div>
+
+        <!-- Tarjeta de búsqueda de rutas -->
+        <div class="card shadow-sm search-card p-3">
+            <div class="input-group mb-2">
+                <span class="input-group-text bg-light border-0">
+                    <i class="fa-solid fa-location-dot text-secondary"></i>
+                </span>
+                <input id="input-origin" type="text" class="form-control"
+                       placeholder="Mi ubicación actual" value="Parque Lleras, Poblado">
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text bg-light border-0">
+                    <i class="fa-solid fa-magnifying-glass" style="color: var(--teal-accent);"></i>
+                </span>
+                <input id="input-destination" type="text" class="form-control" placeholder="¿A dónde vas?">
+            </div>
+
+            <!-- Selector de modo de transporte -->
+            <div class="d-flex justify-content-between px-3 transport-icons" id="transport-selector">
+                <i class="fa-solid fa-train-subway active fs-4" data-mode="metro"         title="Metro"></i>
+                <i class="fa-solid fa-bus           fs-4"        data-mode="bus"           title="Bus"></i>
+                <i class="fa-solid fa-car           fs-4"        data-mode="carro"         title="Automóvil"></i>
+                <i class="fa-solid fa-person-walking fs-4"       data-mode="caminando"     title="A pie"></i>
+            </div>
+        </div>
+
+        <!-- Alerta flotante de zona de riesgo -->
+        <div class="alert-toast shadow-sm p-3 d-flex align-items-center" id="alert-toast">
+            <i class="fa-solid fa-triangle-exclamation fs-3 me-3" style="color: var(--warning-orange);"></i>
+            <div>
+                <h6 class="m-0 text-dark fw-bold">Alerta en tu ruta</h6>
+                <small class="text-muted">Manifestación en Av. Oriental. Ruta desviada automáticamente.</small>
+            </div>
+            <button class="btn-close ms-auto" id="btn-close-alert" aria-label="Cerrar alerta"></button>
+        </div>
+
+        <!-- Botón SOS -->
+        <button class="btn-sos" id="btn-sos" aria-label="Llamada de emergencia SOS">SOS</button>
+
+    </section>
+
+
+    <!-- =============================================
+         VISTA: PANEL / DASHBOARD
+         ============================================= -->
+    <section id="view-panel" class="app-view">
+        <div class="view-header">
+            <h1 class="view-title">Panel de seguridad — LOMA</h1>
+            <p class="view-subtitle">Resumen de tu actividad y zona</p>
+        </div>
+
+        <div class="panel-grid px-3 pb-4">
+
+            <!-- Tarjeta: Nivel de riesgo de la zona -->
+            <div class="info-card">
+                <div class="info-card-icon" style="background: rgba(234,88,12,.12); color: var(--warning-orange);">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div>
+                    <p class="info-card-label">Nivel de riesgo</p>
+                    <p class="info-card-value">Moderado</p>
+                </div>
+            </div>
+
+            <!-- Tarjeta: Alertas activas -->
+            <div class="info-card">
+                <div class="info-card-icon" style="background: rgba(220,38,38,.10); color: var(--danger-red);">
+                    <i class="fa-solid fa-bell"></i>
+                </div>
+                <div>
+                    <p class="info-card-label">Alertas activas</p>
+                    <p class="info-card-value">3</p>
+                </div>
+            </div>
+
+            <!-- Tarjeta: Rutas seguras disponibles -->
+            <div class="info-card">
+                <div class="info-card-icon" style="background: rgba(13,148,136,.10); color: var(--teal-accent);">
+                    <i class="fa-solid fa-route"></i>
+                </div>
+                <div>
+                    <p class="info-card-label">Rutas seguras</p>
+                    <p class="info-card-value">5 disponibles</p>
+                </div>
+            </div>
+
+            <!-- Tarjeta: Reportes de la comunidad -->
+            <div class="info-card">
+                <div class="info-card-icon" style="background: rgba(15,23,42,.08); color: var(--navy-blue);">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <div>
+                    <p class="info-card-label">Reportes hoy</p>
+                    <p class="info-card-value">12 en tu zona</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Lista de alertas recientes -->
+        <div class="px-3">
+            <h2 class="section-title">Alertas recientes</h2>
+            <ul class="alert-list" id="alert-list">
+                <li class="alert-item">
+                    <i class="fa-solid fa-triangle-exclamation" style="color: var(--warning-orange);"></i>
+                    <div>
+                        <strong>Manifestación</strong>
+                        <span>Av. Oriental · hace 15 min</span>
+                    </div>
+                </li>
+                <li class="alert-item">
+                    <i class="fa-solid fa-circle-exclamation" style="color: var(--danger-red);"></i>
+                    <div>
+                        <strong>Robo reportado</strong>
+                        <span>Calle 10 con Cr. 43 · hace 32 min</span>
+                    </div>
+                </li>
+                <li class="alert-item">
+                    <i class="fa-solid fa-road-barrier" style="color: var(--navy-blue);"></i>
+                    <div>
+                        <strong>Vía cerrada</strong>
+                        <span>Túnel de Occidente · hace 1 h</span>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+
+    <!-- =============================================
+         VISTA: REPORTAR INCIDENTE
+         ============================================= -->
+    <section id="view-reportar" class="app-view">
+        <div class="view-header">
+            <h1 class="view-title">Reportar incidente — LOMA</h1>
+            <p class="view-subtitle">Ayuda a tu comunidad compartiendo lo que ves</p>
+        </div>
+
+        <form id="form-reporte" class="px-3 pb-4" novalidate>
+
+            <!-- Tipo de incidente -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold" for="select-tipo">Tipo de incidente</label>
+                <select class="form-select" id="select-tipo" required>
+                    <option value="" disabled selected>Selecciona una categoría…</option>
+                    <option value="robo">🔴 Robo / Hurto</option>
+                    <option value="manifestacion">🟠 Manifestación / Bloqueo</option>
+                    <option value="accidente">🟡 Accidente de tránsito</option>
+                    <option value="via-cerrada">🔵 Vía cerrada</option>
+                    <option value="otro">⚪ Otro</option>
+                </select>
+            </div>
+
+            <!-- Ubicación -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold" for="input-ubicacion">Ubicación</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="input-ubicacion"
+                           placeholder="Dirección o barrio" required>
+                    <button class="btn btn-outline-secondary" type="button" id="btn-gps" title="Usar mi ubicación actual">
+                        <i class="fa-solid fa-location-crosshairs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Descripción -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold" for="textarea-descripcion">Descripción</label>
+                <textarea class="form-control" id="textarea-descripcion" rows="3"
+                          placeholder="Describe brevemente lo que ocurre…"></textarea>
+            </div>
+
+            <!-- Foto (placeholder para integración futura) -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Foto (opcional)</label>
+                <div class="photo-upload-area" id="photo-upload-area">
+                    <i class="fa-solid fa-camera fs-2 mb-2"></i>
+                    <span>Toca para adjuntar una foto</span>
+                    <input type="file" id="input-foto" accept="image/*" capture="environment" class="d-none">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary-full" id="btn-enviar-reporte">
+                <i class="fa-solid fa-paper-plane me-2"></i> Enviar reporte
+            </button>
+
+        </form>
+    </section>
+
+
+    <!-- =============================================
+         VISTA: PERFIL DE USUARIO
+         ============================================= -->
+    <section id="view-perfil" class="app-view">
+
+        <!-- Encabezado de perfil -->
+        <div class="profile-header">
+            <div class="avatar" id="user-avatar">
+                <i class="fa-solid fa-user"></i>
+            </div>
+            <h1 class="profile-name" id="user-name">María García</h1>
+            <p class="profile-role">Usuario LOMA</p>
+            <p class="profile-email" id="user-email">maria.garcia@email.com</p>
+        </div>
+
+        <!-- Estadísticas del usuario -->
+        <div class="profile-stats px-3">
+            <div class="stat-item">
+                <span class="stat-number" id="stat-reportes">8</span>
+                <span class="stat-label">Reportes</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="stat-rutas">24</span>
+                <span class="stat-label">Rutas usadas</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="stat-puntos">150</span>
+                <span class="stat-label">Puntos</span>
+            </div>
+        </div>
+
+        <!-- Menú de opciones -->
+        <nav class="profile-menu px-3 pb-4" aria-label="Menú de perfil">
+            <a href="#" class="profile-menu-item" id="menu-notificaciones">
+                <i class="fa-solid fa-bell"></i>
+                <span>Notificaciones</span>
+                <i class="fa-solid fa-chevron-right ms-auto"></i>
+            </a>
+            <a href="#" class="profile-menu-item" id="menu-rutas-guardadas">
+                <i class="fa-solid fa-bookmark"></i>
+                <span>Rutas guardadas</span>
+                <i class="fa-solid fa-chevron-right ms-auto"></i>
+            </a>
+            <a href="#" class="profile-menu-item" id="menu-contactos-sos">
+                <i class="fa-solid fa-phone"></i>
+                <span>Contactos SOS</span>
+                <i class="fa-solid fa-chevron-right ms-auto"></i>
+            </a>
+            <a href="#" class="profile-menu-item" id="menu-ajustes">
+                <i class="fa-solid fa-gear"></i>
+                <span>Ajustes</span>
+                <i class="fa-solid fa-chevron-right ms-auto"></i>
+            </a>
+            <a href="#" class="profile-menu-item text-danger" id="menu-cerrar-sesion">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Cerrar sesión</span>
+            </a>
+        </nav>
+
+    </section>
+
+
+    <!-- =============================================
+         BOTÓN SOS GLOBAL (visible en todas las vistas excepto mapa)
+         ============================================= -->
+    <button class="btn-sos btn-sos-global d-none" id="btn-sos-global" aria-label="Emergencia SOS">SOS</button>
+
+
+    <!-- =============================================
+         BARRA DE NAVEGACIÓN INFERIOR (global)
+         ============================================= -->
+    <nav class="bottom-nav" id="bottom-nav" aria-label="Navegación principal">
+        <a href="#" class="nav-item" id="nav-panel" data-target="view-panel">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>Panel</span>
+        </a>
+        <a href="#" class="nav-item active" id="nav-mapa" data-target="view-mapa">
+            <i class="fa-solid fa-map"></i>
+            <span>Mapa</span>
+        </a>
+        <a href="#" class="nav-item" id="nav-reportar" data-target="view-reportar">
+            <i class="fa-solid fa-bullhorn"></i>
+            <span>Reportar</span>
+        </a>
+        <a href="#" class="nav-item" id="nav-perfil" data-target="view-perfil">
+            <i class="fa-solid fa-user"></i>
+            <span>Perfil</span>
+        </a>
+    </nav>
+
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLcE=" crossorigin=""></script>
+    <!-- Lógica propia -->
+    <script src="static/js/main.js"></script>
+</body>
+</html>

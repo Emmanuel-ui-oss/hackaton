@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOMA — Crear cuenta</title>
+    <meta name="description" content="Crea tu cuenta en LOMA y empieza a navegar Medellín de forma segura.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="static/css/landing.css">
+</head>
+<body>
+
+    <div class="auth-page">
+
+        <!-- Logo / volver -->
+        <a href="principal.html" class="auth-logo" id="logo-back" style="margin-bottom: 32px; display: block;">
+            LOMA
+        </a>
+
+        <div class="auth-card">
+
+            <h1 class="auth-title">Crea tu cuenta</h1>
+            <p class="auth-subtitle">Gratis, rápido y sin letra pequeña</p>
+
+            <form id="form-register" novalidate>
+
+                <!-- Nombre completo -->
+                <div class="form-group">
+                    <label class="form-label" for="reg-name">Nombre completo</label>
+                    <div class="form-input-icon">
+                        <i class="fa-solid fa-user"></i>
+                        <input
+                            type="text"
+                            id="reg-name"
+                            class="form-input"
+                            placeholder="María García"
+                            autocomplete="name"
+                            required>
+                    </div>
+                </div>
+
+                <!-- Correo -->
+                <div class="form-group">
+                    <label class="form-label" for="reg-email">Correo electrónico</label>
+                    <div class="form-input-icon">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input
+                            type="email"
+                            id="reg-email"
+                            class="form-input"
+                            placeholder="tu@correo.com"
+                            autocomplete="email"
+                            required>
+                    </div>
+                </div>
+
+                <!-- Contraseña -->
+                <div class="form-group">
+                    <label class="form-label" for="reg-password">Contraseña</label>
+                    <div class="form-input-icon">
+                        <i class="fa-solid fa-lock"></i>
+                        <input
+                            type="password"
+                            id="reg-password"
+                            class="form-input"
+                            placeholder="Mínimo 8 caracteres"
+                            autocomplete="new-password"
+                            minlength="8"
+                            required>
+                    </div>
+                    <!-- Barra de fortaleza -->
+                    <div id="strength-bar-wrap" style="margin-top: 8px; display: none;">
+                        <div style="height: 4px; border-radius: 4px; background: var(--slate-200); overflow: hidden;">
+                            <div id="strength-bar" style="height: 100%; width: 0; border-radius: 4px; transition: width 0.3s, background 0.3s;"></div>
+                        </div>
+                        <p id="strength-label" style="font-size: 0.75rem; color: var(--slate-500); margin-top: 4px;"></p>
+                    </div>
+                </div>
+
+                <!-- Confirmar contraseña -->
+                <div class="form-group">
+                    <label class="form-label" for="reg-password2">Confirmar contraseña</label>
+                    <div class="form-input-icon">
+                        <i class="fa-solid fa-lock"></i>
+                        <input
+                            type="password"
+                            id="reg-password2"
+                            class="form-input"
+                            placeholder="Repite tu contraseña"
+                            autocomplete="new-password"
+                            required>
+                    </div>
+                    <p id="pass-match-msg" style="font-size: 0.78rem; margin-top: 4px; display: none;"></p>
+                </div>
+
+                <!-- Términos -->
+                <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px; font-size: 0.85rem; color: var(--slate-500);">
+                    <input type="checkbox" id="reg-terms" required
+                        style="margin-top: 3px; accent-color: var(--teal-accent); width: 16px; height: 16px; flex-shrink: 0;">
+                    <label for="reg-terms">
+                        Acepto los
+                        <a href="#" style="color: var(--teal-accent); font-weight: 600;">Términos de uso</a>
+                        y la
+                        <a href="#" style="color: var(--teal-accent); font-weight: 600;">Política de privacidad</a>
+                        de LOMA.
+                        <!-- TODO: enlazar a documentos reales -->
+                    </label>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" class="btn btn-primary btn-full" id="btn-register">
+                    <i class="fa-solid fa-user-plus"></i>
+                    Crear cuenta
+                </button>
+
+                <!-- Mensaje de error (oculto por defecto) -->
+                <div id="register-error" style="
+                    display: none;
+                    margin-top: 14px;
+                    background: #FEF2F2;
+                    border: 1px solid #FECACA;
+                    border-radius: 10px;
+                    padding: 12px 14px;
+                    font-size: 0.87rem;
+                    color: var(--danger-red);
+                    text-align: center;
+                ">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span id="register-error-msg">Corrige los errores antes de continuar.</span>
+                </div>
+
+                <!-- Mensaje de éxito (oculto por defecto) -->
+                <div id="register-success" style="
+                    display: none;
+                    margin-top: 14px;
+                    background: #F0FDFA;
+                    border: 1px solid #99F6E4;
+                    border-radius: 10px;
+                    padding: 12px 14px;
+                    font-size: 0.87rem;
+                    color: var(--teal-dark);
+                    text-align: center;
+                ">
+                    <i class="fa-solid fa-circle-check"></i>
+                    ¡Cuenta creada! Redirigiendo al mapa…
+                </div>
+
+                <div class="form-divider">o regístrate con</div>
+
+                <button type="button" class="btn btn-outline btn-full" id="btn-google-reg">
+                    <i class="fa-brands fa-google"></i>
+                    Google
+                    <!-- TODO: integrar OAuth con Google -->
+                </button>
+
+            </form>
+
+            <p class="form-footer-link">
+                ¿Ya tienes cuenta? <a href="login.html" id="link-to-login">Inicia sesión</a>
+            </p>
+
+        </div>
+
+        <!-- Volver al mapa sin sesión -->
+        <p style="margin-top: 20px; font-size: 0.84rem; color: var(--slate-500);">
+            <a href="index.html" style="color: var(--teal-accent); font-weight: 600;">
+                <i class="fa-solid fa-map" style="margin-right: 4px;"></i>
+                Explorar el mapa sin cuenta
+            </a>
+        </p>
+
+    </div>
+
+    <script src="static/js/landing.js"></script>
+</body>
+</html>

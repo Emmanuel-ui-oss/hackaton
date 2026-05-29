@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOMA — Navega Medellín con Seguridad</title>
+    <meta name="description" content="LOMA es la plataforma de navegación urbana segura para Medellín. Rutas inteligentes, alertas en tiempo real y botón SOS.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="static/css/landing.css">
+</head>
+<body>
+
+    <!-- ══════════════════════════════════════
+         NAVBAR
+    ══════════════════════════════════════ -->
+    <header>
+        <nav class="navbar" id="navbar">
+            <div class="nav-logo">
+                LOMA
+                <span>Navega seguro · Medellín</span>
+            </div>
+
+            <ul class="nav-links">
+                <li><a href="#features">Funciones</a></li>
+                <li><a href="#how-it-works">Cómo funciona</a></li>
+                <li><a href="#about">Nosotros</a></li>
+            </ul>
+
+            <div class="nav-cta">
+                <a href="login.html" class="btn btn-outline" id="btn-nav-login">
+                    Iniciar sesión
+                </a>
+                <a href="register.html" class="btn btn-primary" id="btn-nav-register">
+                    Registrarse
+                </a>
+            </div>
+        </nav>
+    </header>
+
+
+    <!-- ══════════════════════════════════════
+         HERO
+    ══════════════════════════════════════ -->
+    <section class="hero" id="hero">
+        <div class="hero-inner">
+
+            <!-- Texto -->
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    Plataforma de seguridad urbana
+                </div>
+
+                <h1 class="hero-title">
+                    Muévete por<br>
+                    Medellín con<br>
+                    <span class="accent">total seguridad</span>
+                </h1>
+
+                <p class="hero-subtitle">
+                    LOMA combina mapas en tiempo real, reportes comunitarios
+                    y alertas inteligentes para que siempre elijas la ruta más segura.
+                </p>
+
+                <div class="hero-actions">
+                    <a href="index.html" class="btn btn-primary btn-lg" id="btn-hero-map">
+                        <i class="fa-solid fa-map"></i>
+                        Abrir el mapa
+                    </a>
+                    <a href="register.html" class="btn btn-outline btn-lg" id="btn-hero-register">
+                        Crear cuenta gratis
+                    </a>
+                </div>
+            </div>
+
+            <!-- Mockup teléfono -->
+            <div class="hero-visual" aria-hidden="true">
+                <div class="phone-mockup">
+                    <div class="phone-screen">
+                        <div class="phone-screen-logo">LOMA</div>
+                        <div class="phone-screen-sub">Medellín segura</div>
+                        <div class="phone-map-preview">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════
+         STATS BAR
+    ══════════════════════════════════════ -->
+    <div class="stats-bar" id="stats">
+        <div class="stats-inner">
+            <div>
+                <div class="stat-block-number" id="stat-usuarios">X</div>
+                <div class="stat-block-label">Usuarios activos</div>
+            </div>
+            <div>
+                <div class="stat-block-number" id="stat-reportes">X</div>
+                <div class="stat-block-label">Incidentes reportados</div>
+            </div>
+            <div>
+                <div class="stat-block-number" id="stat-rutas">X</div>
+                <div class="stat-block-label">Rutas sin incidentes</div>
+            </div>
+            <div>
+                <div class="stat-block-number" id="stat-comunas">X</div>
+                <div class="stat-block-label">Comunas cubiertas</div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════
+         FEATURES
+    ══════════════════════════════════════ -->
+    <section class="section" id="features">
+        <div class="section-inner">
+            <div class="section-header">
+                <p class="section-label">¿Qué ofrece LOMA?</p>
+                <h2 class="section-title">Todo lo que necesitas<br>en una sola app</h2>
+                <p class="section-subtitle">
+                    Diseñada para la realidad de Medellín, con tecnología que entiende
+                    la ciudad y sus dinámicas de seguridad.
+                </p>
+            </div>
+
+            <div class="features-grid">
+
+                <div class="feature-card" id="feature-rutas">
+                    <div class="feature-icon" style="background: rgba(13,148,136,.12); color: var(--teal-accent);">
+                        <i class="fa-solid fa-route"></i>
+                    </div>
+                    <h3 class="feature-title">Rutas seguras</h3>
+                    <p class="feature-desc">
+                        Calcula la ruta más segura en metro, bus, carro o caminando,
+                        evitando zonas con reportes activos de la comunidad.
+                    </p>
+                </div>
+
+                <div class="feature-card" id="feature-alertas">
+                    <div class="feature-icon" style="background: rgba(234,88,12,.10); color: var(--warning-orange);">
+                        <i class="fa-solid fa-bell"></i>
+                    </div>
+                    <h3 class="feature-title">Alertas en tiempo real</h3>
+                    <p class="feature-desc">
+                        Recibe notificaciones de manifestaciones, vías cerradas y zonas
+                        de riesgo antes de que te afecten en tu trayecto.
+                    </p>
+                </div>
+
+                <div class="feature-card" id="feature-sos">
+                    <div class="feature-icon" style="background: rgba(220,38,38,.10); color: var(--danger-red);">
+                        <i class="fa-solid fa-siren-on"></i>
+                    </div>
+                    <h3 class="feature-title">Botón SOS</h3>
+                    <p class="feature-desc">
+                        Un toque activa la alerta de emergencia y comparte tu ubicación
+                        exacta con tus contactos de confianza y los servicios de socorro.
+                    </p>
+                </div>
+
+                <div class="feature-card" id="feature-comunidad">
+                    <div class="feature-icon" style="background: rgba(15,23,42,.07); color: var(--navy-blue);">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <h3 class="feature-title">Reportes comunitarios</h3>
+                    <p class="feature-desc">
+                        La comunidad reporta incidentes en tiempo real. Cuantos más
+                        usuarios, más precisa y valiosa se vuelve la información.
+                    </p>
+                </div>
+
+                <div class="feature-card" id="feature-transporte">
+                    <div class="feature-icon" style="background: rgba(13,148,136,.12); color: var(--teal-accent);">
+                        <i class="fa-solid fa-train-subway"></i>
+                    </div>
+                    <h3 class="feature-title">Multimodal</h3>
+                    <p class="feature-desc">
+                        Compatible con metro, Metroplús, buses, taxi, vehículo propio
+                        y desplazamiento a pie. Elige cómo moverte.
+                    </p>
+                </div>
+
+                <div class="feature-card" id="feature-panel">
+                    <div class="feature-icon" style="background: rgba(234,88,12,.10); color: var(--warning-orange);">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <h3 class="feature-title">Panel personal</h3>
+                    <p class="feature-desc">
+                        Consulta el nivel de riesgo de tu zona, tus rutas guardadas
+                        y el historial de alertas desde un dashboard limpio y claro.
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════
+         HOW IT WORKS
+    ══════════════════════════════════════ -->
+    <section class="section" id="how-it-works" style="background: white; border-top: 1px solid var(--slate-200); border-bottom: 1px solid var(--slate-200);">
+        <div class="section-inner">
+            <div class="section-header">
+                <p class="section-label">Tres pasos</p>
+                <h2 class="section-title">Empieza en minutos</h2>
+                <p class="section-subtitle">Sin complicaciones. Sin formularios interminables.</p>
+            </div>
+
+            <div class="steps-grid">
+                <div class="step-card" id="step-1">
+                    <div class="step-number">1</div>
+                    <h3 class="step-title">Crea tu cuenta</h3>
+                    <p class="step-desc">
+                        Regístrate gratis con tu correo. En menos de un minuto
+                        ya tienes acceso completo a LOMA.
+                    </p>
+                </div>
+
+                <div class="step-card" id="step-2">
+                    <div class="step-number">2</div>
+                    <h3 class="step-title">Explora el mapa</h3>
+                    <p class="step-desc">
+                        Abre el mapa interactivo de Medellín y consulta las
+                        alertas activas en tiempo real a tu alrededor.
+                    </p>
+                </div>
+
+                <div class="step-card" id="step-3">
+                    <div class="step-number">3</div>
+                    <h3 class="step-title">Muévete seguro</h3>
+                    <p class="step-desc">
+                        Selecciona tu destino y LOMA te sugiere la ruta más
+                        segura según los reportes más recientes.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════
+         ABOUT
+    ══════════════════════════════════════ -->
+    <section class="section" id="about">
+        <div class="section-inner" style="max-width: 700px; text-align: center;">
+            <p class="section-label">Sobre LOMA</p>
+            <h2 class="section-title">Construida para y por<br>la ciudadanía de Medellín</h2>
+            <p class="section-subtitle" style="margin: 0 auto 24px;">
+                LOMA nació como un proyecto de innovación cívica con el objetivo de democratizar
+                el acceso a información de seguridad urbana. Creemos que moverse con seguridad
+                no debe ser un privilegio, sino un derecho.
+            </p>
+            <!-- TODO: agregar logos de aliados, universidades o entidades -->
+            <a href="register.html" class="btn btn-primary btn-lg" id="btn-about-cta">
+                Únete a la comunidad
+            </a>
+        </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════
+         CTA FINAL
+    ══════════════════════════════════════ -->
+    <section class="cta-section" id="cta">
+        <div class="cta-inner">
+            <h2 class="cta-title">¿Listo para moverte<br>con más seguridad?</h2>
+            <p class="cta-subtitle">
+                Únete a miles de personas que ya navegan Medellín con LOMA.
+                Gratis, sin anuncios, sin letra pequeña.
+            </p>
+            <div class="cta-actions">
+                <a href="register.html" class="btn btn-white btn-lg" id="btn-cta-register">
+                    <i class="fa-solid fa-user-plus"></i>
+                    Crear cuenta gratis
+                </a>
+                <a href="index.html" class="btn btn-ghost btn-lg" id="btn-cta-map">
+                    <i class="fa-solid fa-map"></i>
+                    Ver el mapa
+                </a>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════
+         FOOTER
+    ══════════════════════════════════════ -->
+    <footer>
+        <p>
+            &copy; 2026 <strong>LOMA</strong> · Medellín, Colombia ·
+            Hecho con <i class="fa-solid fa-heart" style="color: var(--danger-red);"></i> para la ciudad ·
+            <a href="principal.html">Inicio</a> · <a href="login.html">Login</a> · <a href="register.html">Registro</a> · <a href="index.html">Mapa</a>
+        </p>
+    </footer>
+
+    <script src="static/js/landing.js"></script>
+</body>
+</html>
