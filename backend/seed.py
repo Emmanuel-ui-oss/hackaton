@@ -17,10 +17,12 @@ from apps.core.models import (
 def run():
     print("Creando seed data...")
 
-
-
     # ── USUARIOS ──
-    admin = User.objects.get(username="admin")
+    admin, _ = User.objects.get_or_create(username="admin", defaults={"email": "admin@test.com", "is_staff": True, "is_superuser": True})
+    admin.set_password("admin123")
+    admin.is_staff = True
+    admin.is_superuser = True
+    admin.save()
     user, _ = User.objects.get_or_create(username="demo", defaults={"email": "demo@test.com"})
     user.set_password("demo123")
     user.save()

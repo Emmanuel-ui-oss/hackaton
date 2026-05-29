@@ -37,6 +37,7 @@ class UserOut(BaseModel):
     email: str
     first_name: str
     last_name: str
+    is_staff: bool = False
 
     class Config:
         from_attributes = True

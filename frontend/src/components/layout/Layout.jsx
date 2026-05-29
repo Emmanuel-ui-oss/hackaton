@@ -1,0 +1,59 @@
+import { useState } from 'react'
+import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
+import { useTheme } from '../../contexts/ThemeContext'
+import { useSocket } from '../../contexts/SocketContext'
+import Sidebar from './Sidebar'
+import BottomNav from './BottomNav'
+import Toast from '../common/Toast'
+import { useToast } from '../../contexts/ToastContext'
+import './Layout.css'
+
+export default function Layout() {
+  const { user, logout } = useAuth()
+  const { theme, toggleTheme } = useTheme()
+  const { connected } = useSocket()
+  const { toasts } = useToast()
+  const navigate = useNavigate()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
+  return (
+    <div className="layout">
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="main-area">
+        <header className="topbar">
+          <div className="topbar-left">
+            <button className="menu-toggle" onClick={() => setSidebarOpen(true)}>
+              ☰
+            </button>
+            <span className="connection-dot ${connected ? 'online' : 'offline'}" />
+          </div>
+          <div className="topbar-right">
+            <button className="btn btn-ghost btn-sm" onClick={toggleTheme}>
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+            <div className="topbar-user" onClick={() => navigate('/perfil')}>
+              <div className="topbar-avatar">
+                {user?.username?.[0]?.toUpperCase()}
+              </div>
+              <span className="topbar-name">{user?.username}</span>
+            </div>
+            <button className="btn btn-ghost btn-sm" onClick={handleLogout}>
+              Salir
+            </button>
+          </div>
+        </header>
+        <main className="content">
+          <Outlet />
+        </main>
+      </div>
+      <BottomNav />
+      <Toast toasts={toasts} />
+    </div>
+  )
+}

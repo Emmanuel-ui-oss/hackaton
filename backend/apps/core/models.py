@@ -22,10 +22,27 @@ class CategoriaRiesgo(models.Model):
 
 
 class ZonaRiesgo(models.Model):
+    TIPOS_RIESGO = [
+        ("ACCIDENTE", "Accidente"),
+        ("VIOLENCIA", "Violencia"),
+        ("ROBO", "Robo"),
+        ("INUNDACION", "Inundación"),
+        ("DESLIZAMIENTO", "Deslizamiento"),
+        ("OTRO", "Otro"),
+    ]
+    NIVELES = [
+        ("BAJO", "Bajo"),
+        ("MEDIO", "Medio"),
+        ("ALTO", "Alto"),
+        ("CRITICO", "Crítico"),
+    ]
     nombre = models.CharField(max_length=200)
     comuna = models.CharField(max_length=100, blank=True)
+    descripcion = models.TextField(blank=True)
+    tipo_riesgo = models.CharField(max_length=30, choices=TIPOS_RIESGO, default="OTRO")
+    nivel = models.CharField(max_length=20, choices=NIVELES, default="MEDIO")
     categoria = models.ForeignKey(
-        CategoriaRiesgo, on_delete=models.CASCADE, related_name="zonas"
+        CategoriaRiesgo, on_delete=models.CASCADE, related_name="zonas", null=True, blank=True
     )
     latitud = models.FloatField()
     longitud = models.FloatField()
@@ -40,6 +57,9 @@ class ZonaRiesgo(models.Model):
     def __str__(self):
         return self.nombre
 
+    def get_nivel_display(self):
+        return dict(self.NIVELES).get(self.nivel, self.nivel)
+
 
 class ReporteIncidente(models.Model):
     TIPOS = [
@@ -50,6 +70,16 @@ class ReporteIncidente(models.Model):
         ("clima", "Riesgo Climático"),
         ("otro", "Otro"),
     ]
+    TIPOS_ALT = [
+        ("ACCIDENTE", "Accidente"),
+        ("BLOQUEO", "Bloqueo"),
+        ("ZONA_PELIGROSA", "Zona Peligrosa"),
+        ("ROBO", "Robo"),
+        ("INUNDACION", "Inundación"),
+        ("DESLIZAMIENTO", "Deslizamiento"),
+        ("MANIFESTACION", "Manifestación"),
+        ("OTRO", "Otro"),
+    ]
     ESTADOS = [
         ("pendiente", "Pendiente"),
         ("aprobado", "Aprobado"),
@@ -58,6 +88,7 @@ class ReporteIncidente(models.Model):
     tipo = models.CharField(max_length=30, choices=TIPOS)
     descripcion = models.TextField()
     ubicacion = models.CharField(max_length=255)
+    ubicacion_texto = models.CharField(max_length=255, blank=True)
     latitud = models.FloatField()
     longitud = models.FloatField()
     foto = models.ImageField(upload_to="incidentes/", blank=True, null=True)
@@ -65,6 +96,7 @@ class ReporteIncidente(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reportes"
     )
     estado = models.CharField(max_length=20, choices=ESTADOS, default="pendiente")
+    activo = models.BooleanField(default=True)
     votos_positivos = models.IntegerField(default=0)
     votos_negativos = models.IntegerField(default=0)
     creado = models.DateTimeField(auto_now_add=True)
@@ -90,6 +122,7 @@ class VotoReporte(models.Model):
         ReporteIncidente, on_delete=models.CASCADE, related_name="votos"
     )
     voto = models.CharField(max_length=20, choices=VOTOS)
+    positivo = models.BooleanField(null=True)
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -105,6 +138,7 @@ class ContactoEmergencia(models.Model):
     )
     nombre = models.CharField(max_length=100)
     telefono = models.CharField(max_length=20)
+    email = models.EmailField(blank=True)
     relacion = models.CharField(max_length=50, blank=True)
     activo = models.BooleanField(default=True)
 
@@ -183,3 +217,150 @@ class LogAuditoria(models.Model):
 
     def __str__(self):
         return f"{self.accion} - {self.modelo} - {self.timestamp}"
+
+
+class LineaTransporte(models.Model):
+    TIPOS = [
+        ("METRO", "Metro"),
+        ("METROPLUS", "Metroplús"),
+        ("TRANVIA", "Tranvía"),
+        ("CABLE", "Metrocable"),
+        ("BUS", "Bus"),
+    ]
+    nombre = models.CharField(max_length=200)
+    tipo = models.CharField(max_length=20, choices=TIPOS)
+    codigo = models.CharField(max_length=10, unique=True)
+    color = models.CharField(max_length=7, default="#666666")
+    descripcion = models.TextField(blank=True)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name_plural = "Líneas de Transporte"
+
+    def __str__(self):
+        return f"{self.codigo} - {self.nombre}"
+
+
+class Parada(models.Model):
+    linea = models.ForeignKey(
+        LineaTransporte, on_delete=models.CASCADE, related_name="paradas"
+    )
+    nombre = models.CharField(max_length=200)
+    direccion = models.CharField(max_length=255, blank=True)
+    latitud = models.FloatField()
+    longitud = models.FloatField()
+    orden = models.IntegerField()
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name_plural = "Paradas"
+        ordering = ["linea", "orden"]
+        unique_together = ("linea", "orden")
+
+    def __str__(self):
+        return f"{self.linea.codigo} - {self.nombre} (orden {self.orden})"
+
+
+class HorarioTransporte(models.Model):
+    DIAS = [
+        (1, "Lunes"), (2, "Martes"), (3, "Miércoles"),
+        (4, "Jueves"), (5, "Viernes"), (6, "Sábado"), (7, "Domingo"),
+    ]
+    linea = models.ForeignKey(
+        LineaTransporte, on_delete=models.CASCADE, related_name="horarios"
+    )
+    dia_semana = models.IntegerField(choices=DIAS)
+    hora_inicio = models.TimeField()
+    hora_fin = models.TimeField()
+    frecuencia_min = models.IntegerField()
+
+    class Meta:
+        verbose_name_plural = "Horarios de Transporte"
+        ordering = ["linea", "dia_semana", "hora_inicio"]
+
+    def __str__(self):
+        return f"{self.linea.codigo} - Día {self.dia_semana}: {self.hora_inicio}-{self.hora_fin}"
+
+
+class Alerta(models.Model):
+    NIVELES = [
+        ("BAJO", "Bajo"),
+        ("MEDIO", "Medio"),
+        ("ALTO", "Alto"),
+        ("CRITICO", "Crítico"),
+    ]
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="alertas"
+    )
+    zona_riesgo = models.ForeignKey(
+        "ZonaRiesgo", on_delete=models.SET_NULL, null=True, blank=True, related_name="alertas"
+    )
+    mensaje = models.TextField()
+    nivel = models.CharField(max_length=20, choices=NIVELES, default="MEDIO")
+    leida = models.BooleanField(default=False)
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Alertas"
+        ordering = ["-creado"]
+
+    def __str__(self):
+        return f"[{self.get_nivel_display()}] {self.mensaje[:60]}"
+
+
+class Favorito(models.Model):
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="favoritos"
+    )
+    nombre = models.CharField(max_length=100)
+    direccion = models.CharField(max_length=255, blank=True)
+    latitud = models.FloatField()
+    longitud = models.FloatField()
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Favoritos"
+
+    def __str__(self):
+        return f"{self.nombre} - {self.usuario.username}"
+
+
+class EventoSOS(models.Model):
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="eventos_sos"
+    )
+    latitud = models.FloatField()
+    longitud = models.FloatField()
+    activo = models.BooleanField(default=True)
+    contactos_notificados = models.JSONField(blank=True, default=list)
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Eventos SOS"
+        ordering = ["-creado"]
+
+    def __str__(self):
+        return f"SOS - {self.usuario.username} ({self.creado})"
+
+
+class HistorialViaje(models.Model):
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="historial_viajes"
+    )
+    origen_nombre = models.CharField(max_length=200)
+    destino_nombre = models.CharField(max_length=200)
+    origen_lat = models.FloatField(null=True, blank=True)
+    origen_lng = models.FloatField(null=True, blank=True)
+    destino_lat = models.FloatField(null=True, blank=True)
+    destino_lng = models.FloatField(null=True, blank=True)
+    distancia_km = models.FloatField(null=True, blank=True)
+    tiempo_min = models.IntegerField(null=True, blank=True)
+    costo_estimado = models.IntegerField(null=True, blank=True)
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Historial de Viajes"
+        ordering = ["-creado"]
+
+    def __str__(self):
+        return f"{self.origen_nombre} → {self.destino_nombre} ({self.usuario.username})"
