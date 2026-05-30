@@ -1,10 +1,118 @@
 import { useState, useRef, useEffect } from 'react'
 import api from '../../services/api'
-import './Chatbot.css'
 
 const GREETING = {
   role: 'bot',
   text: '👋 ¡Hola! Pregúntame sobre zonas de riesgo, clima, estadísticas, transporte o rutas seguras.',
+}
+
+const btnStyle = {
+  position: 'fixed',
+  top: 60,
+  right: 16,
+  zIndex: 99999,
+  width: 42,
+  height: 42,
+  borderRadius: '50%',
+  background: '#2979ff',
+  color: '#fff',
+  border: 'none',
+  fontSize: 18,
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  boxShadow: '0 4px 16px rgba(41,121,255,0.45)',
+}
+
+const boxStyle = {
+  position: 'fixed',
+  top: 110,
+  right: 16,
+  zIndex: 99999,
+  width: 320,
+  maxHeight: 380,
+  display: 'flex',
+  flexDirection: 'column',
+  background: 'rgba(18,18,18,0.96)',
+  backdropFilter: 'blur(20px)',
+  border: '1px solid rgba(42,42,42,0.5)',
+  borderRadius: 10,
+  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+  overflow: 'hidden',
+}
+
+const headStyle = {
+  padding: '10px 14px',
+  fontSize: 12,
+  fontWeight: 700,
+  color: '#e8eaed',
+  borderBottom: '1px solid rgba(42,42,42,0.4)',
+  background: 'rgba(41,121,255,0.08)',
+}
+
+const bodyStyle = {
+  flex: 1,
+  overflowY: 'auto',
+  padding: '10px 12px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 6,
+  maxHeight: 260,
+}
+
+const bubbleUser = {
+  alignSelf: 'flex-end',
+  background: '#2979ff',
+  color: '#fff',
+  borderBottomRightRadius: 2,
+  padding: '7px 10px',
+  borderRadius: 8,
+  fontSize: 11,
+  lineHeight: 1.45,
+  maxWidth: '90%',
+}
+
+const bubbleBot = {
+  alignSelf: 'flex-start',
+  background: 'rgba(42,42,42,0.6)',
+  color: '#e8eaed',
+  borderBottomLeftRadius: 2,
+  padding: '7px 10px',
+  borderRadius: 8,
+  fontSize: 11,
+  lineHeight: 1.45,
+  maxWidth: '90%',
+}
+
+const footStyle = {
+  display: 'flex',
+  gap: 6,
+  padding: '8px 10px',
+  borderTop: '1px solid rgba(42,42,42,0.4)',
+}
+
+const inputStyle = {
+  flex: 1,
+  background: 'rgba(42,42,42,0.4)',
+  border: '1px solid rgba(42,42,42,0.3)',
+  borderRadius: 5,
+  padding: '7px 10px',
+  fontSize: 11,
+  color: '#e8eaed',
+  outline: 'none',
+}
+
+const goStyle = {
+  width: 30,
+  height: 30,
+  background: '#2979ff',
+  border: 'none',
+  borderRadius: 5,
+  fontSize: 12,
+  cursor: 'pointer',
+  color: '#fff',
+  flexShrink: 0,
 }
 
 export default function Chatbot() {
@@ -35,24 +143,25 @@ export default function Chatbot() {
 
   return (
     <>
-      <button className="cb-btn" onClick={() => setOpen(p => !p)}>
+      <button style={btnStyle} onClick={() => setOpen(p => !p)}>
         {open ? '✕' : '💬'}
       </button>
       {open && (
-        <div className="cb-box">
-          <div className="cb-head">💬 Asistente Movilidad</div>
-          <div className="cb-body" ref={listRef}>
+        <div style={boxStyle}>
+          <div style={headStyle}>💬 Asistente Movilidad</div>
+          <div style={bodyStyle} ref={listRef}>
             {messages.map((m, i) => (
-              <div key={i} className={`cb-bubble ${m.role}`}>
+              <div key={i} style={m.role === 'user' ? bubbleUser : bubbleBot}>
                 {m.text.split('\n').map((l, j) => <span key={j}>{l}<br /></span>)}
               </div>
             ))}
-            {loading && <div className="cb-bubble bot">...</div>}
+            {loading && <div style={bubbleBot}>...</div>}
           </div>
-          <div className="cb-foot">
-            <input className="cb-inp" placeholder="Escribe un mensaje..." value={input}
+          <div style={footStyle}>
+            <input style={inputStyle} placeholder="Escribe un mensaje..." value={input}
               onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} disabled={loading} />
-            <button className="cb-go" onClick={send} disabled={loading || !input.trim()}>➤</button>
+            <button style={{...goStyle, opacity: loading || !input.trim() ? 0.4 : 1}}
+              onClick={send} disabled={loading || !input.trim()}>➤</button>
           </div>
         </div>
       )}
