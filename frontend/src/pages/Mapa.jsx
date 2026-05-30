@@ -103,6 +103,7 @@ export default function Mapa() {
   const userAccuracyRef = useRef(null)
   const routeLayerRef = useRef(null)
   const searchLayerRef = useRef(null)
+  const lastRouteRef = useRef({ origC: null, destC: null, zonas: [] })
   const [stats, setStats] = useState(null)
   const [weather, setWeather] = useState(null)
   const [ticker, setTicker] = useState([])
@@ -120,6 +121,7 @@ export default function Mapa() {
   const [routeLoading, setRouteLoading] = useState(false)
   const [filters, setFilters] = useState({ evitarCritico: false, evitarAlto: false })
   const [sortMode, setSortMode] = useState('fast')
+  const [selectedRoute, setSelectedRoute] = useState(0)
   const [suggestions, setSuggestions] = useState([])
   const [activeField, setActiveField] = useState(null)
   const suggestTimer = useRef(null)
@@ -393,7 +395,9 @@ export default function Mapa() {
       else filtered.sort((a, b) => a.duration - b.duration || a.worstRisk - b.worstRisk)
 
       setRoutes(filtered)
-      renderRouteOnMap(filtered, zonas, origC, destC)
+      setSelectedRoute(0)
+      lastRouteRef.current = { origC, destC, zonas }
+      renderRouteOnMap(filtered, zonas, origC, destC, 0)
 
       const best = filtered[0]
       if (best) {
@@ -405,24 +409,25 @@ export default function Mapa() {
     } finally { setRouteLoading(false) }
   }
 
-  const renderRouteOnMap = (routes, zonas, origC, destC) => {
+  const renderRouteOnMap = (routes, zonas, origC, destC, selectedIdx = 0) => {
     const map = mapInstance.current
     if (!map) return
     routeLayerRef.current?.clearLayers()
 
     routes.forEach((r, idx) => {
+      const isSelected = idx === selectedIdx
       const segs = splitIntoSegments(r.coords, 15)
       const risks = segs.map(seg => avgRiskForCoords(seg, zonas))
       segs.forEach((seg, si) => {
-        const color = idx === 0 ? getRiskColor(risks[si]) : '#888'
+        const color = isSelected ? getRiskColor(risks[si]) : '#888'
         const poly = L.polyline(seg, {
-          color, weight: idx === 0 ? 5 : 3,
-          opacity: idx === 0 ? 0.85 : 0.25,
-          dashArray: idx > 0 ? '4 6' : null,
+          color, weight: isSelected ? 5 : 3,
+          opacity: isSelected ? 0.85 : 0.25,
+          dashArray: isSelected ? null : '4 6',
         }).addTo(routeLayerRef.current)
       })
 
-      if (idx === 0) {
+      if (isSelected) {
         L.marker([origC.lat, origC.lng], {
           icon: L.divIcon({ html: '<div class="ruta-marker ruta-marker-o">A</div>', className: '', iconSize: [24, 24], iconAnchor: [12, 12] }),
         }).addTo(routeLayerRef.current)
@@ -627,10 +632,13 @@ export default function Mapa() {
 
                 <div className="ruteo-results">
                   {routes.map((r, i) => (
-                    <div key={i} className={`ruteo-result ${i === 0 ? 'primary' : ''}`}
+                    <div key={i} className={`ruteo-result ${i === selectedRoute ? 'primary' : ''}`}
                       onClick={() => {
+                        setSelectedRoute(i)
                         const map = mapInstance.current
                         if (map) map.fitBounds(L.latLngBounds(r.coords), { padding: [50, 50] })
+                        const { origC, destC, zonas } = lastRouteRef.current
+                        if (origC && destC) renderRouteOnMap(routes, zonas, origC, destC, i)
                       }}>
                       <div className="rr-top">
                         <span className="rr-label">Ruta {i + 1}</span>
