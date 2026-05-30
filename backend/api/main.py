@@ -15,7 +15,7 @@ from api.routes import weather as weather_router
 
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 app = FastAPI(title="Medellín Movilidata OS", docs_url="/docs")
 
@@ -43,6 +43,5 @@ if FRONTEND_DIR.exists():
     @app.get("/{full_path:path}")
     def serve_spa(full_path: str):
         if full_path.startswith("api/") or full_path.startswith("ws/") or full_path.startswith("docs") or full_path.startswith("assets/") or full_path.startswith("static/"):
-            from fastapi.responses import JSONResponse
             return JSONResponse({"detail": "Not Found"}, status_code=404)
-        return FileResponse(str(FRONTEND_DIR / "index.html"))
+        return FileResponse(str(FRONTEND_DIR / "index.html"), headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
