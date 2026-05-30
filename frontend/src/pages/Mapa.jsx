@@ -111,6 +111,7 @@ export default function Mapa() {
   const [toggles, setToggles] = useState({ zonas: true, reportes: true, transporte: true })
   const [events, setEvents] = useState([])
   const [userPos, setUserPos] = useState(null)
+  const [userAddress, setUserAddress] = useState('')
   const [routeMode, setRouteMode] = useState(false)
   const [routePanelOpen, setRoutePanelOpen] = useState(false)
   const [origin, setOrigin] = useState('')
@@ -277,6 +278,14 @@ export default function Mapa() {
     }
   }, [userPos])
 
+  useEffect(() => {
+    if (!userPos) return
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userPos.lat}&lon=${userPos.lng}&format=json`)
+      .then(r => r.json())
+      .then(data => setUserAddress(data.display_name || ''))
+      .catch(() => {})
+  }, [userPos?.lat, userPos?.lng])
+
   const toggleRouteMode = () => {
     const next = !routeMode
     setRouteMode(next)
@@ -294,9 +303,9 @@ export default function Mapa() {
     tileLayerRef.current?.setUrl(LIGHT_TILE)
     mapRef.current?.closest('.mapa-wrap')?.style.setProperty('--map-bg', '#f5f5f5')
     if (userPos) {
-      setOrigin(`Mi ubicación (${userPos.lat.toFixed(4)}, ${userPos.lng.toFixed(4)})`)
+      setOrigin(userAddress || `Mi ubicación (${userPos.lat.toFixed(4)}, ${userPos.lng.toFixed(4)})`)
     }
-  }, [routeMode, userPos])
+  }, [routeMode, userPos, userAddress])
 
   const locateMe = () => {
     const map = mapInstance.current
@@ -550,7 +559,7 @@ export default function Mapa() {
                     onChange={e => handleInputChange(e, 'origin')}
                     onFocus={() => setActiveField('origin')}
                     onKeyDown={e => e.key === 'Enter' && calcRoute()} />
-                  {userPos && <button className="ruteo-gps" onClick={() => setOrigin(`Mi ubicación (${userPos.lat.toFixed(4)}, ${userPos.lng.toFixed(4)})`)} title="Usar mi ubicación">📡</button>}
+                  {userPos && <button className="ruteo-gps" onClick={() => setOrigin(userAddress || `Mi ubicación (${userPos.lat.toFixed(4)}, ${userPos.lng.toFixed(4)})`)} title="Usar mi ubicación">📡</button>}
                 </div>
                 {activeField === 'origin' && suggestions.length > 0 && (
                   <div className="ruteo-suggestions">
