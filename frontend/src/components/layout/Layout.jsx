@@ -7,6 +7,7 @@ import BottomNav from './BottomNav'
 import SOSButton from '../common/SOSButton'
 import Toast from '../common/Toast'
 import { useToast } from '../../contexts/ToastContext'
+import Chatbot from '../Chatbot/Chatbot'
 import './Layout.css'
 
 export default function Layout() {
@@ -53,6 +54,7 @@ export default function Layout() {
         </main>
       </div>
       <SOSButton />
+      <Chatbot />
       <BottomNav />
       <Toast toasts={toasts} />
     </div>

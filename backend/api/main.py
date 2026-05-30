@@ -9,7 +9,7 @@ django.setup()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.routes import auth
-from api.routes.v1 import items, extras, predict
+from api.routes.v1 import items, extras, predict, chat
 from api.routes import ws as ws_router
 from api.routes import weather as weather_router
 
@@ -33,6 +33,7 @@ app.include_router(items.router, prefix="/api/v1", tags=["Items"])
 app.include_router(extras.router, prefix="/api/v1", tags=["Extras"])
 app.include_router(predict.router, prefix="/api/v1", tags=["Predicción ML"])
 app.include_router(weather_router.router, prefix="/api/v1", tags=["Clima"])
+app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
 app.include_router(ws_router.router, prefix="/ws", tags=["WebSocket"])
 
 if FRONTEND_DIR.exists():
