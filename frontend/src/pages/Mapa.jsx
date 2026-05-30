@@ -103,7 +103,6 @@ export default function Mapa() {
   const userAccuracyRef = useRef(null)
   const routeLayerRef = useRef(null)
   const searchLayerRef = useRef(null)
-  const searchTimerRef = useRef(null)
   const [stats, setStats] = useState(null)
   const [weather, setWeather] = useState(null)
   const [ticker, setTicker] = useState([])
@@ -120,9 +119,9 @@ export default function Mapa() {
   const [routeLoading, setRouteLoading] = useState(false)
   const [filters, setFilters] = useState({ evitarCritico: false, evitarAlto: false })
   const [sortMode, setSortMode] = useState('fast')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchSuggestions, setSearchSuggestions] = useState([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [suggestions, setSuggestions] = useState([])
+  const [activeField, setActiveField] = useState(null)
+  const suggestTimer = useRef(null)
   const socketStats = useSocket().stats
   const { user, logout } = useAuth()
   const { error: showError, info: showInfo } = useToast()
@@ -420,48 +419,40 @@ export default function Mapa() {
     })
   }
 
-  // ── Search ──
-  const searchAddress = (q) => {
-    if (!q || q.length < 3) { setSearchSuggestions([]); return }
-    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)},Medellín,Colombia&format=json&limit=8&addressdetails=1`)
+  // ── Autocomplete for route inputs ──
+  const fetchSuggestions = (q, field) => {
+    if (!q || q.length < 3) { setSuggestions([]); return }
+    setActiveField(field)
+    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)},Medellín,Colombia&format=json&limit=5&addressdetails=1`)
       .then(r => r.json())
-      .then(data => setSearchSuggestions(Array.isArray(data) ? data : []))
-      .catch(() => setSearchSuggestions([]))
+      .then(data => setSuggestions(Array.isArray(data) ? data : []))
+      .catch(() => setSuggestions([]))
   }
 
-  const handleSearchChange = (e) => {
+  const handleInputChange = (e, field) => {
     const v = e.target.value
-    setSearchQuery(v)
-    setShowSuggestions(true)
-    clearTimeout(searchTimerRef.current)
-    searchTimerRef.current = setTimeout(() => searchAddress(v), 300)
+    if (field === 'origin') setOrigin(v)
+    else setDest(v)
+    clearTimeout(suggestTimer.current)
+    if (v.length >= 3) suggestTimer.current = setTimeout(() => fetchSuggestions(v, field), 300)
+    else setSuggestions([])
   }
 
-  const selectSuggestion = (s) => {
-    const lat = parseFloat(s.lat), lng = parseFloat(s.lon)
-    const name = s.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
-    setSearchQuery(s.display_name?.split(',')[0] || name)
-    setShowSuggestions(false)
-    setSearchSuggestions([])
+  const pickSuggestion = (s, field) => {
+    const name = s.display_name?.split(',')[0] || s.display_name || ''
+    if (field === 'origin') setOrigin(name)
+    else setDest(name)
+    setSuggestions([])
+    setActiveField(null)
 
-    searchLayerRef.current?.clearLayers()
+    const lat = parseFloat(s.lat), lng = parseFloat(s.lon)
     const map = mapInstance.current
     if (!map) return
-
-    L.marker([lat, lng], {
-      icon: L.divIcon({
-        html: `<div class="search-marker"><span>📍</span><div class="search-marker-label">${s.display_name?.split(',')[0] || name}</div></div>`,
-        className: '', iconSize: [24, 24], iconAnchor: [12, 24],
-      }),
-    }).addTo(searchLayerRef.current)
-    map.setView([lat, lng], 16)
-  }
-
-  const clearSearch = () => {
-    setSearchQuery('')
-    setSearchSuggestions([])
-    setShowSuggestions(false)
     searchLayerRef.current?.clearLayers()
+    L.marker([lat, lng], {
+      icon: L.divIcon({ html: '<div class="ruteo-pin"><span>📍</span></div>', className: '', iconSize: [24, 24], iconAnchor: [12, 24] }),
+    }).bindPopup(`<div class="ruteo-pin-popup">${s.display_name || name}</div>`).addTo(searchLayerRef.current)
+    map.setView([lat, lng], 15)
   }
 
   // ── Map click → reverse geocode → marker ──
@@ -541,35 +532,6 @@ export default function Mapa() {
           <label className={`mapa-tag ${routeMode ? 'active' : ''}`} onClick={toggleRouteMode}>🚗 Ruta</label>
         </div>
 
-        <div className="mapa-search">
-          <div className="mapa-search-input-wrap">
-            <span className="mapa-search-icon">🔍</span>
-            <input className="mapa-search-input" placeholder="Buscar dirección en Medellín..." value={searchQuery}
-              onChange={handleSearchChange} onFocus={() => setShowSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 250)} />
-            {searchQuery && <button className="mapa-search-clear" onClick={clearSearch}>✕</button>}
-          </div>
-          {showSuggestions && searchSuggestions.length > 0 && (
-            <div className="mapa-suggestions">
-              {searchSuggestions.map((s, i) => (
-                <div key={i} className="mapa-suggestion-item" onMouseDown={() => selectSuggestion(s)}>
-                  <span className="ms-icon">📍</span>
-                  <div className="ms-text">
-                    <span className="ms-name">{s.display_name?.split(',')[0]}</span>
-                    <span className="ms-detail">{s.display_name?.split(',').slice(1, 4).join(',').trim()}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {showSuggestions && !searchSuggestions.length && searchQuery.length >= 3 && (
-            <div className="mapa-suggestions mapa-suggestions-empty">
-              <span>Buscando direcciones...</span>
-            </div>
-          )}
-
-        </div>
-
         <div ref={mapRef} className="mapa-leaflet" />
         {mapLoading && <div className="mapa-loading"><div className="spinner" /></div>}
 
@@ -581,21 +543,53 @@ export default function Mapa() {
             </div>
 
             <div className="ruteo-inputs">
-              <div className="ruteo-field">
-                <span className="ruteo-icon">📍</span>
-                <input className="ruteo-input" placeholder="Desde (o usa GPS)" value={origin}
-                  onChange={e => setOrigin(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && calcRoute()} />
-                {userPos && <button className="ruteo-gps" onClick={() => setOrigin(`Mi ubicación (${userPos.lat.toFixed(4)}, ${userPos.lng.toFixed(4)})`)} title="Usar mi ubicación">📡</button>}
+              <div className="ruteo-field-wrap">
+                <div className="ruteo-field">
+                  <span className="ruteo-icon">📍</span>
+                  <input className="ruteo-input" placeholder="Desde (o usa GPS)" value={origin}
+                    onChange={e => handleInputChange(e, 'origin')}
+                    onFocus={() => setActiveField('origin')}
+                    onKeyDown={e => e.key === 'Enter' && calcRoute()} />
+                  {userPos && <button className="ruteo-gps" onClick={() => setOrigin(`Mi ubicación (${userPos.lat.toFixed(4)}, ${userPos.lng.toFixed(4)})`)} title="Usar mi ubicación">📡</button>}
+                </div>
+                {activeField === 'origin' && suggestions.length > 0 && (
+                  <div className="ruteo-suggestions">
+                    {suggestions.map((s, i) => (
+                      <div key={i} className="ruteo-suggestion-item" onMouseDown={() => pickSuggestion(s, 'origin')}>
+                        <span className="rs-icon">📍</span>
+                        <div className="rs-text">
+                          <span className="rs-name">{s.display_name?.split(',')[0]}</span>
+                          <span className="rs-detail">{s.display_name?.split(',').slice(1, 4).join(',').trim()}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="ruteo-field">
-                <span className="ruteo-icon">🎯</span>
-                <input className="ruteo-input" placeholder="Destino en Medellín" value={dest}
-                  onChange={e => setDest(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && calcRoute()} />
-                <button className="ruteo-go" onClick={calcRoute} disabled={routeLoading || !dest}>
-                  {routeLoading ? '...' : '›'}
-                </button>
+              <div className="ruteo-field-wrap">
+                <div className="ruteo-field">
+                  <span className="ruteo-icon">🎯</span>
+                  <input className="ruteo-input" placeholder="Destino en Medellín" value={dest}
+                    onChange={e => handleInputChange(e, 'dest')}
+                    onFocus={() => setActiveField('dest')}
+                    onKeyDown={e => e.key === 'Enter' && calcRoute()} />
+                  <button className="ruteo-go" onClick={calcRoute} disabled={routeLoading || !dest}>
+                    {routeLoading ? '...' : '›'}
+                  </button>
+                </div>
+                {activeField === 'dest' && suggestions.length > 0 && (
+                  <div className="ruteo-suggestions">
+                    {suggestions.map((s, i) => (
+                      <div key={i} className="ruteo-suggestion-item" onMouseDown={() => pickSuggestion(s, 'dest')}>
+                        <span className="rs-icon">📍</span>
+                        <div className="rs-text">
+                          <span className="rs-name">{s.display_name?.split(',')[0]}</span>
+                          <span className="rs-detail">{s.display_name?.split(',').slice(1, 4).join(',').trim()}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
