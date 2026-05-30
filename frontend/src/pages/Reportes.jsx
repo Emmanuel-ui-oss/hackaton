@@ -113,7 +113,20 @@ export default function Reportes() {
             </div>
             <div className="form-group">
               <label className="form-label">Ubicación</label>
-              <input className="form-input" value={form.ubicacion_texto} onChange={e => setForm(p => ({ ...p, ubicacion_texto: e.target.value }))} placeholder="Dirección o referencia" />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input className="form-input" style={{ flex: 1 }} value={form.ubicacion_texto} onChange={e => setForm(p => ({ ...p, ubicacion_texto: e.target.value }))} placeholder="Dirección o referencia" />
+                <button type="button" className="btn btn-ghost" onClick={() => {
+                  if (!navigator.geolocation) { showError('Geolocalización no disponible'); return }
+                  navigator.geolocation.getCurrentPosition(
+                    pos => {
+                      setForm(p => ({ ...p, latitud: pos.coords.latitude, longitud: pos.coords.longitude, ubicacion_texto: `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}` }))
+                      success('Ubicación obtenida')
+                    },
+                    () => showError('No se pudo obtener la ubicación'),
+                    { enableHighAccuracy: true, timeout: 10000 }
+                  )
+                }}>📍 Obtener ubicación</button>
+              </div>
             </div>
             <div className="grid grid-2">
               <div className="form-group">
