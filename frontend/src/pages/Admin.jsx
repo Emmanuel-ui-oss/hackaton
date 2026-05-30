@@ -45,6 +45,15 @@ export default function Admin() {
     } catch { showError('Error al actualizar reporte') }
   }
 
+  const eliminarReporte = async (reporte) => {
+    if (!confirm(`¿Eliminar reporte #${reporte.id} de "${reporte.usuario_username}"? Esta acción no se puede deshacer.`)) return
+    try {
+      await api.delete(`/api/v1/reportes/${reporte.id}`)
+      success('Reporte eliminado permanentemente')
+      loadReportes()
+    } catch { showError('Error al eliminar reporte') }
+  }
+
   if (loading && zonas.length === 0 && reportes.length === 0) return <Loading />
 
   return (
@@ -112,9 +121,14 @@ export default function Admin() {
                   <td style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descripcion}</td>
                   <td>{r.activo ? <span style={{ color: 'var(--green)', fontWeight: 600 }}>Visible</span> : <span style={{ color: 'var(--text-muted)' }}>Oculto</span>}</td>
                   <td>
-                    <button className={`btn btn-sm ${r.activo ? 'btn-ghost' : 'btn-primary'}`} onClick={() => toggleReporte(r)}>
-                      {r.activo ? 'Ocultar' : 'Mostrar'}
-                    </button>
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <button className={`btn btn-sm ${r.activo ? 'btn-ghost' : 'btn-primary'}`} onClick={() => toggleReporte(r)}>
+                        {r.activo ? 'Ocultar' : 'Mostrar'}
+                      </button>
+                      <button className="btn btn-sm btn-danger" onClick={() => eliminarReporte(r)}>
+                        Eliminar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -143,6 +143,17 @@ def votar_reporte(reporte_id: int, data: dict, user=Depends(get_current_user)):
     }
 
 
+@router.delete("/reportes/{reporte_id}")
+def eliminar_reporte(reporte_id: int, user=Depends(get_current_user)):
+    if not user.is_staff:
+        raise HTTPException(status_code=403, detail="Solo administradores pueden eliminar reportes")
+    reporte = ReporteIncidente.objects.filter(id=reporte_id).first()
+    if not reporte:
+        raise HTTPException(status_code=404, detail="Reporte no encontrado")
+    reporte.delete()
+    return {"detail": "Reporte eliminado"}
+
+
 # ── FAVORITOS ──
 
 class FavoritoCreate(BaseModel):
