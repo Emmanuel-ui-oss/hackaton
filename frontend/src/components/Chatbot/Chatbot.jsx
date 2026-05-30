@@ -8,21 +8,17 @@ const GREETING = {
 
 const btnStyle = {
   position: 'fixed',
-  top: 60,
-  right: 16,
+  top: 10,
+  left: 10,
   zIndex: 99999,
-  width: 42,
-  height: 42,
-  borderRadius: '50%',
-  background: '#2979ff',
-  color: '#fff',
-  border: 'none',
-  fontSize: 18,
+  width: 80,
+  height: 40,
+  background: '#ff0',
+  color: '#000',
+  border: '3px solid #f00',
+  fontSize: 14,
   cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  boxShadow: '0 4px 16px rgba(41,121,255,0.45)',
+  fontWeight: 'bold',
 }
 
 const boxStyle = {
@@ -116,6 +112,7 @@ const goStyle = {
 }
 
 export default function Chatbot() {
+  console.log('[Chatbot] RENDERED')
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState([GREETING])
   const [input, setInput] = useState('')
@@ -142,9 +139,9 @@ export default function Chatbot() {
   }
 
   return (
-    <>
-      <button style={btnStyle} onClick={() => setOpen(p => !p)}>
-        {open ? '✕' : '💬'}
+    <div id="chatbot-root">
+      <button id="chatbot-btn" style={btnStyle} onClick={() => setOpen(p => !p)}>
+        {open ? '✕' : 'CHAT'}
       </button>
       {open && (
         <div style={boxStyle}>
@@ -165,6 +162,6 @@ export default function Chatbot() {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }
