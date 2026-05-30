@@ -2,14 +2,14 @@ import { useState, useRef, useEffect } from 'react'
 import api from '../../services/api'
 import './Chatbot.css'
 
-const WELCOME = {
+const GREETING = {
   role: 'bot',
-  text: '👋 ¡Hola! Soy tu asistente de movilidad de Medellín.\n\nPuedes preguntarme:\n• ⚠️ "¿Cuántas zonas críticas hay?"\n• 🌤️ "¿Cómo está el clima?"\n• 📊 "¿Cuántos reportes hay?"\n• 🚇 "¿Qué líneas de metro hay?"\n• 🗺️ "¿Ruta segura al centro?"',
+  text: '👋 ¡Hola! Pregúntame sobre zonas de riesgo, clima, estadísticas, transporte o rutas seguras.',
 }
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState([WELCOME])
+  const [messages, setMessages] = useState([GREETING])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const listRef = useRef(null)
@@ -18,51 +18,41 @@ export default function Chatbot() {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight
   }, [messages])
 
-  const send = async () => {
+  async function send() {
     const text = input.trim()
     if (!text || loading) return
     setInput('')
-    setMessages(prev => [...prev, { role: 'user', text }])
+    setMessages(m => [...m, { role: 'user', text }])
     setLoading(true)
     try {
       const res = await api.post('/api/v1/chat', { message: text })
-      setMessages(prev => [...prev, { role: 'bot', text: res.data.reply }])
+      setMessages(m => [...m, { role: 'bot', text: res.data.reply }])
     } catch {
-      setMessages(prev => [...prev, { role: 'bot', text: '❌ Error al conectar con el servidor. Intenta de nuevo.' }])
-    } finally {
-      setLoading(false)
+      setMessages(m => [...m, { role: 'bot', text: 'Error de conexión. Intenta de nuevo.' }])
     }
-  }
-
-  const handleKey = (e) => {
-    if (e.key === 'Enter') send()
+    setLoading(false)
   }
 
   return (
     <>
-      <button className={`cb-fab ${open ? 'cb-fab-open' : ''}`} onClick={() => setOpen(p => !p)} title="Chatbot">
+      <button className="cb-btn" onClick={() => setOpen(p => !p)}>
         {open ? '✕' : '💬'}
       </button>
-
       {open && (
-        <div className="cb-panel">
-          <div className="cb-header">
-            <span>💬 Asistente Movilidad</span>
-          </div>
-          <div className="cb-messages" ref={listRef}>
+        <div className="cb-box">
+          <div className="cb-head">💬 Asistente Movilidad</div>
+          <div className="cb-body" ref={listRef}>
             {messages.map((m, i) => (
-              <div key={i} className={`cb-msg cb-msg-${m.role}`}>
-                {m.text.split('\n').map((line, j) => (
-                  <span key={j}>{line}<br /></span>
-                ))}
+              <div key={i} className={`cb-bubble ${m.role}`}>
+                {m.text.split('\n').map((l, j) => <span key={j}>{l}<br /></span>)}
               </div>
             ))}
-            {loading && <div className="cb-msg cb-msg-bot"><span className="cb-typing">...</span></div>}
+            {loading && <div className="cb-bubble bot">...</div>}
           </div>
-          <div className="cb-input-area">
-            <input className="cb-input" placeholder="Escribe un mensaje..." value={input}
-              onChange={e => setInput(e.target.value)} onKeyDown={handleKey} disabled={loading} />
-            <button className="cb-send" onClick={send} disabled={loading || !input.trim()}>➤</button>
+          <div className="cb-foot">
+            <input className="cb-inp" placeholder="Escribe un mensaje..." value={input}
+              onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} disabled={loading} />
+            <button className="cb-go" onClick={send} disabled={loading || !input.trim()}>➤</button>
           </div>
         </div>
       )}
