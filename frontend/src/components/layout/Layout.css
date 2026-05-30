@@ -112,6 +112,7 @@
 .topbar-name { font-size: 0.8rem; font-weight: 600; color: var(--text); }
 
 .content { padding: 20px; }
+.content.fullscreen { padding: 0; max-width: none; }
 
 .connection-dot {
   width: 6px; height: 6px;

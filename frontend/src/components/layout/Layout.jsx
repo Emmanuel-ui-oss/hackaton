@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSocket } from '../../contexts/SocketContext'
 import Sidebar from './Sidebar'
@@ -14,7 +14,9 @@ export default function Layout() {
   const { connected } = useSocket()
   const { toasts } = useToast()
   const navigate = useNavigate()
+  const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const isDashboard = location.pathname === '/dashboard'
 
   const handleLogout = () => {
     logout()
@@ -25,26 +27,28 @@ export default function Layout() {
     <div className="layout">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="main-area">
-        <header className="topbar">
-          <div className="topbar-left">
-            <button className="menu-toggle" onClick={() => setSidebarOpen(true)}>
-              ☰
-            </button>
-            <div className={`connection-dot ${connected ? 'online' : 'offline'}`} />
-          </div>
-          <div className="topbar-right">
-            <div className="topbar-user" onClick={() => navigate('/perfil')}>
-              <div className="topbar-avatar">
-                {user?.username?.[0]?.toUpperCase()}
-              </div>
-              <span className="topbar-name">{user?.username}</span>
+        {!isDashboard && (
+          <header className="topbar">
+            <div className="topbar-left">
+              <button className="menu-toggle" onClick={() => setSidebarOpen(true)}>
+                ☰
+              </button>
+              <div className={`connection-dot ${connected ? 'online' : 'offline'}`} />
             </div>
-            <button className="btn btn-ghost btn-sm" onClick={handleLogout}>
-              Salir
-            </button>
-          </div>
-        </header>
-        <main className="content">
+            <div className="topbar-right">
+              <div className="topbar-user" onClick={() => navigate('/perfil')}>
+                <div className="topbar-avatar">
+                  {user?.username?.[0]?.toUpperCase()}
+                </div>
+                <span className="topbar-name">{user?.username}</span>
+              </div>
+              <button className="btn btn-ghost btn-sm" onClick={handleLogout}>
+                Salir
+              </button>
+            </div>
+          </header>
+        )}
+        <main className={`content ${isDashboard ? 'fullscreen' : ''}`}>
           <Outlet />
         </main>
       </div>

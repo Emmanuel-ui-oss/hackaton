@@ -1,57 +1,55 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import api from '../services/api'
 import { useSocket } from '../contexts/SocketContext'
+import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { useNavigate } from 'react-router-dom'
 import AnimatedNumber from '../components/common/AnimatedNumber'
-import Loading from '../components/common/Loading'
+import {
+  Chart as ChartJS,
+  ArcElement, Tooltip, Legend,
+  BarElement, CategoryScale, LinearScale,
+  PointElement, LineElement, Filler,
+} from 'chart.js'
+import { Doughnut, Bar, Line } from 'react-chartjs-2'
+ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale, PointElement, LineElement, Filler)
 import './Dashboard.css'
 
-const COLORS = {
-  CRITICO: { color: 'var(--red)', bg: 'var(--red-bg)' },
-  ALTO: { color: 'var(--amber)', bg: 'var(--amber-bg)' },
-  MEDIO: { color: 'var(--blue)', bg: 'var(--blue-bg)' },
-  BAJO: { color: 'var(--green)', bg: 'var(--green-bg)' },
+const NIVEL_STYLES = {
+  CRITICO: { color: '#ff1744' },
+  ALTO:    { color: '#ffab00' },
+  MEDIO:   { color: '#2979ff' },
+  BAJO:    { color: '#00c853' },
 }
 
-function TickerCard({ icon, label, value, color }) {
-  return (
-    <div className="ticker-card" style={{ borderTop: `2px solid ${color}` }}>
-      <div className="ticker-label">{label}</div>
-      <div className="ticker-value">
-        <AnimatedNumber value={value ?? 0} />
-      </div>
-      <div className="ticker-icon">{icon}</div>
-    </div>
-  )
+const CARD_COLORS = {
+  ZONAS: '#ffab00', REPORTES: '#2979ff', ALERTAS: '#ff1744', LINEAS: '#00c853',
+  SOS: '#d500f9', FAVORITOS: '#ffab00', PARADAS: '#00bcd4', TOTAL: '#2979ff',
 }
 
-function MiniChartBars({ data, labels, colors }) {
-  if (!data?.length) return null
-  const max = Math.max(...data, 1)
-  return (
-    <div className="mc-bars">
-      {data.map((v, i) => (
-        <div key={i} className="mc-col" title={`${labels[i]}: ${v}`}>
-          <div className="mc-bar" style={{
-            height: `${(v / max) * 100}%`,
-            background: colors?.[i] || 'var(--blue)',
-            transition: 'height 0.5s ease',
-          }} />
-          <div className="mc-label">{labels[i]?.slice(0, 4)}</div>
-        </div>
-      ))}
-    </div>
-  )
-}
+const CARD_CONFIG = [
+  { key: 'zonas_riesgo', icon: '⚠', label: 'ZONAS RIESGO', colorKey: 'ZONAS' },
+  { key: 'reportes_activos', icon: '📋', label: 'REPORTES', colorKey: 'REPORTES' },
+  { key: 'alertas_no_leidas', icon: '🔔', label: 'ALERTAS', altKey: 'alertas_enviadas', colorKey: 'ALERTAS' },
+  { key: 'lineas_transporte', icon: '🚇', label: 'LINEAS TRANS.', colorKey: 'LINEAS' },
+  { key: 'eventos_sos', icon: '🆘', label: 'EVENTOS SOS', colorKey: 'SOS' },
+  { key: 'favoritos', icon: '⭐', label: 'FAVORITOS', colorKey: 'FAVORITOS' },
+  { key: 'paradas', icon: '📍', label: 'PARADAS', colorKey: 'PARADAS' },
+  { key: 'total_reportes', icon: '📊', label: 'TOTAL REPORTES', colorKey: 'TOTAL' },
+]
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [weather, setWeather] = useState(null)
   const [ticker, setTicker] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [reportHistory, setReportHistory] = useState([])
+  const [zoneHistory, setZoneHistory] = useState([])
+  const [forecast, setForecast] = useState([])
   const socketStats = useSocket().stats
+  const { user, logout } = useAuth()
   const { error: showError } = useToast()
-  const tickerRef = useRef([])
+  const navigate = useNavigate()
 
   const load = useCallback(async () => {
     try {
@@ -61,115 +59,203 @@ export default function Dashboard() {
       ])
       setStats(statsRes.data)
       setWeather(weatherRes?.data)
-    } catch {
-      showError('Error al cargar datos')
-    } finally { setLoading(false) }
+    } catch { showError('Error al cargar datos') }
+    finally { setLoading(false) }
   }, [])
 
   useEffect(() => { load() }, [load])
 
   useEffect(() => {
-    if (!socketStats) return
-    setStats(prev => {
-      if (!prev) return socketStats
-      const changed = []
-      Object.entries(socketStats).forEach(([k, v]) => {
-        if (prev[k] !== undefined && prev[k] !== v) {
-          changed.push(`${k}: ${prev[k]} → ${v}`)
-        }
-      })
-      if (changed.length) {
-        setTicker(t => [{ time: new Date().toLocaleTimeString(), msg: changed.join(', ') }, ...t].slice(0, 20))
-      }
-      return { ...prev, ...socketStats }
-    })
-  }, [socketStats])
+    api.get('/api/v1/predict/congestion/forecast')
+      .then(res => setForecast(res.data.forecast || []))
+      .catch(() => {})
+  }, [])
 
-  if (loading) return <Loading />
+  const getVal = (s, cfg) => {
+    let v = s?.[cfg.key]
+    if (v === undefined && cfg.altKey) v = s?.[cfg.altKey]
+    return v ?? 0
+  }
+
+  useEffect(() => {
+    if (!socketStats || !stats) return
+    const changes = []
+    CARD_CONFIG.forEach(({ key, altKey }) => {
+      const oldV = stats[key] ?? stats[altKey]
+      const newV = socketStats[key] ?? socketStats[altKey]
+      if (oldV !== undefined && newV !== undefined && oldV !== newV) {
+        const dir = newV > oldV ? 'up' : 'down'
+        changes.push({ label: key.replace(/_/g,' '), oldV, newV, dir })
+      }
+    })
+    if (changes.length) {
+      setTicker(t => [
+        ...changes.map(c => ({ time: new Date().toLocaleTimeString(), ...c })),
+        ...t,
+      ].slice(0, 30))
+    }
+    setStats(prev => prev ? { ...prev, ...socketStats } : socketStats)
+
+    if (socketStats.reportes_por_tipo) {
+      setReportHistory(prev => [...prev, { ...socketStats.reportes_por_tipo }].slice(-20))
+    }
+    if (socketStats.zonas_por_nivel) {
+      setZoneHistory(prev => [...prev, { ...socketStats.zonas_por_nivel }].slice(-20))
+    }
+  }, [socketStats])
 
   const s = stats || {}
 
-  const cards = [
-    { icon: '⚠', label: 'ZONAS RIESGO', value: s.zonas_riesgo, color: '#ffab00' },
-    { icon: '📋', label: 'REPORTES ACTIVOS', value: s.reportes_activos, color: '#2979ff' },
-    { icon: '🚇', label: 'LINEAS TRANSPORTE', value: s.lineas_transporte, color: '#00c853' },
-    { icon: '🔔', label: 'ALERTAS NO LEIDAS', value: s.alertas_no_leidas ?? s.alertas_enviadas, color: '#ff1744' },
-    { icon: '🆘', label: 'EVENTOS SOS', value: s.eventos_sos, color: '#d500f9' },
-    { icon: '⭐', label: 'FAVORITOS', value: s.favoritos, color: '#ffab00' },
-    { icon: '📍', label: 'PARADAS', value: s.paradas, color: '#00bcd4' },
-    { icon: '📊', label: 'TOTAL REPORTES', value: s.total_reportes, color: '#2979ff' },
-  ]
+  const latestRpt = reportHistory.length > 0 ? reportHistory[reportHistory.length - 1] : { accidente: 0, bloqueo: 0, robo: 0 }
+  const latestZonas = zoneHistory.length > 0 ? zoneHistory[zoneHistory.length - 1] : { CRITICO: 0, ALTO: 0, MEDIO: 0, BAJO: 0 }
 
-  const niveles = s.zonas_por_nivel || {}
-  const nivelData = Object.values(niveles)
-  const nivelLabels = Object.keys(niveles)
-  const nivelColors = nivelLabels.map(n => COLORS[n]?.color || '#666')
+  const chartOpts = (label) => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1a1a1a',
+        titleColor: '#e8eaed',
+        bodyColor: '#9aa0a6',
+        borderColor: '#2a2a2a',
+        borderWidth: 1,
+        cornerRadius: 4,
+      },
+    },
+    scales: label?.includes('line') ? {
+      x: { grid: { color: 'rgba(42,42,42,0.5)' }, ticks: { color: '#5f6368', font: { size: 9 } } },
+      y: { grid: { color: 'rgba(42,42,42,0.5)' }, ticks: { color: '#5f6368', font: { size: 9 } }, beginAtZero: true, max: 100 },
+    } : label?.includes('bar') ? {
+      x: { grid: { display: false }, ticks: { color: '#5f6368', font: { size: 9 } } },
+      y: { grid: { color: 'rgba(42,42,42,0.5)' }, ticks: { color: '#5f6368', font: { size: 9 } }, beginAtZero: true },
+    } : {},
+  })
 
-  const tipos = s.reportes_por_tipo || {}
-  const tipoData = Object.values(tipos)
-  const tipoLabels = Object.keys(tipos)
+  const doughnutData = {
+    labels: ['Accidente', 'Bloqueo', 'Robo'],
+    datasets: [{
+      data: [latestRpt.accidente, latestRpt.bloqueo, latestRpt.robo],
+      backgroundColor: ['#ff1744', '#ffab00', '#2979ff'],
+      borderWidth: 0,
+    }],
+  }
+
+  const barData = {
+    labels: ['CRIT', 'ALTO', 'MED', 'BAJO'],
+    datasets: [{
+      label: 'Zonas',
+      data: [latestZonas.CRITICO, latestZonas.ALTO, latestZonas.MEDIO, latestZonas.BAJO],
+      backgroundColor: ['#ff1744', '#ffab00', '#2979ff', '#00c853'],
+      borderRadius: 3,
+      borderSkipped: false,
+    }],
+  }
+
+  const lineData = forecast.length ? {
+    labels: forecast.map(f => f.hora_label?.slice(0, 5) ?? ''),
+    datasets: [{
+      label: 'Congestión %',
+      data: forecast.map(f => f.probabilidad ?? 0),
+      borderColor: '#2979ff',
+      backgroundColor: (ctx) => {
+        if (!ctx.chart.chartArea) return 'transparent'
+        const { top, bottom } = ctx.chart.chartArea
+        const gradient = ctx.chart.ctx.createLinearGradient(0, top, 0, bottom)
+        gradient.addColorStop(0, 'rgba(41,121,255,0.25)')
+        gradient.addColorStop(1, 'rgba(41,121,255,0.01)')
+        return gradient
+      },
+      fill: true,
+      tension: 0.4,
+      pointRadius: 0,
+      borderWidth: 1.5,
+    }],
+  } : null
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1 className="page-title">Dashboard</h1>
-        <p className="page-subtitle">Monitoreo en vivo · Movilidad Medellín</p>
+    <div className="dash-iq">
+      <div className="dash-topbar">
+        <div className="dash-top-left">
+          {weather && (
+            <div className="dash-weather">
+              <span>🌤️ {weather.temp}°C</span>
+              <span className="ws-sep">·</span>
+              <span>{weather.condition}</span>
+              <span className="ws-sep">·</span>
+              <span>💧 {weather.humidity}%</span>
+              <span className="ws-sep">·</span>
+              <span>🌧️ {weather.rain_prob}%</span>
+            </div>
+          )}
+        </div>
+        <div className="dash-top-right">
+          <button className="dash-btn dash-btn-mapa" onClick={() => navigate('/mapa')}>
+            🗺️ Mapa
+          </button>
+          <div className="dash-user" onClick={() => navigate('/perfil')}>
+            <span className="dash-avatar">{user?.username?.[0]?.toUpperCase()}</span>
+            <span className="dash-username">{user?.username}</span>
+          </div>
+          <button className="dash-btn dash-btn-logout" onClick={() => { logout(); navigate('/login') }}>Salir</button>
+        </div>
       </div>
 
-      {weather && (
-        <div className="weather-strip">
-          <div className="ws-item"><span className="ws-dot" style={{ background: '#ffab00' }} />{weather.temp}°C</div>
-          <div className="ws-item"><span className="ws-dot" style={{ background: '#2979ff' }} />{weather.condition}</div>
-          <div className="ws-item"><span className="ws-dot" style={{ background: '#00c853' }} />{weather.humidity}% HR</div>
-          <div className="ws-item"><span className="ws-dot" style={{ background: '#ff1744' }} />Lluvia {weather.rain_prob}%</div>
-        </div>
-      )}
-
-      <div className="ticker-grid">
-        {cards.map(c => <TickerCard key={c.label} {...c} />)}
+      <div className="dash-stats">
+        {CARD_CONFIG.map(cfg => (
+          <div key={cfg.key} className="stat-ticker" style={{ borderTopColor: CARD_COLORS[cfg.colorKey] }}>
+            <div className="stat-icon-label">
+              <span>{cfg.icon}</span>
+              <span className="stat-label">{cfg.label}</span>
+            </div>
+            <div className="stat-value" style={{ color: CARD_COLORS[cfg.colorKey] }}>
+              <AnimatedNumber value={getVal(s, cfg)} />
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="dash-row">
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">Zonas por Nivel</div>
-            <span className="badge badge-info">LIVE</span>
-          </div>
-          <div className="card-body">
-            <MiniChartBars data={nivelData} labels={nivelLabels} colors={nivelColors} />
-          </div>
+      <div className="dash-charts">
+        <div className="chart-card">
+          <span className="chart-title">REPORTES POR TIPO</span>
+          <div className="chart-wrap"><Doughnut data={doughnutData} options={chartOpts()} /></div>
         </div>
+        <div className="chart-card">
+          <span className="chart-title">ZONAS POR NIVEL</span>
+          <div className="chart-wrap"><Bar data={barData} options={chartOpts('bar')} /></div>
+        </div>
+        <div className="chart-card chart-card-wide">
+          <span className="chart-title">CONGESTIÓN 24H</span>
+          <div className="chart-wrap">{lineData && <Line data={lineData} options={chartOpts('line')} />}</div>
+        </div>
+      </div>
 
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">Reportes por Tipo</div>
-            <span className="badge badge-info">LIVE</span>
-          </div>
-          <div className="card-body">
-            <MiniChartBars data={tipoData} labels={tipoLabels} />
-          </div>
-        </div>
+      <div className="dash-riskbar">
+        {Object.entries(NIVEL_STYLES).map(([nivel, style]) => {
+          const count = stats?.zonas_por_nivel?.[nivel] ?? 0
+          return (
+            <div key={nivel} className="riskbar-item" style={{ color: style.color }}>
+              <span className="riskbar-dot" style={{ background: style.color, boxShadow: `0 0 6px ${style.color}` }} />
+              {nivel} <span className="riskbar-count">{count}</span>
+            </div>
+          )
+        })}
+      </div>
 
-        <div className="card dash-ticker-card">
-          <div className="card-header">
-            <div className="card-title">Live Ticker</div>
-            <span className="badge badge-info">5s</span>
-          </div>
-          <div className="card-body" style={{ maxHeight: 200, overflow: 'auto' }}>
-            {ticker.length === 0 ? (
-              <div className="empty-state" style={{ padding: '20px 0' }}>
-                <div className="empty-state-text" style={{ fontSize: '0.75rem' }}>Esperando cambios en vivo...</div>
-              </div>
-            ) : (
-              ticker.map((t, i) => (
-                <div key={i} className="ticker-line">
-                  <span className="ticker-time">{t.time}</span>
-                  <span className="ticker-msg">{t.msg}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+      <div className="dash-ticker">
+        <div className="ticker-title">LIVE TICKER</div>
+        {ticker.length === 0 ? (
+          <div className="ticker-empty">Esperando cambios...</div>
+        ) : (
+          ticker.map((t, i) => (
+            <div key={i} className="ticker-line">
+              <span className="ticker-time">{t.time}</span>
+              <span className={`ticker-${t.dir}`}>{(t.dir === 'up' ? '↑' : '↓')}</span>
+              <span className="ticker-msg">{t.label}</span>
+              <span className="ticker-dir">{t.newV}</span>
+            </div>
+          ))
+        )}
       </div>
     </div>
   )
