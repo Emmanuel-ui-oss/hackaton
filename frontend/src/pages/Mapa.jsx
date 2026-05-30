@@ -102,6 +102,8 @@ export default function Mapa() {
   const userMarkerRef = useRef(null)
   const userAccuracyRef = useRef(null)
   const routeLayerRef = useRef(null)
+  const searchLayerRef = useRef(null)
+  const searchTimerRef = useRef(null)
   const [stats, setStats] = useState(null)
   const [weather, setWeather] = useState(null)
   const [ticker, setTicker] = useState([])
@@ -118,6 +120,10 @@ export default function Mapa() {
   const [routeLoading, setRouteLoading] = useState(false)
   const [filters, setFilters] = useState({ evitarCritico: false, evitarAlto: false })
   const [sortMode, setSortMode] = useState('fast')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchSuggestions, setSearchSuggestions] = useState([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [searchHistory, setSearchHistory] = useState([])
   const socketStats = useSocket().stats
   const { user, logout } = useAuth()
   const { error: showError, info: showInfo } = useToast()
@@ -165,6 +171,7 @@ export default function Mapa() {
     mapInstance.current = map
     setTimeout(() => map.invalidateSize(), 200)
     routeLayerRef.current = L.layerGroup().addTo(map)
+    searchLayerRef.current = L.layerGroup().addTo(map)
     return () => { map.remove(); mapInstance.current = null }
   }, [])
 
@@ -414,6 +421,113 @@ export default function Mapa() {
     })
   }
 
+  // ── Search ──
+  const searchAddress = (q) => {
+    if (!q || q.length < 3) { setSearchSuggestions([]); return }
+    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)},Medellín,Colombia&format=json&limit=8&addressdetails=1`)
+      .then(r => r.json())
+      .then(data => setSearchSuggestions(Array.isArray(data) ? data : []))
+      .catch(() => setSearchSuggestions([]))
+  }
+
+  const handleSearchChange = (e) => {
+    const v = e.target.value
+    setSearchQuery(v)
+    setShowSuggestions(true)
+    clearTimeout(searchTimerRef.current)
+    searchTimerRef.current = setTimeout(() => searchAddress(v), 300)
+  }
+
+  const selectSuggestion = (s) => {
+    const lat = parseFloat(s.lat), lng = parseFloat(s.lon)
+    const name = s.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+    setSearchQuery(s.display_name?.split(',')[0] || name)
+    setShowSuggestions(false)
+    setSearchSuggestions([])
+    setSearchHistory(prev => {
+      const next = [{ name, lat, lng }, ...prev.filter(h => h.name !== name)].slice(0, 5)
+      return next
+    })
+
+    searchLayerRef.current?.clearLayers()
+    const map = mapInstance.current
+    if (!map) return
+
+    const marker = L.marker([lat, lng], {
+      icon: L.divIcon({
+        html: `<div class="search-marker"><span>📍</span><div class="search-marker-label">${s.display_name?.split(',')[0] || name}</div></div>`,
+        className: '', iconSize: [24, 24], iconAnchor: [12, 24],
+      }),
+    }).addTo(searchLayerRef.current)
+    marker.bindPopup(`
+      <div class="search-popup">
+        <div class="search-popup-addr">${s.display_name || name}</div>
+        <button class="search-popup-btn" data-lat="${lat}" data-lng="${lng}" data-name="${(s.display_name?.split(',')[0] || name).replace(/"/g, '&quot;')}">📍 Como llegar</button>
+      </div>
+    `)
+    marker.on('popupopen', () => {
+      const btn = document.querySelector('.search-popup-btn')
+      if (btn) btn.onclick = () => {
+        const name = btn.dataset.name
+        setDest(name)
+        setRouteMode(true)
+        setRoutePanelOpen(true)
+        if (userPos) setOrigin(`Mi ubicación (${userPos.lat.toFixed(4)}, ${userPos.lng.toFixed(4)})`)
+      }
+    })
+    marker.openPopup()
+    map.setView([lat, lng], 16)
+  }
+
+  const clearSearch = () => {
+    setSearchQuery('')
+    setSearchSuggestions([])
+    setShowSuggestions(false)
+    searchLayerRef.current?.clearLayers()
+  }
+
+  // ── Map click → reverse geocode ──
+  useEffect(() => {
+    const map = mapInstance.current
+    if (!map) return
+    const handler = async (e) => {
+      const { lat, lng } = e.latlng
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+        const data = await res.json()
+        const addr = data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+        const shortName = addr.split(',')[0]
+
+        const marker = L.marker([lat, lng], {
+          icon: L.divIcon({
+            html: `<div class="search-marker search-marker-click"><span>📍</span></div>`,
+            className: '', iconSize: [24, 24], iconAnchor: [12, 24],
+          }),
+        }).addTo(searchLayerRef.current)
+
+        marker.bindPopup(`
+          <div class="search-popup">
+            <div class="search-popup-addr">${addr}</div>
+            <button class="search-popup-btn" data-lat="${lat}" data-lng="${lng}" data-name="${shortName.replace(/"/g, '&quot;')}">📍 Como llegar</button>
+          </div>
+        `)
+        marker.on('popupopen', () => {
+          const btn = document.querySelector('.search-popup-btn')
+          if (btn) btn.onclick = () => {
+            const name = btn.dataset.name
+            setDest(name)
+            setRouteMode(true)
+            setRoutePanelOpen(true)
+            if (userPos) setOrigin(`Mi ubicación (${userPos.lat.toFixed(4)}, ${userPos.lng.toFixed(4)})`)
+          }
+        })
+        marker.openPopup()
+      } catch {}
+    }
+    map.on('click', handler)
+    return () => map.off('click', handler)
+  }, [mapInstance.current, userPos])
+
   const ss = stats || {}
 
   return (
@@ -466,6 +580,60 @@ export default function Mapa() {
             <label key={k} className={`mapa-tag ${toggles[k] ? 'active' : ''}`} onClick={() => toggleLayer(k)}>{l}</label>
           ))}
           <label className={`mapa-tag ${routeMode ? 'active' : ''}`} onClick={toggleRouteMode}>🚗 Ruta</label>
+        </div>
+
+        <div className="mapa-search">
+          <div className="mapa-search-input-wrap">
+            <span className="mapa-search-icon">🔍</span>
+            <input className="mapa-search-input" placeholder="Buscar dirección en Medellín..." value={searchQuery}
+              onChange={handleSearchChange} onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 250)} />
+            {searchQuery && <button className="mapa-search-clear" onClick={clearSearch}>✕</button>}
+          </div>
+          {showSuggestions && searchSuggestions.length > 0 && (
+            <div className="mapa-suggestions">
+              {searchSuggestions.map((s, i) => (
+                <div key={i} className="mapa-suggestion-item" onMouseDown={() => selectSuggestion(s)}>
+                  <span className="ms-icon">📍</span>
+                  <div className="ms-text">
+                    <span className="ms-name">{s.display_name?.split(',')[0]}</span>
+                    <span className="ms-detail">{s.display_name?.split(',').slice(1, 4).join(',').trim()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {showSuggestions && !searchSuggestions.length && searchQuery.length >= 3 && (
+            <div className="mapa-suggestions mapa-suggestions-empty">
+              <span>Buscando direcciones...</span>
+            </div>
+          )}
+          {showSuggestions && searchQuery.length === 0 && searchHistory.length > 0 && (
+            <div className="mapa-suggestions">
+              <div className="ms-history-title">Recientes</div>
+              {searchHistory.map((h, i) => (
+                <div key={i} className="mapa-suggestion-item" onMouseDown={() => {
+                  setSearchQuery(h.name)
+                  setShowSuggestions(false)
+                  searchLayerRef.current?.clearLayers()
+                  const map = mapInstance.current
+                  if (!map) return
+                  L.marker([h.lat, h.lng], {
+                    icon: L.divIcon({
+                      html: `<div class="search-marker"><span>📍</span></div>`,
+                      className: '', iconSize: [24, 24], iconAnchor: [12, 24],
+                    }),
+                  }).addTo(searchLayerRef.current)
+                  map.setView([h.lat, h.lng], 16)
+                }}>
+                  <span className="ms-icon">🕐</span>
+                  <div className="ms-text">
+                    <span className="ms-name">{h.name}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div ref={mapRef} className="mapa-leaflet" />
