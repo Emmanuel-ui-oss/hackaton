@@ -279,12 +279,18 @@ export default function Mapa() {
   }, [userPos])
 
   useEffect(() => {
-    if (!userPos) return
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userPos.lat}&lon=${userPos.lng}&format=json`)
+    fetch('https://ip-api.com/json/?fields=city,region,country,lat,lon,query')
       .then(r => r.json())
-      .then(data => setUserAddress(data.display_name || ''))
+      .then(data => {
+        if (data.city && data.region) {
+          setUserAddress(`${data.city}, ${data.region}, ${data.country}`)
+          if (data.lat && data.lon) {
+            setUserPos({ lat: data.lat, lng: data.lon, accuracy: 1000 })
+          }
+        }
+      })
       .catch(() => {})
-  }, [userPos?.lat, userPos?.lng])
+  }, [])
 
   const toggleRouteMode = () => {
     const next = !routeMode
