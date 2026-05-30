@@ -1,4 +1,4 @@
-# Arquitectura del Sistema - Medellín Movilidata OS
+# Arquitectura del Sistema - VisionVial
 
 ## Diagrama de Arquitectura
 

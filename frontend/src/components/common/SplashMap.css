@@ -1,0 +1,120 @@
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d0d0d;
+  animation: splashFadeOut 0.8s ease 2.2s forwards;
+  overflow: hidden;
+}
+
+@keyframes splashFadeOut {
+  to { opacity: 0; pointer-events: none; }
+}
+
+/* ===== MAP ===== */
+.splash-map {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.splash-map .leaflet-control-container {
+  display: none;
+}
+
+.splash-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(13, 13, 13, 0.55);
+}
+
+/* ===== MARKERS ===== */
+.splash-marker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.splash-marker-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color);
+  position: relative;
+  z-index: 2;
+  animation: markerPulse 1.8s ease-in-out infinite;
+  animation-delay: inherit;
+  box-shadow: 0 0 6px var(--color);
+}
+
+.splash-marker-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--color);
+  animation: markerRing 1.8s ease-in-out infinite;
+  animation-delay: inherit;
+}
+
+@keyframes markerPulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.6); opacity: 1; }
+}
+
+@keyframes markerRing {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  50% { transform: scale(2.5); opacity: 0; }
+  100% { transform: scale(0.8); opacity: 0; }
+}
+
+/* ===== CENTER LOGO ===== */
+.splash-center {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  animation: splashContentIn 0.8s ease;
+}
+
+@keyframes splashContentIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.splash-logo-svg {
+  width: 130px;
+  height: auto;
+  filter: drop-shadow(0 0 40px rgba(0, 188, 212, 0.3));
+  animation: splashContentIn 0.8s ease;
+}
+
+/* ===== LOADER ===== */
+.splash-loader {
+  width: 200px;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.splash-loader-bar {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--blue), var(--green));
+  border-radius: 2px;
+  animation: loaderProgress 2.2s ease forwards;
+}
+
+@keyframes loaderProgress {
+  to { width: 100%; }
+}

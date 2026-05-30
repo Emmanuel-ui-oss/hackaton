@@ -4,12 +4,12 @@ const ThemeContext = createContext()
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('movilidata-theme') || 'dark'
+    return localStorage.getItem('visionvial-theme') || 'dark'
   })
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('movilidata-theme', theme)
+    localStorage.setItem('visionvial-theme', theme)
   }, [theme])
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')

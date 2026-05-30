@@ -281,17 +281,11 @@ export default function Mapa() {
   }, [userPos])
 
   useEffect(() => {
-    fetch('https://ip-api.com/json/?fields=city,region,country,lat,lon,query')
-      .then(r => r.json())
-      .then(data => {
-        if (data.city && data.region) {
-          setUserAddress(`${data.city}, ${data.region}, ${data.country}`)
-          if (data.lat && data.lon) {
-            setUserPos({ lat: data.lat, lng: data.lon, accuracy: 1000 })
-          }
-        }
-      })
-      .catch(() => {})
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+      () => {},
+      { enableHighAccuracy: false, timeout: 5000 }
+    )
   }, [])
 
   const toggleRouteMode = () => {

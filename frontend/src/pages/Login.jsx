@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import VisionVialLogo from '../components/common/VisionVialLogo'
 import './Auth.css'
 
 export default function Login() {
@@ -30,9 +31,8 @@ export default function Login() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-brand">
-          <div className="auth-brand-icon">M</div>
-          <h1 className="auth-title">Movilidata OS</h1>
-          <p className="auth-subtitle">Medellín - Plataforma de Movilidad Inteligente</p>
+          <VisionVialLogo className="auth-brand-logo" />
+          <p className="auth-subtitle">Plataforma de Movilidad Inteligente</p>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="form-group">

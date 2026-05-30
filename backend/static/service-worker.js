@@ -1,4 +1,4 @@
-const CACHE_NAME = 'movilidata-v1'
+const CACHE_NAME = 'visionvial-v1'
 const STATIC_FILES = [
   '/',
   '/static/manifest.json',

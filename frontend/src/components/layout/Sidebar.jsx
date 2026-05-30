@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import VisionVialLogo from '../common/VisionVialLogo'
 
 const mainNav = [
   { to: '/dashboard', icon: '📊', label: 'Dashboard' },
@@ -19,11 +20,8 @@ export default function Sidebar({ open, onClose }) {
       {open && <div className="modal-overlay" onClick={onClose} style={{ zIndex: 99 }} />}
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <div className="sidebar-brand">
-          <div className="sidebar-brand-icon">M</div>
-          <div>
-            <div className="sidebar-brand-text">Movilidata</div>
-            <div className="sidebar-brand-sub">Medellín OS</div>
-          </div>
+          <VisionVialLogo className="sidebar-brand-logo" />
+          <div className="sidebar-brand-sub">Plataforma de Movilidad</div>
         </div>
         <nav className="sidebar-nav">
           <div className="nav-section-label">Principal</div>

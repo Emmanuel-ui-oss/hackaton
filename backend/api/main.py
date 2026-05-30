@@ -17,7 +17,7 @@ from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 
-app = FastAPI(title="Medellín Movilidata OS", docs_url="/docs")
+app = FastAPI(title="VisionVial", docs_url="/docs")
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "backend" / "static" / "frontend"
 
@@ -39,6 +39,10 @@ app.include_router(ws_router.router, prefix="/ws", tags=["WebSocket"])
 if FRONTEND_DIR.exists():
     app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIR / "assets")), name="assets")
     app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR / "static")), name="static")
+
+    @app.get("/")
+    def serve_index():
+        return FileResponse(str(FRONTEND_DIR / "index.html"), headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
     @app.get("/{full_path:path}")
     def serve_spa(full_path: str):

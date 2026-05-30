@@ -1,6 +1,6 @@
-# 🚦 Medellín Movilidata OS
+# 🚦 VisionVial
 
-**Plataforma Unificada de Movilidad Inteligente para Medellín**
+**Plataforma de Movilidad Inteligente**
 
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=flat&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
@@ -15,7 +15,7 @@
 
 ## 📋 Descripción
 
-**Medellín Movilidata OS** es una plataforma web progresiva (PWA) que integra analítica predictiva, monitoreo en tiempo real e inteligencia artificial para transformar la movilidad urbana en Medellín.
+**VisionVial** es una plataforma web progresiva (PWA) que integra analítica predictiva, monitoreo en tiempo real e inteligencia artificial para transformar la movilidad urbana en Medellín.
 
 Desarrollada para **HackData CTGI SENA 2026**, la plataforma aborda cuatro desafíos interconectados:
 - 🚨 **Zonas críticas de accidentalidad** — detección y predicción por sector geográfico

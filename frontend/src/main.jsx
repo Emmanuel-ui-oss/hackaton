@@ -8,6 +8,12 @@ import { SocketProvider } from './contexts/SocketContext'
 import { ToastProvider } from './contexts/ToastContext'
 import './index.css'
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/static/service-worker.js')
+  })
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <BrowserRouter>
     <ThemeProvider>

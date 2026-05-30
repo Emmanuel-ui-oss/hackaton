@@ -1,7 +1,7 @@
 {
-  "name": "Medellín Movilidata OS",
-  "short_name": "Movilidata",
-  "description": "Plataforma Unificada de Movilidad Inteligente para Medellín",
+  "name": "VisionVial",
+  "short_name": "VisionVial",
+  "description": "Plataforma de Movilidad Inteligente",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
