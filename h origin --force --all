@@ -1,0 +1,266 @@
+[33mcommit 51b8b34eec3bbabbdd5ac65ff225523de65fbeb1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    Add geolocation button to report form; restart server to register DELETE /reportes endpoint
+
+[33mcommit fc6818c3d8c95eddc03edf577c11e831d73a1740[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    Rebuild frontend assets
+
+[33mcommit fdedb91712bcd96e29992bb0f0f0858b404160da[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    Admin: add delete reports; Seed: add paradas for L2/M1/M2/J1/H1
+
+[33mcommit bc694ea8dc94a5c0635125f931de19d9a53e5d69[m
+Author:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    VisionVial: landing page, logo, PWA offline support
+    
+    - Rebrand Movilidata a VisionVial (18 archivos)
+    - Landing page con hero, features, stats, audiencias, CTA, footer
+    - Splash screen con mapa Leaflet de Medellin y markers de riesgo
+    - MapBackground con Leaflet dark tiles como fondo fijo
+    - Login/Register dropdown con tabs en el header
+    - Logo corporativo VisionVial (SVG cuadrado turquesa)
+    - Service worker para funcionamiento offline (cache-first assets, network-first API)
+    - Manifest PWA con iconos SVG + PNG
+    - Optimizaciones responsive y animaciones scroll-reveal
+
+[33mcommit d731b4898290e2c99062e6b477d09d95ebc488de[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    Restore Chatbot to original design: blue circle with emoji at top-right
+
+[33mcommit 90ba4c746dee9d316a631b475ccd709c0772b00e[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    Fix: ProtectedRoute now renders children so Layout (and Chatbot) actually render
+
+[33mcommit e33da7b16ea99e123f28d755bf2b44beceef59a3[m[33m ([m[1;32mdevelop[m[33m)[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    Agregar Cache-Control: no-cache a index.html para evitar caché persistente
+
+[33mcommit 756bf70862e8bc06422c4dee37623935abdfd478[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    Chatbot: inline styles en vez de CSS externo
+
+[33mcommit c5d00c57cb1174617eacedd2432e85e07321e326[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    Reconstruir Chatbot desde cero en esquina superior derecha
+
+[33mcommit 460997b48726ba36997a8393ba69e0f3a01cea34[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    Add rule-based AI chatbot assistant to all pages
+    
+    - POST /api/v1/chat endpoint with intent detection + Django ORM queries
+    - Floating Chatbot component (bottom-left) accessible from all authenticated pages
+    - Chatbot handles: greeting, help, zones, climate, stats, transport, routes, SOS
+    - Auth-protected, no API keys, zero-cost rule-based responses
+    - Dark theme design matching IQ Option aesthetic
+
+[33mcommit 8bb9550fce742066f34619504863e4228c75d119[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    feat: click route result to switch selected route with risk colors on map
+
+[33mcommit b2eff9e2239be46b46f282f3a37202d2adbd92d1[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    fix: use IP geolocation instead of Nominatim reverse for user address
+
+[33mcommit 85c89e2b945a31b4c1ffb6f8d0fc038c0349b17f[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    feat: reverse geocode user GPS position to street address via Nominatim
+
+[33mcommit d2566f886f66d2e3ab5b676918c245135d323ff7[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    refactor: remove top search bar, add Nominatim autocomplete inside route panel inputs
+
+[33mcommit ba00ecdcce78bdf6186aa3536ea1df580dd96765[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    refactor: simplify search bar to pure pin-drop, remove routing links and history
+
+[33mcommit e1a13ec774350c94db61c8a12b639404b4f27c1d[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    feat: Waze-style search bar with Nominatim autocomplete, map click reverse geocode, and markers for Medellín addresses
+
+[33mcommit c21d018f0cc0c581f2774d75402bd0713d1ffc4f[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    feat: IQ Option fullscreen Dashboard with real-time map, pulsating zones, WebSocket zone fluctuation, async-safe backend
+
+[33mcommit f678994e9be7ad8ccc49080be6bfa786ebefe0ef[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    fix: rebuild IQ Option theme correctly, remove stale old-variable build
+
+[33mcommit d7c94952a4ea129837c3e120a8b8603bd66bbe00[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    feat: IQ Option redesign - Dashboard, Mapa, PlanificarRuta, WebSocket simulation, SOS button
+
+[33mcommit 481811437c92d6a8f520c31e2ed91e707836cb38[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    feat: rebuild frontend with React + Vite, add WebSocket real-time stats, weather API, and dark mode
+
+[33mcommit f5ed8d23fae28b24489f03517d6faf4e5d1521a1[m
+Author:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    feat: add ML prediction endpoints, seed data, and documentation
+    
+    - ML modules: congestion prediction (hourly/daily), DBSCAN critical zone detection, safe route evaluation
+    - New endpoints: /predict/congestion, /predict/congestion/forecast, /predict/zonas-criticas, /predict/ruta-segura
+    - Seed data: 25 EventoRiesgo, 16 ZonaRiesgo, lines, stops, reports, alerts for Medellin
+    - Enhanced /api/v1/stats endpoint with nested response
+    - Updated frontend: PWA service worker (v2), stats.js for new API format
+    - Documentation: api.md, architecture.md, data-sources.md
+    - Dependencies: scikit-learn, numpy, scipy, statsmodels
+
+[33mcommit c27678697d010ba7ba0fd1fd4e3b12b1275572aa[m
+Author:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    feat(branding): apply Movilidata OS branding to frontend with PWA, Chart.js, and gradient nav
+
+[33mcommit e901c105b74df1673a6f132e1d770519633207aa[m
+Merge: 3da820b 11b8c58
+Author:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    Merge branch 'develop' into main
+
+[33mcommit 3da820b1636824c5852fdfbd43e96211f4e8ff21[m
+Author:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    feat(dashboard): add Chart.js donut and bar charts for risk zones and report types
+
+[33mcommit 11b8c5834a0092dc0abd30ca8b94e45c35542c2b[m
+Author:     Emmanuel <emmanuel@example.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel <emmanuel@example.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    feat: MVP completo - mapa Leaflet, auth JWT, CRUD zonas, reportes, stats, ingesta SIMUR/DAGRD
+
+[33mcommit 2c54b8dcdc2ec08fd730de4431e89eabfe48eef7[m
+Author:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    style(branding): update CSS with logo, animations, shadows, and Medellín Movilidata OS theme
+
+[33mcommit 5071daf787eecc779c5eb665821693b3101942f7[m
+Author:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    docs(readme): comprehensive README with badges, screenshots, and full documentation
+
+[33mcommit e1709905889d02b50b4bcfbb3b26d734965c27a1[m
+Author:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    feat(pwa): add service worker, manifest, and app icons for PWA support
+
+[33mcommit d7fac8822fec927bb88be4cb30b0fd683a7c768a[m
+Author:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+AuthorDate: Sun May 31 12:30:00 2026 -0500
+Commit:     Emmanuel-ui-oss <emmanuelrestrepo076@gmail.com>
+CommitDate: Sun May 31 12:30:00 2026 -0500
+
+    feat: backend completo + frontend SPA + mapa Leaflet interactivo
+    
+    - API FastAPI con 35+ endpoints (auth, items, extras)
+    - 22 modelos Django para logística y movilidad urbana Medellín
+    - Frontend SPA con 9 vistas: Dashboard, Mapa, Zonas, Reportes, Transporte, Alertas, Favoritos, Emergencia, Historial
+    - Mapa interactivo Leaflet.js con zonas de riesgo, reportes, líneas de transporte, alertas, favoritos
+    - JWT auth con 7 días de expiración
+    - Paginación, búsqueda global, export CSV, estadísticas
+    - 67 tests pytest + httpx
+    - Dockerfile + docker-compose.yml
+    - Seed data con datos reales de Medellín (16 comunas, 8 líneas, 25 paradas, 9 reportes)

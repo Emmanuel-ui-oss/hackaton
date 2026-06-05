@@ -10,6 +10,7 @@ Pillow>=10.4.0
 django-cors-headers>=4.3.0
 mysqlclient>=2.2.0
 gunicorn>=22.0.0
+slowapi>=0.1.9
 
 # ML
 scikit-learn>=1.5.0

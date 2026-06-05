@@ -1,0 +1,45 @@
+name: visionvial-services deploy
+
+on:
+  push:
+    branches: [main]
+    paths: ["backend/**", "!backend/static/frontend/**"]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download encrypted core
+        uses: actions/download-artifact@v4
+        with:
+          name: visionvial-core-encrypted
+          path: ./.core
+
+      - name: Decrypt core binary
+        env:
+          CORE_KEY: ${{ secrets.CORE_ENCRYPT_KEY }}
+        run: |
+          pip install cryptography
+          python -c "
+          import hashlib, base64
+          from cryptography.fernet import Fernet
+          key = hashlib.sha256('$CORE_KEY'.encode()).digest()
+          f = Fernet(base64.urlsafe_b64encode(key))
+          with open('.core/visionvial-core.enc', 'rb') as fin:
+              data = fin.read()
+          with open('.core/visionvial-core.exe', 'wb') as fout:
+              fout.write(f.decrypt(data))
+          "
+
+      - name: Build Docker image
+        run: |
+          docker build -t visionvial-services .
+          docker tag visionvial-services ghcr.io/${{ github.repository }}/visionvial-services:latest
+
+      - name: Push to registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker push ghcr.io/${{ github.repository }}/visionvial-services:latest

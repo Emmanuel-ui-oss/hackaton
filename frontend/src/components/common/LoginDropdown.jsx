@@ -2,11 +2,20 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
+import { Lock } from '../../icons'
 import './LoginDropdown.css'
 
-export default function LoginDropdown() {
+export default function LoginDropdown({ trigger, onTriggerDone }) {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState('login')
+
+  useEffect(() => {
+    if (trigger?.open) {
+      setOpen(true)
+      setMode(trigger.mode || 'login')
+      onTriggerDone?.()
+    }
+  }, [trigger])
   const [loading, setLoading] = useState(false)
   const { login, register } = useAuth()
   const { error: showError } = useToast()
@@ -82,15 +91,15 @@ export default function LoginDropdown() {
               <form onSubmit={handleLogin}>
                 <div className="form-group">
                   <label className="form-label">Usuario</label>
-                  <div className="input-icon-wrap">
-                    <span className="input-icon">👤</span>
+                    <div className="input-icon-wrap">
+                    <span className="input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg></span>
                     <input className="form-input" value={username} onChange={e => setUsername(e.target.value)} placeholder="Usuario" autoFocus />
                   </div>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Contraseña</label>
                   <div className="input-icon-wrap">
-                    <span className="input-icon">🔒</span>
+                    <span className="input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span>
                     <input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Contraseña" />
                   </div>
                 </div>
@@ -103,28 +112,28 @@ export default function LoginDropdown() {
                 <div className="form-group">
                   <label className="form-label">Nombre (opcional)</label>
                   <div className="input-icon-wrap">
-                    <span className="input-icon">👤</span>
+                    <span className="input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg></span>
                     <input className="form-input" value={reg.first_name} onChange={e => setReg(p => ({ ...p, first_name: e.target.value }))} placeholder="Tu nombre" />
                   </div>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Usuario <span className="required">*</span></label>
                   <div className="input-icon-wrap">
-                    <span className="input-icon">✨</span>
+                    <span className="input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg></span>
                     <input className="form-input" value={reg.username} onChange={e => setReg(p => ({ ...p, username: e.target.value }))} placeholder="Nombre de usuario" autoFocus />
                   </div>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Email <span className="required">*</span></label>
                   <div className="input-icon-wrap">
-                    <span className="input-icon">📧</span>
+                    <span className="input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg></span>
                     <input className="form-input" type="email" value={reg.email} onChange={e => setReg(p => ({ ...p, email: e.target.value }))} placeholder="correo@ejemplo.com" />
                   </div>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Contraseña <span className="required">*</span></label>
                   <div className="input-icon-wrap">
-                    <span className="input-icon">🔒</span>
+                    <span className="input-icon">{Lock}</span>
                     <input className="form-input" type="password" value={reg.password} onChange={e => setReg(p => ({ ...p, password: e.target.value }))} placeholder="Mínimo 3 caracteres" />
                   </div>
                   <span className="form-hint">Mínimo 3 caracteres</span>

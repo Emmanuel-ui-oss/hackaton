@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Loading from '../components/common/Loading'
+import { Warning as WarningIcon, MapPin, Search, Circle } from '../icons'
 
 export default function Zonas() {
   const [zonas, setZonas] = useState([])
@@ -25,7 +26,7 @@ export default function Zonas() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">⚠️ Zonas de Riesgo</h1>
+        <h1 className="page-title">{WarningIcon.full} Zonas de Riesgo</h1>
         <p className="page-subtitle">Áreas identificadas con riesgo en Medellín</p>
       </div>
 
@@ -41,9 +42,9 @@ export default function Zonas() {
               <span className={`badge badge-${z.nivel?.toLowerCase()}`}>{z.nivel}</span>
             </div>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
-              <div>📌 {z.comuna}</div>
-              <div>🔴 {z.tipo_riesgo}</div>
-              <div>📍 {z.latitud?.toFixed(4)}, {z.longitud?.toFixed(4)}</div>
+              <div>{MapPin.withDot} {z.comuna}</div>
+              <div><Circle color="#ff1744" /> {z.tipo_riesgo}</div>
+              <div>{MapPin.withDot} {z.latitud?.toFixed(4)}, {z.longitud?.toFixed(4)}</div>
             </div>
             {z.descripcion && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{z.descripcion}</p>}
           </div>
@@ -52,7 +53,7 @@ export default function Zonas() {
 
       {filtered.length === 0 && (
         <div className="empty-state">
-          <div className="empty-state-icon">🔍</div>
+          <div className="empty-state-icon">{Search}</div>
           <div className="empty-state-text">No se encontraron zonas</div>
         </div>
       )}

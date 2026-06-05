@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
+import { UserCircle } from '../icons'
 
 export default function Perfil() {
   const { user, logout } = useAuth()
@@ -17,7 +18,7 @@ export default function Perfil() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">👤 Mi Perfil</h1>
+        <h1 className="page-title">{UserCircle} Mi Perfil</h1>
         <p className="page-subtitle">Información de tu cuenta</p>
       </div>
 

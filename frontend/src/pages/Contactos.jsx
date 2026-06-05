@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Loading from '../components/common/Loading'
+import { Phone, Mail, User, Trash, AlertCircle } from '../icons'
 
 export default function Contactos() {
   const [contactos, setContactos] = useState([])
@@ -67,7 +68,7 @@ export default function Contactos() {
     <div className="page">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 className="page-title">📞 Contactos de Emergencia</h1>
+          <h1 className="page-title">{Phone} Contactos de Emergencia</h1>
           <p className="page-subtitle">Tus contactos de confianza</p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ Añadir</button>
@@ -76,18 +77,18 @@ export default function Contactos() {
       <div style={{ marginBottom: 24 }}>
         {sosActivo ? (
           <button className="btn btn-danger btn-lg" onClick={cerrarSOS} style={{ width: '100%', justifyContent: 'center', animation: 'pulse 1.5s infinite' }}>
-            🆘 DESACTIVAR SOS
+            {AlertCircle} DESACTIVAR SOS
           </button>
         ) : (
           <button className="btn btn-danger btn-lg" onClick={activarSOS} style={{ width: '100%', justifyContent: 'center' }}>
-            🆘 ACTIVAR SOS
+            {AlertCircle} ACTIVAR SOS
           </button>
         )}
       </div>
 
       {contactos.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">📞</div>
+          <div className="empty-state-icon">{Phone}</div>
           <div className="empty-state-text">No tienes contactos de emergencia</div>
         </div>
       ) : (
@@ -97,11 +98,11 @@ export default function Contactos() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <div className="card-title" style={{ fontSize: '1rem' }}>{c.nombre}</div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: 4 }}>📞 {c.telefono}</div>
-                  {c.email && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>✉️ {c.email}</div>}
-                  {c.relacion && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>👤 {c.relacion}</div>}
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: 4 }}>{Phone} {c.telefono}</div>
+                  {c.email && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{Mail} {c.email}</div>}
+                  {c.relacion && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{User} {c.relacion}</div>}
                 </div>
-                <button className="btn btn-sm btn-ghost" onClick={() => handleDelete(c.id)} style={{ color: 'var(--red)' }}>🗑</button>
+                <button className="btn btn-sm btn-ghost" onClick={() => handleDelete(c.id)} style={{ color: 'var(--red)' }}>{Trash}</button>
               </div>
             </div>
           ))}

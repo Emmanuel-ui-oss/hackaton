@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Loading from '../components/common/Loading'
+import { Settings as SettingsIcon } from '../icons'
 
 export default function Admin() {
   const [tab, setTab] = useState('zonas')
@@ -59,7 +60,7 @@ export default function Admin() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">⚙️ Panel de Administración</h1>
+        <h1 className="page-title">{SettingsIcon} Panel de Administración</h1>
         <p className="page-subtitle">Gestión de zonas de riesgo y reportes</p>
       </div>
 

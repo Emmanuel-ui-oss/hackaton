@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import api from '../services/api'
+import api, { setTokens, getAccessToken, clearTokens } from '../services/api'
 
 const AuthContext = createContext()
 
@@ -8,9 +8,8 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    const saved = localStorage.getItem('user')
-    if (token && saved) {
+    const saved = sessionStorage.getItem('user')
+    if (getAccessToken() && saved) {
       setUser(JSON.parse(saved))
       setLoading(false)
     } else {
@@ -18,31 +17,30 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  const fetchUser = async () => {
+    const me = await api.get('/api/auth/me')
+    sessionStorage.setItem('user', JSON.stringify(me.data))
+    setUser(me.data)
+  }
+
   const login = async (username, password) => {
     const res = await api.post('/api/auth/login', { username, password })
-    const { access_token } = res.data
-    localStorage.setItem('token', access_token)
-    const me = await api.get('/api/auth/me')
-    const userData = me.data
-    localStorage.setItem('user', JSON.stringify(userData))
-    setUser(userData)
-    return userData
+    const { access_token, refresh_token } = res.data
+    setTokens(access_token, refresh_token)
+    await fetchUser()
+    return res.data
   }
 
   const register = async (data) => {
     const res = await api.post('/api/auth/register', data)
-    const { access_token } = res.data
-    localStorage.setItem('token', access_token)
-    const me = await api.get('/api/auth/me')
-    const userData = me.data
-    localStorage.setItem('user', JSON.stringify(userData))
-    setUser(userData)
-    return userData
+    const { access_token, refresh_token } = res.data
+    setTokens(access_token, refresh_token)
+    await fetchUser()
+    return res.data
   }
 
   const logout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    clearTokens()
     setUser(null)
   }
 

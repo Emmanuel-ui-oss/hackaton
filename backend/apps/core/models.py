@@ -149,6 +149,17 @@ class ContactoEmergencia(models.Model):
         return f"{self.nombre} ({self.telefono})"
 
 
+class PerfilUsuario(models.Model):
+    usuario = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="perfil"
+    )
+    telefono = models.CharField(max_length=20, blank=True, default="")
+
+    def __str__(self):
+        return f"Perfil de {self.usuario.username}"
+
+
 class EventoRiesgo(models.Model):
     TIPOS = [
         ("inundacion", "Inundación"),
@@ -341,6 +352,23 @@ class EventoSOS(models.Model):
 
     def __str__(self):
         return f"SOS - {self.usuario.username} ({self.creado})"
+
+
+class Testimonial(models.Model):
+    nombre = models.CharField(max_length=100)
+    rol = models.CharField(max_length=100)
+    contenido = models.TextField()
+    avatar_url = models.URLField(blank=True)
+    calificacion = models.IntegerField(default=5)
+    activo = models.BooleanField(default=True)
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Testimonios"
+        ordering = ["-creado"]
+
+    def __str__(self):
+        return f"{self.nombre} - {self.rol}"
 
 
 class HistorialViaje(models.Model):

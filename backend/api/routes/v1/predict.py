@@ -1,8 +1,8 @@
 from datetime import datetime
 from fastapi import APIRouter, Query
+from api.core_client import call as core_call
 from api.ml.congestion import predict_congestion, get_hourly_forecast
-from api.ml.clustering import detect_critical_zones
-from api.ml.routes import safe_route
+from api.services.tomtom import traffic_available
 
 router = APIRouter()
 
@@ -11,11 +11,17 @@ router = APIRouter()
 def get_congestion(
     hora: int = Query(None, ge=0, le=23),
     comuna: str = Query(None, description="Nombre de la comuna"),
+    lat: float = Query(None, ge=6.0, le=6.5),
+    lng: float = Query(None, ge=-75.7, le=-75.4),
 ):
     now = datetime.now()
-    dia_semana = now.weekday()
-    hora_actual = hora if hora is not None else now.hour
-    result = predict_congestion(hora_actual, dia_semana, comuna)
+    result = core_call("predict_congestion", {
+        "hora": hora if hora is not None else now.hour,
+        "dia_semana": now.weekday(),
+        "comuna": comuna,
+        "lat": lat,
+        "lng": lng,
+    })
     result["timestamp"] = now.isoformat()
     return result
 
@@ -23,12 +29,18 @@ def get_congestion(
 @router.get("/predict/congestion/forecast")
 def get_congestion_forecast(
     comuna: str = Query(None, description="Nombre de la comuna"),
+    lat: float = Query(None, ge=6.0, le=6.5),
+    lng: float = Query(None, ge=-75.7, le=-75.4),
 ):
-    forecast = get_hourly_forecast(comuna)
+    result = core_call("congestion_forecast", {
+        "comuna": comuna,
+        "lat": lat,
+        "lng": lng,
+    })
     return {
         "comuna": comuna,
         "timestamp": datetime.now().isoformat(),
-        "forecast": forecast,
+        "forecast": result if isinstance(result, list) else result.get("forecast", result),
     }
 
 
@@ -37,7 +49,7 @@ def get_zonas_criticas(
     eps: float = Query(0.008, description="Radio de agrupación en grados (~500m)"),
     min_samples: int = Query(3, ge=2, description="Mínimo de puntos por cluster"),
 ):
-    return detect_critical_zones(eps=eps, min_samples=min_samples)
+    return core_call("zonas_criticas", {"eps": eps, "min_samples": min_samples})
 
 
 @router.get("/predict/ruta-segura")
@@ -47,4 +59,34 @@ def get_ruta_segura(
     dest_lat: float = Query(..., ge=6.0, le=6.5),
     dest_lng: float = Query(..., ge=-75.7, le=-75.4),
 ):
-    return safe_route(origen_lat, origen_lng, dest_lat, dest_lng)
+    return core_call("ruta_segura", {
+        "origen_lat": origen_lat,
+        "origen_lng": origen_lng,
+        "dest_lat": dest_lat,
+        "dest_lng": dest_lng,
+    })
+
+
+@router.get("/predict/comprehensive")
+def get_comprehensive(
+    hora: int = Query(None, ge=0, le=23),
+    comuna: str = Query(None),
+    lat: float = Query(None, ge=6.0, le=6.5),
+    lng: float = Query(None, ge=-75.7, le=-75.4),
+):
+    now = datetime.now()
+    h = hora if hora is not None else now.hour
+    c = predict_congestion(lat=lat, lng=lng, comuna=comuna, hora=h)
+    forecast = get_hourly_forecast(lat=lat, lng=lng, comuna=comuna)
+    zonas = core_call("zonas_criticas", {"eps": 0.008, "min_samples": 3})
+    return {
+        "timestamp": now.isoformat(),
+        "hora": h,
+        "comuna": comuna,
+        "lat": lat,
+        "lng": lng,
+        "congestion": c,
+        "forecast_24h": forecast,
+        "zonas_criticas": zonas,
+        "trafico_disponible": traffic_available(),
+    }

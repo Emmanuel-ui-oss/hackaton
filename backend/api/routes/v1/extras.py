@@ -2,12 +2,14 @@ import csv
 import io
 import json
 import math
+import re
 import socket
+from pathlib import Path
 
 from datetime import datetime, date, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, Request
 from django.db.models import Count, Q
 from django.utils import timezone
 from fastapi.responses import StreamingResponse
@@ -18,8 +20,13 @@ from apps.core.models import (
     Alerta, LineaTransporte, Parada, HorarioTransporte,
     Favorito, ContactoEmergencia, EventoSOS, HistorialViaje, VotoReporte,
 )
+from apps.core.audit import log_audit
 from api.dependencies import get_current_user
+from api.limiter import limiter
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+ALLOWED_UPLOAD_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf", ".doc", ".docx"}
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
 
 security = HTTPBearer(auto_error=False)
 
@@ -84,7 +91,8 @@ class ReporteCreate(BaseModel):
 
 
 @router.post("/reportes", status_code=201)
-def crear_reporte(data: ReporteCreate, user=Depends(get_current_user)):
+@limiter.limit("10/minute")
+def crear_reporte(request: Request, data: ReporteCreate, user=Depends(get_current_user)):
     reporte = ReporteIncidente.objects.create(
         tipo=data.tipo,
         descripcion=data.descripcion,
@@ -96,6 +104,7 @@ def crear_reporte(data: ReporteCreate, user=Depends(get_current_user)):
         estado="pendiente",
         activo=True,
     )
+    log_audit(user, "crear_reporte", "ReporteIncidente", reporte.id, {"tipo": data.tipo})
     return {
         "id": reporte.id,
         "tipo": reporte.tipo,
@@ -229,8 +238,22 @@ def eliminar_contacto(contacto_id: int, user=Depends(get_current_user)):
 
 # ── SOS ──
 
+def _datos_usuario(user):
+    perfil = getattr(user, 'perfil', None)
+    return {
+        "username": user.username,
+        "nombre_completo": f"{user.first_name} {user.last_name}".strip() or user.username,
+        "email": user.email,
+        "telefono": perfil.telefono if perfil else "",
+    }
+
+
 @router.post("/sos/activar", status_code=201)
-def activar_sos(lat: float = Query(...), lng: float = Query(...), user=Depends(get_current_user)):
+@limiter.limit("3/minute")
+def activar_sos(request: Request, lat: float = Query(0.0), lng: float = Query(0.0), user=Depends(get_current_user)):
+    active_count = EventoSOS.objects.filter(usuario=user, activo=True).count()
+    if active_count >= 1:
+        raise HTTPException(status_code=400, detail="Ya tienes un SOS activo")
     contactos = ContactoEmergencia.objects.filter(usuario=user, activo=True)
     sos = EventoSOS.objects.create(
         usuario=user, latitud=lat, longitud=lng,
@@ -240,7 +263,13 @@ def activar_sos(lat: float = Query(...), lng: float = Query(...), user=Depends(g
             for c in contactos
         ],
     )
-    return {"id": sos.id, "activo": True, "contactos_notificados": sos.contactos_notificados}
+    log_audit(user, "activar_sos", "EventoSOS", sos.id, {"lat": lat, "lng": lng})
+    return {
+        "id": sos.id,
+        "activo": True,
+        "contactos_notificados": sos.contactos_notificados,
+        "usuario": _datos_usuario(user),
+    }
 
 
 @router.post("/sos/{sos_id}/cerrar")
@@ -251,6 +280,60 @@ def cerrar_sos(sos_id: int, user=Depends(get_current_user)):
     sos.activo = False
     sos.save()
     return {"id": sos.id, "activo": False}
+
+
+@router.get("/sos/activo")
+def sos_activo(user=Depends(get_current_user)):
+    sos = EventoSOS.objects.filter(usuario=user, activo=True).first()
+    if not sos:
+        return {"activo": False, "sos": None}
+    return {
+        "activo": True,
+        "sos": {
+            "id": sos.id,
+            "latitud": sos.latitud,
+            "longitud": sos.longitud,
+            "creado": sos.creado.isoformat(),
+            "contactos_notificados": sos.contactos_notificados,
+            "usuario": _datos_usuario(user),
+        }
+    }
+
+
+class SOSUbicacion(BaseModel):
+    latitud: float
+    longitud: float
+
+
+@router.post("/sos/{sos_id}/ubicacion")
+def actualizar_ubicacion_sos(sos_id: int, data: SOSUbicacion, user=Depends(get_current_user)):
+    sos = EventoSOS.objects.filter(id=sos_id, usuario=user, activo=True).first()
+    if not sos:
+        raise HTTPException(status_code=404, detail="SOS no encontrado o inactivo")
+    sos.latitud = data.latitud
+    sos.longitud = data.longitud
+    sos.save()
+    return {"id": sos.id, "latitud": sos.latitud, "longitud": sos.longitud}
+
+
+@router.get("/sos")
+def list_sos_activos(user=Depends(get_current_user)):
+    if not user.is_staff:
+        sos_qs = EventoSOS.objects.filter(usuario=user)
+    else:
+        sos_qs = EventoSOS.objects.all()
+    return [
+        {
+            "id": s.id,
+            "latitud": s.latitud,
+            "longitud": s.longitud,
+            "activo": s.activo,
+            "creado": s.creado.isoformat(),
+            "contactos_notificados": s.contactos_notificados,
+            "usuario": _datos_usuario(s.usuario),
+        }
+        for s in sos_qs.select_related("usuario__perfil").order_by("-creado")[:50]
+    ]
 
 
 # ── LÍNEAS DE TRANSPORTE ──
@@ -387,9 +470,13 @@ def get_stats(user=Depends(get_current_user)):
 
     total_zonas = ZonaRiesgo.objects.count()
     zonas_activas = ZonaRiesgo.objects.filter(activo=True).count()
-    zonas_por_nivel = {}
-    for z in ZonaRiesgo.objects.values("nivel").annotate(total=Count("id")):
-        zonas_por_nivel[z["nivel"]] = z["total"]
+    from api.ml.zonas import compute_all_zonas
+    computed = compute_all_zonas()
+    zonas_por_nivel = {"CRITICO": 0, "ALTO": 0, "MEDIO": 0, "BAJO": 0}
+    for z in computed:
+        nivel = z["nivel"]
+        if nivel in zonas_por_nivel:
+            zonas_por_nivel[nivel] += 1
 
     total_eventos = EventoRiesgo.objects.count()
     eventos_activos = EventoRiesgo.objects.filter(activo=True).count()
@@ -561,18 +648,29 @@ def export_csv(user=Depends(get_current_user)):
 
 
 @router.post("/items/import")
-def import_items(file: UploadFile = File(...), user=Depends(get_current_user)):
+@limiter.limit("3/hour")
+def import_items(request: Request, file: UploadFile = File(...), user=Depends(get_current_user)):
     if not user.is_staff:
         raise HTTPException(status_code=403, detail="Solo administradores")
 
-    content = file.file.read().decode("utf-8")
+    ext = Path(file.filename or "").suffix.lower()
+    if ext != ".json":
+        raise HTTPException(status_code=400, detail="Solo se permiten archivos .json")
+
+    content = file.file.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Archivo muy grande. Máximo: 5 MB")
+
     try:
-        data = json.loads(content)
-    except json.JSONDecodeError:
+        data = json.loads(content.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
         raise HTTPException(status_code=400, detail="JSON inválido")
 
     if not isinstance(data, list):
         raise HTTPException(status_code=400, detail="Debe ser un array de objetos")
+
+    if len(data) > 1000:
+        raise HTTPException(status_code=400, detail="Máximo 1000 registros por importación")
 
     creados = 0
     errores = []
@@ -591,24 +689,43 @@ def import_items(file: UploadFile = File(...), user=Depends(get_current_user)):
         except Exception as e:
             errores.append({"index": i, "error": str(e)})
 
+    log_audit(user, "importar_reportes", "ReporteIncidente", detalles={"creados": creados, "errores": len(errores)})
     return {"creados": creados, "errores": errores}
 
 
 @router.post("/upload")
-async def upload_file(file: UploadFile = File(...), user=Depends(get_current_user)):
+@limiter.limit("5/hour")
+async def upload_file(request: Request, file: UploadFile = File(...), user=Depends(get_current_user)):
     import aiofiles
-    from pathlib import Path
+    from django.conf import settings
 
-    upload_dir = Path("media/uploads")
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in ALLOWED_UPLOAD_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Extensión no permitida: {ext}. Permitidas: {', '.join(sorted(ALLOWED_UPLOAD_EXTENSIONS))}")
+
+    if file.content_type:
+        allowed_types = {"image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+        if file.content_type not in allowed_types:
+            raise HTTPException(status_code=400, detail=f"Tipo de contenido no permitido: {file.content_type}")
+
+    safe_name = re.sub(r'[^\w\.\-]', '_', file.filename or "upload")
+    if not safe_name:
+        safe_name = "upload.bin"
+
+    upload_dir = Path(settings.MEDIA_ROOT) / "uploads"
     upload_dir.mkdir(parents=True, exist_ok=True)
 
-    file_path = upload_dir / file.filename
+    file_path = upload_dir / safe_name
     async with aiofiles.open(file_path, "wb") as f:
         content = await file.read()
+        if len(content) > MAX_UPLOAD_SIZE:
+            raise HTTPException(status_code=413, detail=f"Archivo demasiado grande. Máximo: {MAX_UPLOAD_SIZE // (1024*1024)} MB")
         await f.write(content)
 
+    log_audit(user, "subir_archivo", "Upload", detalles={"filename": file.filename, "size": len(content)})
+
     return {
-        "filename": file.filename,
+        "filename": safe_name,
         "size": len(content),
-        "url": f"/media/uploads/{file.filename}",
+        "url": f"/media/uploads/{safe_name}",
     }

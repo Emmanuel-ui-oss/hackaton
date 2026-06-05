@@ -14,6 +14,7 @@ from apps.core.models import (
     Alerta,
     Favorito,
     EventoSOS,
+    Testimonial,
     HistorialViaje,
 )
 
@@ -140,6 +141,13 @@ class EventoSOSAdmin(admin.ModelAdmin):
 class HorarioTransporteAdmin(admin.ModelAdmin):
     list_display = ("linea", "dia_semana", "hora_inicio", "hora_fin", "frecuencia_min")
     list_filter = ("linea", "dia_semana")
+
+
+@admin.register(Testimonial)
+class TestimonialAdmin(admin.ModelAdmin):
+    list_display = ("nombre", "rol", "calificacion", "activo", "creado")
+    list_filter = ("activo", "calificacion")
+    search_fields = ("nombre", "contenido")
 
 
 @admin.register(HistorialViaje)

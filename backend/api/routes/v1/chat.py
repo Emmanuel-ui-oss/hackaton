@@ -103,20 +103,32 @@ def handle_intent(intent, msg):
         return reply
 
     if intent == 'weather':
-        import random
-        temp = round(24 + random.uniform(-3, 3), 1)
-        humidity = random.randint(55, 85)
-        rain_prob = random.randint(5, 70)
-        conditions = ['Soleado', 'Nublado', 'Parcialmente nublado', 'Lluvia ligera']
-        condition = random.choice(conditions)
-        return (
-            f"🌤️ **Clima en Medellín ahora**\n\n"
-            f"🌡️ Temperatura: {temp}°C\n"
-            f"☁️ Condición: {condition}\n"
-            f"💧 Humedad: {humidity}%\n"
-            f"🌧️ Prob. lluvia: {rain_prob}%\n\n"
-            f"{'⚠️ Lleva paraguas' if rain_prob > 40 else '☀️ Buen día para salir'}."
-        )
+        try:
+            import httpx
+            resp = httpx.get(
+                "https://api.open-meteo.com/v1/forecast"
+                "?latitude=6.2476&longitude=-75.5658"
+                "&current=temperature_2m,relative_humidity_2m,precipitation,weather_code"
+                "&timezone=America%2FBogota",
+                timeout=10,
+            )
+            resp.raise_for_status()
+            cur = resp.json()["current"]
+            wmo = {0:"Despejado",1:"Mayormente despejado",2:"Parcialmente nublado",3:"Nublado",45:"Niebla",51:"Lluvia ligera",53:"Lluvia moderada",55:"Lluvia intensa",61:"Lluvia ligera",63:"Lluvia moderada",65:"Lluvia intensa",80:"Chubascos ligeros",81:"Chubascos moderados",82:"Chubascos intensos",95:"Tormenta",96:"Tormenta con granizo",99:"Tormenta con granizo intenso"}
+            temp = cur["temperature_2m"]
+            humidity = cur["relative_humidity_2m"]
+            rain = cur["precipitation"] or 0
+            cond = wmo.get(cur["weather_code"], "Desconocido")
+            return (
+                f"🌤️ **Clima en Medellín ahora**\n\n"
+                f"🌡️ Temperatura: {temp}°C\n"
+                f"☁️ Condición: {cond}\n"
+                f"💧 Humedad: {humidity}%\n"
+                f"🌧️ Precipitación: {rain}mm\n\n"
+                f"{'⚠️ Lleva paraguas' if rain > 0 else '☀️ Buen día para salir'}."
+            )
+        except Exception:
+            return "🌤️ No pude obtener el clima en este momento. Intenta de nuevo más tarde."
 
     if intent == 'stats':
         total_reportes = ReporteIncidente.objects.count()

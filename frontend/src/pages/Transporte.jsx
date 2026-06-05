@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
 import Loading from '../components/common/Loading'
+import { Train, Bus, CableCar } from '../icons'
 
 export default function Transporte() {
   const [lineas, setLineas] = useState([])
@@ -36,8 +37,8 @@ export default function Transporte() {
       <div className="grid grid-4" style={{ marginBottom: 24 }}>
         {tipos.map(t => (
           <div key={t} className="card" style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem', marginBottom: 8 }}>
-              {t === 'METRO' ? '🚇' : t === 'METROPLUS' ? '🚌' : t === 'TRANVIA' ? '🚊' : t === 'CABLE' ? '🚡' : '🚍'}
+            <div style={{ fontSize: '2rem', marginBottom: 8, display: 'flex', justifyContent: 'center' }}>
+              {t === 'METRO' ? <span style={{ color: 'var(--neon-cyan)' }}>{Train}</span> : t === 'METROPLUS' ? <span style={{ color: 'var(--neon-green)' }}>{Bus}</span> : t === 'TRANVIA' ? <span style={{ color: 'var(--neon-purple)' }}>{Train}</span> : t === 'CABLE' ? <span style={{ color: 'var(--neon-amber)' }}>{CableCar}</span> : <span style={{ color: 'var(--text-secondary)' }}>{Bus}</span>}
             </div>
             <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>{t}</div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{lineas.filter(l => l.tipo === t).length} líneas</div>

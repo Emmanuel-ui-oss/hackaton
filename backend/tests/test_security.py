@@ -3,8 +3,6 @@ import pytest
 
 class TestAuthRequired:
     ENDPOINTS = [
-        ("GET", "/api/v1/items"),
-        ("POST", "/api/v1/items"),
         ("GET", "/api/v1/zonas-riesgo"),
         ("POST", "/api/v1/zonas-riesgo"),
         ("GET", "/api/v1/reportes"),
@@ -33,17 +31,11 @@ class TestAuthRequired:
 
 class TestValidation:
     async def test_invalid_json(self, client, auth_headers):
-        resp = await client.post("/api/v1/items", headers=auth_headers, json="not json")
+        hdrs = {**auth_headers, "Content-Type": "application/json"}
+        resp = await client.post("/api/v1/reportes", headers=hdrs, content=b"not json")
         assert resp.status_code == 422
 
-    async def test_invalid_enum(self, client, auth_headers):
-        resp = await client.post("/api/v1/items", headers=auth_headers, json={
-            "codigo": "INVALID",
-            "descripcion": "Test",
-            "valor": 100,
-            "peso_kg": 10,
-            "origen": "A",
-            "destino": "B",
-            "estado": "INVALID_STATE",
-        })
-        assert resp.status_code == 422
+    async def test_create_reporte_missing_fields(self, client, auth_headers):
+        # ReporteCreate tiene defaults para todos los campos, así que {} es válido
+        resp = await client.post("/api/v1/reportes", headers=auth_headers, json={})
+        assert resp.status_code == 201

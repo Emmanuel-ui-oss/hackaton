@@ -1,118 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import api from '../../services/api'
+import { MessageCircle, Close, ArrowRight } from '../../icons'
+import './Chatbot.css'
 
 const GREETING = {
   role: 'bot',
   text: '👋 ¡Hola! Pregúntame sobre zonas de riesgo, clima, estadísticas, transporte o rutas seguras.',
-}
-
-const btnStyle = {
-  position: 'fixed',
-  top: 60,
-  right: 16,
-  zIndex: 99999,
-  width: 42,
-  height: 42,
-  borderRadius: '50%',
-  background: '#2979ff',
-  color: '#fff',
-  border: 'none',
-  fontSize: 18,
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  boxShadow: '0 4px 16px rgba(41,121,255,0.45)',
-}
-
-const boxStyle = {
-  position: 'fixed',
-  top: 110,
-  right: 16,
-  zIndex: 99999,
-  width: 320,
-  maxHeight: 380,
-  display: 'flex',
-  flexDirection: 'column',
-  background: 'rgba(18,18,18,0.96)',
-  backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(42,42,42,0.5)',
-  borderRadius: 10,
-  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-  overflow: 'hidden',
-}
-
-const headStyle = {
-  padding: '10px 14px',
-  fontSize: 12,
-  fontWeight: 700,
-  color: '#e8eaed',
-  borderBottom: '1px solid rgba(42,42,42,0.4)',
-  background: 'rgba(41,121,255,0.08)',
-}
-
-const bodyStyle = {
-  flex: 1,
-  overflowY: 'auto',
-  padding: '10px 12px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 6,
-  maxHeight: 260,
-}
-
-const bubbleUser = {
-  alignSelf: 'flex-end',
-  background: '#2979ff',
-  color: '#fff',
-  borderBottomRightRadius: 2,
-  padding: '7px 10px',
-  borderRadius: 8,
-  fontSize: 11,
-  lineHeight: 1.45,
-  maxWidth: '90%',
-}
-
-const bubbleBot = {
-  alignSelf: 'flex-start',
-  background: 'rgba(42,42,42,0.6)',
-  color: '#e8eaed',
-  borderBottomLeftRadius: 2,
-  padding: '7px 10px',
-  borderRadius: 8,
-  fontSize: 11,
-  lineHeight: 1.45,
-  maxWidth: '90%',
-}
-
-const footStyle = {
-  display: 'flex',
-  gap: 6,
-  padding: '8px 10px',
-  borderTop: '1px solid rgba(42,42,42,0.4)',
-}
-
-const inputStyle = {
-  flex: 1,
-  background: 'rgba(42,42,42,0.4)',
-  border: '1px solid rgba(42,42,42,0.3)',
-  borderRadius: 5,
-  padding: '7px 10px',
-  fontSize: 11,
-  color: '#e8eaed',
-  outline: 'none',
-}
-
-const goStyle = {
-  width: 30,
-  height: 30,
-  background: '#2979ff',
-  border: 'none',
-  borderRadius: 5,
-  fontSize: 12,
-  cursor: 'pointer',
-  color: '#fff',
-  flexShrink: 0,
 }
 
 export default function Chatbot() {
@@ -143,25 +36,25 @@ export default function Chatbot() {
 
   return (
     <>
-      <button style={btnStyle} onClick={() => setOpen(p => !p)}>
-        {open ? '✕' : '💬'}
+      <button className={`chat-toggle ${open ? 'chat-open' : ''}`} onClick={() => setOpen(p => !p)}>
+        {open ? <span className="chat-toggle-icon">{Close}</span> : <span className="chat-toggle-icon">{MessageCircle}</span>}
       </button>
       {open && (
-        <div style={boxStyle}>
-          <div style={headStyle}>💬 Asistente Movilidad</div>
-          <div style={bodyStyle} ref={listRef}>
+        <div className="chat-box">
+          <div className="chat-header"><span className="chat-header-icon">{MessageCircle}</span> Asistente Movilidad</div>
+          <div className="chat-body" ref={listRef}>
             {messages.map((m, i) => (
-              <div key={i} style={m.role === 'user' ? bubbleUser : bubbleBot}>
+              <div key={i} className={`chat-bubble chat-${m.role}`}>
                 {m.text.split('\n').map((l, j) => <span key={j}>{l}<br /></span>)}
               </div>
             ))}
-            {loading && <div style={bubbleBot}>...</div>}
+            {loading && <div className="chat-bubble chat-bot chat-loading">...</div>}
           </div>
-          <div style={footStyle}>
-            <input style={inputStyle} placeholder="Escribe un mensaje..." value={input}
+          <div className="chat-footer">
+            <input className="chat-input" placeholder="Escribe un mensaje..." value={input}
               onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} disabled={loading} />
-            <button style={{...goStyle, opacity: loading || !input.trim() ? 0.4 : 1}}
-              onClick={send} disabled={loading || !input.trim()}>➤</button>
+            <button className={`chat-send ${(!loading && input.trim()) ? 'chat-send-active' : ''}`}
+              onClick={send} disabled={loading || !input.trim()}>{ArrowRight}</button>
           </div>
         </div>
       )}

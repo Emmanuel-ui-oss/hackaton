@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Loading from '../components/common/Loading'
+import { Clipboard, ThumbsUp, ThumbsDown, EmptyBox } from '../icons'
 
 export default function Reportes() {
   const [reportes, setReportes] = useState([])
@@ -50,7 +51,7 @@ export default function Reportes() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">📋 Reportes</h1>
+        <h1 className="page-title">{Clipboard} Reportes</h1>
         <p className="page-subtitle">Reportes comunitarios de incidentes viales</p>
       </div>
 
@@ -63,7 +64,7 @@ export default function Reportes() {
         <div className="table-container">
           {reportes.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-state-icon">📭</div>
+              <div className="empty-state-icon">{EmptyBox}</div>
               <div className="empty-state-text">No hay reportes aún</div>
             </div>
           ) : (
@@ -83,11 +84,11 @@ export default function Reportes() {
                     <td><span className={`badge badge-${r.tipo === 'accidente' ? 'critico' : r.tipo === 'bloqueo' ? 'alto' : 'info'}`}>{r.tipo}</span></td>
                     <td style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descripcion}</td>
                     <td>{r.usuario_username}</td>
-                    <td>👍 {r.votos_positivos} 👎 {r.votos_negativos}</td>
+                    <td>{ThumbsUp} {r.votos_positivos} {ThumbsDown} {r.votos_negativos}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 4 }}>
-                        <button className="btn btn-sm btn-ghost" onClick={() => handleVote(r.id, true)}>👍</button>
-                        <button className="btn btn-sm btn-ghost" onClick={() => handleVote(r.id, false)}>👎</button>
+                        <button className="btn btn-sm btn-ghost" onClick={() => handleVote(r.id, true)}>{ThumbsUp}</button>
+                        <button className="btn btn-sm btn-ghost" onClick={() => handleVote(r.id, false)}>{ThumbsDown}</button>
                       </div>
                     </td>
                   </tr>

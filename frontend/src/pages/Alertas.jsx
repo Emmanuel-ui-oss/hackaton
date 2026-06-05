@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Loading from '../components/common/Loading'
+import { Bell, MapPin, Check } from '../icons'
 
 export default function Alertas() {
   const [alertas, setAlertas] = useState([])
@@ -32,7 +33,7 @@ export default function Alertas() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">🔔 Alertas</h1>
+        <h1 className="page-title">{Bell.full} Alertas</h1>
         <p className="page-subtitle">Notificaciones de seguridad y movilidad</p>
       </div>
 
@@ -43,7 +44,7 @@ export default function Alertas() {
 
       {alertas.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">🔕</div>
+          <div className="empty-state-icon">{Bell}</div>
           <div className="empty-state-text">No hay alertas</div>
         </div>
       ) : (
@@ -62,7 +63,7 @@ export default function Alertas() {
                   <p style={{ fontSize: '0.9rem', color: 'var(--text)' }}>{a.mensaje}</p>
                   {a.zona_riesgo && (
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                      📍 {a.zona_riesgo.nombre} · {a.zona_riesgo.comuna}
+                      {MapPin.withDot} {a.zona_riesgo.nombre} · {a.zona_riesgo.comuna}
                     </div>
                   )}
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
@@ -70,7 +71,7 @@ export default function Alertas() {
                   </div>
                 </div>
                 {!a.leida && (
-                  <button className="btn btn-sm btn-ghost" onClick={() => markRead(a.id)}>✔</button>
+                  <button className="btn btn-sm btn-ghost" onClick={() => markRead(a.id)}>{Check}</button>
                 )}
               </div>
             </div>

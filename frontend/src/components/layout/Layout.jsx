@@ -8,6 +8,10 @@ import SOSButton from '../common/SOSButton'
 import Toast from '../common/Toast'
 import { useToast } from '../../contexts/ToastContext'
 import Chatbot from '../Chatbot/Chatbot'
+import { Menu } from '../../icons'
+import AmbientBackground from '../common/AmbientBackground'
+import ParticleBackground from '../common/ParticleBackground'
+import AnimatedPage from '../common/AnimatedPage'
 import './Layout.css'
 
 export default function Layout() {
@@ -21,18 +25,20 @@ export default function Layout() {
 
   const handleLogout = () => {
     logout()
-    navigate('/login')
+    navigate('/')
   }
 
   return (
     <div className="layout">
+      <AmbientBackground />
+      <ParticleBackground />
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="main-area">
         {!isDashboard && (
           <header className="topbar">
             <div className="topbar-left">
               <button className="menu-toggle" onClick={() => setSidebarOpen(true)}>
-                ☰
+                {Menu}
               </button>
               <div className={`connection-dot ${connected ? 'online' : 'offline'}`} />
             </div>
@@ -50,7 +56,7 @@ export default function Layout() {
           </header>
         )}
         <main className={`content ${isDashboard ? 'fullscreen' : ''}`}>
-          <Outlet />
+          <AnimatedPage><Outlet /></AnimatedPage>
         </main>
       </div>
       <SOSButton />

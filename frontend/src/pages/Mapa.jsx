@@ -8,6 +8,7 @@ import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
 import AnimatedNumber from '../components/common/AnimatedNumber'
 import './Mapa.css'
+import { Warning, Clipboard, Bell, Train, AlertCircle, Star, MapPin, Chart, CloudRain, Target, Sun, Droplet, Map, ArrowUp, ArrowDown, TrafficLight } from '../icons'
 
 const NIVEL_STYLES = {
   CRITICO: { color: '#ff1744', fill: 'rgba(255,23,68,0.2)', border: 'rgba(255,23,68,0.3)' },
@@ -22,76 +23,37 @@ const CARD_COLORS = {
 }
 
 const CARD_CONFIG = [
-  { key: 'zonas_riesgo', icon: '⚠', label: 'ZONAS RIESGO', colorKey: 'ZONAS' },
-  { key: 'reportes_activos', icon: '📋', label: 'REPORTES', colorKey: 'REPORTES' },
-  { key: 'alertas_no_leidas', icon: '🔔', label: 'ALERTAS', altKey: 'alertas_enviadas', colorKey: 'ALERTAS' },
-  { key: 'lineas_transporte', icon: '🚇', label: 'LINEAS TRANS.', colorKey: 'LINEAS' },
-  { key: 'eventos_sos', icon: '🆘', label: 'EVENTOS SOS', colorKey: 'SOS' },
-  { key: 'favoritos', icon: '⭐', label: 'FAVORITOS', colorKey: 'FAVORITOS' },
-  { key: 'paradas', icon: '📍', label: 'PARADAS', colorKey: 'PARADAS' },
-  { key: 'total_reportes', icon: '📊', label: 'TOTAL REPORTES', colorKey: 'TOTAL' },
+  { key: 'zonas_riesgo', icon: Warning, label: 'ZONAS RIESGO', colorKey: 'ZONAS' },
+  { key: 'reportes_activos', icon: Clipboard, label: 'REPORTES', colorKey: 'REPORTES' },
+  { key: 'alertas_no_leidas', icon: Bell, label: 'ALERTAS', altKey: 'alertas_enviadas', colorKey: 'ALERTAS' },
+  { key: 'lineas_transporte', icon: Train, label: 'LINEAS TRANS.', colorKey: 'LINEAS' },
+  { key: 'eventos_sos', icon: AlertCircle, label: 'EVENTOS SOS', colorKey: 'SOS' },
+  { key: 'favoritos', icon: Star, label: 'FAVORITOS', colorKey: 'FAVORITOS' },
+  { key: 'paradas', icon: MapPin, label: 'PARADAS', colorKey: 'PARADAS' },
+  { key: 'total_reportes', icon: Chart, label: 'TOTAL REPORTES', colorKey: 'TOTAL' },
 ]
 
 const DARK_TILE = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-const LIGHT_TILE = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-const OSRM_BASE = 'https://router.project-osrm.org'
 
-const RISK_COLORS = {
-  CRITICO: '#ff1744', ALTO: '#ffab00', MEDIO: '#2979ff', BAJO: '#00c853',
-}
-
-const RISK_WEIGHTS = { CRITICO: 0.9, ALTO: 0.6, MEDIO: 0.35, BAJO: 0.1 }
-
-const RISK_LABELS = [
-  { max: 1, min: 0.7, label: 'CRÍTICO', color: '#ff1744' },
-  { max: 0.7, min: 0.4, label: 'ALTO', color: '#ffab00' },
-  { max: 0.4, min: 0.2, label: 'MEDIO', color: '#2979ff' },
-  { max: 0.2, min: 0, label: 'BAJO', color: '#00c853' },
+const REPORT_TYPES = [
+  { key: 'accidente', label: 'Accidente', color: '#ff1744', icon: AlertCircle },
+  { key: 'bloqueo', label: 'Vía bloqueada', color: '#ffab00', icon: Warning },
+  { key: 'zona_peligrosa', label: 'Zona peligrosa', color: '#d500f9', icon: Warning },
+  { key: 'robo', label: 'Robo / Hurtos', color: '#ff1744', icon: AlertCircle },
+  { key: 'clima', label: 'Inundación / Clima', color: '#00bcd4', icon: CloudRain },
+  { key: 'otro', label: 'Otro', color: '#9e9e9e', icon: MapPin },
 ]
 
-function riskLevel(score) {
-  for (const r of RISK_LABELS) if (score >= r.min) return r
-  return RISK_LABELS[3]
+const REPORT_ICON_HTML = {
+  accidente: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+  bloqueo: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  zona_peligrosa: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  robo: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+  clima: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 13v8"/><path d="M8 13v8"/><path d="M12 15v8"/><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 0 0 4 15.25"/></svg>',
+  otro: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
 }
 
-function getRiskColor(score) {
-  return riskLevel(score).color
-}
-
-function distKm(lat1, lng1, lat2, lng2) {
-  const R = 6371, dLat = (lat2 - lat1) * Math.PI / 180, dLng = (lng2 - lng1) * Math.PI / 180
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
-function splitIntoSegments(coords, n) {
-  if (coords.length <= n) return [coords]
-  const step = Math.floor(coords.length / n), segs = []
-  for (let i = 0; i < coords.length; i += step) segs.push(coords.slice(i, i + step + 1))
-  return segs
-}
-
-function avgRiskForCoords(segCoords, zonas) {
-  if (!zonas.length || !segCoords.length) return 0
-  let total = 0
-  segCoords.forEach(([lat, lng]) => {
-    zonas.forEach(z => {
-      if (distKm(lat, lng, z.latitud, z.longitud) < (z.radio_metros || 500) / 1000)
-        total = Math.max(total, RISK_WEIGHTS[z.nivel] || 0.2)
-    })
-  })
-  return total
-}
-
-function riskForPoint(lat, lng, zonas) {
-  if (!zonas.length) return 0
-  let maxRisk = 0
-  zonas.forEach(z => {
-    if (distKm(lat, lng, z.latitud, z.longitud) < (z.radio_metros || 500) / 1000)
-      maxRisk = Math.max(maxRisk, RISK_WEIGHTS[z.nivel] || 0.2)
-  })
-  return maxRisk
-}
+const REPORT_COLORS = Object.fromEntries(REPORT_TYPES.map(t => [t.key, t.color]))
 
 export default function Mapa() {
   const mapRef = useRef(null)
@@ -101,9 +63,12 @@ export default function Mapa() {
   const circlesRef = useRef({})
   const userMarkerRef = useRef(null)
   const userAccuracyRef = useRef(null)
-  const routeLayerRef = useRef(null)
-  const searchLayerRef = useRef(null)
-  const lastRouteRef = useRef({ origC: null, destC: null, zonas: [] })
+  const sosLayerRef = useRef(null)
+  const sosMarkersRef = useRef({})
+  const trafficLayerRef = useRef(null)
+  const [trafficAvailable, setTrafficAvailable] = useState(false)
+  const [trafficTileUrl, setTrafficTileUrl] = useState(null)
+  const [trafficOn, setTrafficOn] = useState(false)
   const [stats, setStats] = useState(null)
   const [weather, setWeather] = useState(null)
   const [ticker, setTicker] = useState([])
@@ -113,18 +78,12 @@ export default function Mapa() {
   const [events, setEvents] = useState([])
   const [userPos, setUserPos] = useState(null)
   const [userAddress, setUserAddress] = useState('')
-  const [routeMode, setRouteMode] = useState(false)
-  const [routePanelOpen, setRoutePanelOpen] = useState(false)
-  const [origin, setOrigin] = useState('')
-  const [dest, setDest] = useState('')
-  const [routes, setRoutes] = useState([])
-  const [routeLoading, setRouteLoading] = useState(false)
-  const [filters, setFilters] = useState({ evitarCritico: false, evitarAlto: false })
-  const [sortMode, setSortMode] = useState('fast')
-  const [selectedRoute, setSelectedRoute] = useState(0)
-  const [suggestions, setSuggestions] = useState([])
-  const [activeField, setActiveField] = useState(null)
-  const suggestTimer = useRef(null)
+  const reportMarkerRef = useRef(null)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [reportType, setReportType] = useState('accidente')
+  const [reportDesc, setReportDesc] = useState('')
+  const [reportCoords, setReportCoords] = useState(null)
+  const [reportSubmitting, setReportSubmitting] = useState(false)
   const socketStats = useSocket().stats
   const { user, logout } = useAuth()
   const { error: showError, info: showInfo } = useToast()
@@ -171,8 +130,13 @@ export default function Mapa() {
     L.control.zoom({ position: 'bottomright' }).addTo(map)
     mapInstance.current = map
     setTimeout(() => map.invalidateSize(), 200)
-    routeLayerRef.current = L.layerGroup().addTo(map)
-    searchLayerRef.current = L.layerGroup().addTo(map)
+    sosLayerRef.current = L.layerGroup().addTo(map)
+    api.get('/api/v1/traffic/config').then(r => {
+      if (r.data?.available && r.data?.tile_url) {
+        setTrafficAvailable(true)
+        setTrafficTileUrl(r.data.tile_url)
+      }
+    }).catch(() => {})
     return () => { map.remove(); mapInstance.current = null }
   }, [])
 
@@ -204,8 +168,10 @@ export default function Mapa() {
       })
 
       ;(reportesRes.data || []).forEach(r => {
-        const m = L.circleMarker([r.latitud, r.longitud], { radius: 5, color: '#ff1744', fillColor: '#ff1744', fillOpacity: 0.6, weight: 1 })
-        m.bindPopup(`<div style="color:#e0e0e0;font-size:12px"><b style="color:#fff">${r.tipo}</b><br>${r.descripcion?.slice(0, 80)}</div>`)
+        const rc = REPORT_COLORS[r.tipo] || '#ff1744'
+        const rt = REPORT_TYPES.find(t => t.key === r.tipo)
+        const m = L.circleMarker([r.latitud, r.longitud], { radius: 6, color: rc, fillColor: rc, fillOpacity: 0.5, weight: 2 })
+        m.bindPopup(`<div class="report-popup"><div class="report-popup-header" style="color:${rc}">${REPORT_ICON_HTML[rt?.key] || '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'} ${rt?.label || r.tipo}</div><div class="report-popup-body">${r.descripcion || 'Sin descripción'}</div><div class="report-popup-footer">${r.usuario_username || 'Anónimo'} · <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg> ${r.votos_positivos || 0}</div></div>`)
         layersRef.current.reportes.push(m)
         if (toggles.reportes) m.addTo(map)
       })
@@ -226,6 +192,25 @@ export default function Mapa() {
       map.invalidateSize()
     }).catch(() => setMapLoading(false))
   }, [toggles])
+
+  useEffect(() => {
+    const map = mapInstance.current
+    if (!map || !trafficTileUrl) return
+    if (trafficOn && !trafficLayerRef.current) {
+      trafficLayerRef.current = L.tileLayer(trafficTileUrl, {
+        maxZoom: 19, opacity: 0.7, zIndex: 500,
+      }).addTo(map)
+    } else if (!trafficOn && trafficLayerRef.current) {
+      map.removeLayer(trafficLayerRef.current)
+      trafficLayerRef.current = null
+    }
+    return () => {
+      if (trafficLayerRef.current && map) {
+        map.removeLayer(trafficLayerRef.current)
+        trafficLayerRef.current = null
+      }
+    }
+  }, [trafficOn, trafficTileUrl])
 
   useEffect(() => {
     if (!socketStats?.zonas_updated || !mapInstance.current) return
@@ -252,6 +237,52 @@ export default function Mapa() {
       }
     })
   }, [socketStats?.zonas_updated])
+
+  useEffect(() => {
+    if (!mapInstance.current || !sosLayerRef.current) return
+    const sosList = socketStats?.sos_activos || []
+    const map = mapInstance.current
+    const layer = sosLayerRef.current
+    const currentIds = new Set(sosList.map(s => s.id))
+
+    Object.keys(sosMarkersRef.current).forEach(id => {
+      if (!currentIds.has(Number(id))) {
+        layer.removeLayer(sosMarkersRef.current[id])
+        delete sosMarkersRef.current[id]
+      }
+    })
+
+    sosList.forEach(s => {
+      if (sosMarkersRef.current[s.id]) {
+        sosMarkersRef.current[s.id].setLatLng([s.latitud, s.longitud])
+        return
+      }
+      const icon = L.divIcon({
+        html: `<div class="sos-map-marker"><div class="sos-map-pulse"></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff1744" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>`,
+        className: '',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+      })
+      const marker = L.marker([s.latitud, s.longitud], { icon }).addTo(layer)
+      const tiempo = Math.floor((Date.now() - new Date(s.creado).getTime()) / 1000)
+      const mins = Math.floor(tiempo / 60)
+      const nombre = s.nombre_completo || s.username
+      const email = s.email || ''
+      const telefono = s.telefono || ''
+      marker.bindPopup(`
+        <div class="sos-popup">
+          <div class="sos-popup-header"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff1744" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> SOS ACTIVO</div>
+          <div class="sos-popup-body">
+            <div class="sos-popup-row"><span class="sos-popup-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg></span><span>${nombre}</span></div>
+            ${email ? `<div class="sos-popup-row"><span class="sos-popup-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span><span>${email}</span></div>` : ''}
+            ${telefono ? `<div class="sos-popup-row"><span class="sos-popup-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span><span>${telefono}</span></div>` : ''}
+            <div class="sos-popup-row"><span class="sos-popup-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span>${mins} min activo</span></div>
+          </div>
+        </div>
+      `)
+      sosMarkersRef.current[s.id] = marker
+    })
+  }, [socketStats?.sos_activos])
 
   useEffect(() => {
     if (!mapInstance.current) return
@@ -288,27 +319,6 @@ export default function Mapa() {
     )
   }, [])
 
-  const toggleRouteMode = () => {
-    const next = !routeMode
-    setRouteMode(next)
-    setRoutePanelOpen(next)
-    if (!next) {
-      setRoutes([])
-      routeLayerRef.current?.clearLayers()
-      tileLayerRef.current?.setUrl(DARK_TILE)
-      mapRef.current?.closest('.mapa-wrap')?.style.setProperty('--map-bg', '#0d0d0d')
-    }
-  }
-
-  useEffect(() => {
-    if (!routeMode || !mapInstance.current) return
-    tileLayerRef.current?.setUrl(LIGHT_TILE)
-    mapRef.current?.closest('.mapa-wrap')?.style.setProperty('--map-bg', '#f5f5f5')
-    if (userPos) {
-      setOrigin(userAddress || `Mi ubicación (${userPos.lat.toFixed(4)}, ${userPos.lng.toFixed(4)})`)
-    }
-  }, [routeMode, userPos, userAddress])
-
   const locateMe = () => {
     const map = mapInstance.current
     if (!map) return
@@ -319,6 +329,60 @@ export default function Mapa() {
     )
   }
 
+  const openReportModal = () => {
+    setShowReportModal(true)
+    setReportType('accidente')
+    setReportDesc('')
+    setReportCoords(null)
+    if (userPos) {
+      setReportCoords({ lat: userPos.lat, lng: userPos.lng })
+      placeReportPin(userPos.lat, userPos.lng)
+    }
+  }
+
+  const closeReportModal = () => {
+    setShowReportModal(false)
+    if (reportMarkerRef.current && mapInstance.current) {
+      mapInstance.current.removeLayer(reportMarkerRef.current)
+      reportMarkerRef.current = null
+    }
+  }
+
+  const placeReportPin = (lat, lng) => {
+    if (!mapInstance.current) return
+    if (reportMarkerRef.current) mapInstance.current.removeLayer(reportMarkerRef.current)
+    reportMarkerRef.current = L.marker([lat, lng], {
+      icon: L.divIcon({
+        html: `<div class="report-pin"><svg width="24" height="24" viewBox="0 0 24 24" fill="#ff1744"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>`,
+        className: '', iconSize: [24, 24], iconAnchor: [12, 24],
+      }),
+    }).addTo(mapInstance.current)
+  }
+
+  const submitReport = async () => {
+    if (!reportCoords) { showError('Selecciona una ubicación en el mapa'); return }
+    setReportSubmitting(true)
+    try {
+      const payload = {
+        tipo: reportType,
+        descripcion: reportDesc,
+        latitud: reportCoords.lat,
+        longitud: reportCoords.lng,
+        ubicacion_texto: `${reportCoords.lat.toFixed(4)}, ${reportCoords.lng.toFixed(4)}`,
+      }
+      await api.post('/api/v1/reportes', payload)
+      showInfo('Reporte enviado correctamente ✅')
+      closeReportModal()
+      // refresh layers
+      setTimeout(() => {
+        setToggles(p => ({ ...p, reportes: false }))
+        setTimeout(() => setToggles(p => ({ ...p, reportes: true })), 100)
+      }, 500)
+    } catch {
+      showError('Error al enviar reporte')
+    } finally { setReportSubmitting(false) }
+  }
+
   const toggleLayer = k => setToggles(p => ({ ...p, [k]: !p[k] }))
   const getVal = (s, cfg) => {
     let v = s?.[cfg.key]
@@ -326,171 +390,19 @@ export default function Mapa() {
     return v ?? 0
   }
 
-  const geocode = async (q) => {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)},Medellín&format=json&limit=1`)
-    const data = await res.json()
-    if (!data.length) throw new Error(`"${q}" no encontrado en Medellín`)
-    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), name: data[0].display_name }
-  }
-
-  const calcRoute = async () => {
-    if (!dest) return
-    setRouteLoading(true)
-    setRoutes([])
-    routeLayerRef.current?.clearLayers()
-    try {
-      let origC, destC
-      if (origin.startsWith('Mi ubicación') && userPos) {
-        origC = { lat: userPos.lat, lng: userPos.lng, name: 'Mi ubicación' }
-      } else {
-        origC = await geocode(origin || 'Mi ubicación, Medellín')
-      }
-      destC = await geocode(dest)
-
-      const res = await fetch(`${OSRM_BASE}/route/v1/driving/${origC.lng},${origC.lat};${destC.lng},${destC.lat}?overview=full&geometries=geojson&steps=true&alternatives=2`)
-      const data = await res.json()
-      if (!data.routes?.length) throw new Error('Ruta no encontrada')
-
-      const zonasRes = await api.get('/api/v1/zonas-riesgo').catch(() => ({ data: [] }))
-      const zonas = zonasRes.data || []
-
-      const destRisk = riskForPoint(destC.lat, destC.lng, zonas)
-      const destRiskLevel = riskLevel(destRisk)
-
-      const mapped = data.routes.map((route, idx) => {
-        const coords = route.geometry.coordinates.map(c => [c[1], c[0]])
-        const segments = splitIntoSegments(coords, 15)
-        const segRisks = segments.map(seg => avgRiskForCoords(seg, zonas))
-        const worstRisk = Math.max(...segRisks, 0)
-        const worstLevel = riskLevel(worstRisk)
-        const critCount = segRisks.filter(r => r >= 0.7).length
-        const altoCount = segRisks.filter(r => r >= 0.4 && r < 0.7).length
-        return {
-          idx,
-          coords,
-          segments,
-          segRisks,
-          worstRisk,
-          worstLevel,
-          critCount,
-          altoCount,
-          distance: (route.distance / 1000).toFixed(1),
-          duration: Math.round(route.duration / 60),
-          destRisk,
-          destRiskLevel,
-        }
-      })
-
-      let filtered = [...mapped]
-      if (filters.evitarCritico) filtered = filtered.filter(r => r.worstRisk < 0.7)
-      if (filters.evitarAlto) filtered = filtered.filter(r => r.worstRisk < 0.4)
-
-      if (sortMode === 'safe') filtered.sort((a, b) => a.worstRisk - b.worstRisk || a.duration - b.duration)
-      else filtered.sort((a, b) => a.duration - b.duration || a.worstRisk - b.worstRisk)
-
-      setRoutes(filtered)
-      setSelectedRoute(0)
-      lastRouteRef.current = { origC, destC, zonas }
-      renderRouteOnMap(filtered, zonas, origC, destC, 0)
-
-      const best = filtered[0]
-      if (best) {
-        const msg = `🚗 Ruta 1: ${best.distance}km · ${best.duration}min · Riesgo ${best.worstLevel.label}${best.critCount ? ` (${best.critCount} críticos)` : ''}${filtered.length > 1 ? `\n🛡️ Ruta 2: ${filtered[1].distance}km · ${filtered[1].duration}min · Riesgo ${filtered[1].worstLevel.label}` : ''}\n📍 Destino: ${destRiskLevel.label}${destRiskLevel.label !== 'BAJO' ? ' - precaución' : ''}`
-        showInfo(msg)
-      }
-    } catch (err) {
-      showError(err.message || 'Error al calcular ruta')
-    } finally { setRouteLoading(false) }
-  }
-
-  const renderRouteOnMap = (routes, zonas, origC, destC, selectedIdx = 0) => {
-    const map = mapInstance.current
-    if (!map) return
-    routeLayerRef.current?.clearLayers()
-
-    routes.forEach((r, idx) => {
-      const isSelected = idx === selectedIdx
-      const segs = splitIntoSegments(r.coords, 15)
-      const risks = segs.map(seg => avgRiskForCoords(seg, zonas))
-      segs.forEach((seg, si) => {
-        const color = isSelected ? getRiskColor(risks[si]) : '#888'
-        const poly = L.polyline(seg, {
-          color, weight: isSelected ? 5 : 3,
-          opacity: isSelected ? 0.85 : 0.25,
-          dashArray: isSelected ? null : '4 6',
-        }).addTo(routeLayerRef.current)
-      })
-
-      if (isSelected) {
-        L.marker([origC.lat, origC.lng], {
-          icon: L.divIcon({ html: '<div class="ruta-marker ruta-marker-o">A</div>', className: '', iconSize: [24, 24], iconAnchor: [12, 12] }),
-        }).addTo(routeLayerRef.current)
-        L.marker([destC.lat, destC.lng], {
-          icon: L.divIcon({ html: '<div class="ruta-marker ruta-marker-d">B</div>', className: '', iconSize: [24, 24], iconAnchor: [12, 12] }),
-        }).addTo(routeLayerRef.current)
-        map.fitBounds(L.latLngBounds(r.coords), { padding: [50, 50] })
-      }
-    })
-  }
-
-  // ── Autocomplete for route inputs ──
-  const fetchSuggestions = (q, field) => {
-    if (!q || q.length < 3) { setSuggestions([]); return }
-    setActiveField(field)
-    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)},Medellín,Colombia&format=json&limit=5&addressdetails=1`)
-      .then(r => r.json())
-      .then(data => setSuggestions(Array.isArray(data) ? data : []))
-      .catch(() => setSuggestions([]))
-  }
-
-  const handleInputChange = (e, field) => {
-    const v = e.target.value
-    if (field === 'origin') setOrigin(v)
-    else setDest(v)
-    clearTimeout(suggestTimer.current)
-    if (v.length >= 3) suggestTimer.current = setTimeout(() => fetchSuggestions(v, field), 300)
-    else setSuggestions([])
-  }
-
-  const pickSuggestion = (s, field) => {
-    const name = s.display_name?.split(',')[0] || s.display_name || ''
-    if (field === 'origin') setOrigin(name)
-    else setDest(name)
-    setSuggestions([])
-    setActiveField(null)
-
-    const lat = parseFloat(s.lat), lng = parseFloat(s.lon)
-    const map = mapInstance.current
-    if (!map) return
-    searchLayerRef.current?.clearLayers()
-    L.marker([lat, lng], {
-      icon: L.divIcon({ html: '<div class="ruteo-pin"><span>📍</span></div>', className: '', iconSize: [24, 24], iconAnchor: [12, 24] }),
-    }).bindPopup(`<div class="ruteo-pin-popup">${s.display_name || name}</div>`).addTo(searchLayerRef.current)
-    map.setView([lat, lng], 15)
-  }
-
-  // ── Map click → reverse geocode → marker ──
+  // ── Map click → report pin ──
   useEffect(() => {
     const map = mapInstance.current
     if (!map) return
     const handler = async (e) => {
+      if (!showReportModal) return
       const { lat, lng } = e.latlng
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-        const data = await res.json()
-        const addr = data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
-        L.marker([lat, lng], {
-          icon: L.divIcon({
-            html: `<div class="search-marker"><span>📍</span></div>`,
-            className: '', iconSize: [24, 24], iconAnchor: [12, 24],
-          }),
-        }).bindPopup(`<div class="search-popup"><div class="search-popup-addr">${addr}</div></div>`)
-          .addTo(searchLayerRef.current)
-      } catch {}
+      setReportCoords({ lat, lng })
+      placeReportPin(lat, lng)
     }
     map.on('click', handler)
     return () => map.off('click', handler)
-  }, [mapInstance.current])
+  }, [mapInstance.current, showReportModal])
 
   const ss = stats || {}
 
@@ -501,19 +413,19 @@ export default function Mapa() {
           <div className="dash-top-left">
             {weather && (
               <div className="dash-weather">
-                <span>🌤️ {weather.temp}°C</span>
+                <span>{Sun} {weather.temp}°C</span>
                 <span className="ws-sep">·</span>
                 <span>{weather.condition}</span>
                 <span className="ws-sep">·</span>
-                <span>💧 {weather.humidity}%</span>
+                <span>{Droplet} {weather.humidity}%</span>
                 <span className="ws-sep">·</span>
-                <span>🌧️ {weather.rain_prob}%</span>
+                <span>{CloudRain} {weather.rain_prob}%</span>
               </div>
             )}
           </div>
           <div className="dash-top-right">
-            <button className="dash-btn" onClick={() => mapInstance.current?.setView([6.2442, -75.5812], 12)} title="Centrar mapa">🎯</button>
-            <button className="dash-btn" onClick={locateMe} title="Mi ubicación">📍</button>
+            <button className="dash-btn" onClick={() => mapInstance.current?.setView([6.2442, -75.5812], 12)} title="Centrar mapa">{Target}</button>
+            <button className="dash-btn" onClick={locateMe} title="Mi ubicación">{MapPin}</button>
             <div className="dash-user" onClick={() => navigate('/perfil')}>
               <span className="dash-avatar">{user?.username?.[0]?.toUpperCase()}</span>
               <span className="dash-username">{user?.username}</span>
@@ -537,143 +449,21 @@ export default function Mapa() {
         </div>
 
         <div className="mapa-bar">
-          <div className="mapa-bar-left"><h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>🗺️ Mapa</h2></div>
+          <div className="mapa-bar-left"><h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>{Map} Mapa</h2></div>
         </div>
         <div className="mapa-layers">
           {[{ k: 'zonas', l: 'Zonas' }, { k: 'reportes', l: 'Reportes' }, { k: 'transporte', l: 'Transporte' }].map(({ k, l }) => (
             <label key={k} className={`mapa-tag ${toggles[k] ? 'active' : ''}`} onClick={() => toggleLayer(k)}>{l}</label>
           ))}
-          <label className={`mapa-tag ${routeMode ? 'active' : ''}`} onClick={toggleRouteMode}>🚗 Ruta</label>
+          {trafficAvailable && (
+            <label className={`mapa-tag ${trafficOn ? 'active' : ''}`} onClick={() => setTrafficOn(p => !p)}>
+              {TrafficLight} Tráfico
+            </label>
+          )}
         </div>
 
         <div ref={mapRef} className="mapa-leaflet" />
         {mapLoading && <div className="mapa-loading"><div className="spinner" /></div>}
-
-        {routePanelOpen && (
-          <div className="ruteo-panel">
-            <div className="ruteo-header">
-              <span>Planificar Ruta</span>
-              <button className="ruteo-close" onClick={toggleRouteMode}>✕</button>
-            </div>
-
-            <div className="ruteo-inputs">
-              <div className="ruteo-field-wrap">
-                <div className="ruteo-field">
-                  <span className="ruteo-icon">📍</span>
-                  <input className="ruteo-input" placeholder="Desde (o usa GPS)" value={origin}
-                    onChange={e => handleInputChange(e, 'origin')}
-                    onFocus={() => setActiveField('origin')}
-                    onKeyDown={e => e.key === 'Enter' && calcRoute()} />
-                  {userPos && <button className="ruteo-gps" onClick={() => setOrigin(userAddress || `Mi ubicación (${userPos.lat.toFixed(4)}, ${userPos.lng.toFixed(4)})`)} title="Usar mi ubicación">📡</button>}
-                </div>
-                {activeField === 'origin' && suggestions.length > 0 && (
-                  <div className="ruteo-suggestions">
-                    {suggestions.map((s, i) => (
-                      <div key={i} className="ruteo-suggestion-item" onMouseDown={() => pickSuggestion(s, 'origin')}>
-                        <span className="rs-icon">📍</span>
-                        <div className="rs-text">
-                          <span className="rs-name">{s.display_name?.split(',')[0]}</span>
-                          <span className="rs-detail">{s.display_name?.split(',').slice(1, 4).join(',').trim()}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="ruteo-field-wrap">
-                <div className="ruteo-field">
-                  <span className="ruteo-icon">🎯</span>
-                  <input className="ruteo-input" placeholder="Destino en Medellín" value={dest}
-                    onChange={e => handleInputChange(e, 'dest')}
-                    onFocus={() => setActiveField('dest')}
-                    onKeyDown={e => e.key === 'Enter' && calcRoute()} />
-                  <button className="ruteo-go" onClick={calcRoute} disabled={routeLoading || !dest}>
-                    {routeLoading ? '...' : '›'}
-                  </button>
-                </div>
-                {activeField === 'dest' && suggestions.length > 0 && (
-                  <div className="ruteo-suggestions">
-                    {suggestions.map((s, i) => (
-                      <div key={i} className="ruteo-suggestion-item" onMouseDown={() => pickSuggestion(s, 'dest')}>
-                        <span className="rs-icon">📍</span>
-                        <div className="rs-text">
-                          <span className="rs-name">{s.display_name?.split(',')[0]}</span>
-                          <span className="rs-detail">{s.display_name?.split(',').slice(1, 4).join(',').trim()}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {routes.length > 0 && (
-              <>
-                <div className="ruteo-filters">
-                  <label className={`ruteo-filter-tag ${filters.evitarCritico ? 'active' : ''}`}
-                    onClick={() => setFilters(p => ({ ...p, evitarCritico: !p.evitarCritico }))}>
-                    🚫 Crítico
-                  </label>
-                  <label className={`ruteo-filter-tag ${filters.evitarAlto ? 'active' : ''}`}
-                    onClick={() => setFilters(p => ({ ...p, evitarAlto: !p.evitarAlto }))}>
-                    🚫 Alto
-                  </label>
-                  <label className={`ruteo-filter-tag ${sortMode === 'fast' ? 'active' : ''}`}
-                    onClick={() => setSortMode('fast')}>⚡ Rápido</label>
-                  <label className={`ruteo-filter-tag ${sortMode === 'safe' ? 'active' : ''}`}
-                    onClick={() => setSortMode('safe')}>🛡️ Seguro</label>
-                </div>
-
-                <div className="ruteo-results">
-                  {routes.map((r, i) => (
-                    <div key={i} className={`ruteo-result ${i === selectedRoute ? 'primary' : ''}`}
-                      onClick={() => {
-                        setSelectedRoute(i)
-                        const map = mapInstance.current
-                        if (map) map.fitBounds(L.latLngBounds(r.coords), { padding: [50, 50] })
-                        const { origC, destC, zonas } = lastRouteRef.current
-                        if (origC && destC) renderRouteOnMap(routes, zonas, origC, destC, i)
-                      }}>
-                      <div className="rr-top">
-                        <span className="rr-label">Ruta {i + 1}</span>
-                        <span className="rr-dist">{r.distance} km · {r.duration} min</span>
-                      </div>
-                      <div className="rr-riskbar">
-                        {r.segRisks.map((risk, si) => (
-                          <span key={si} className="rr-block" style={{ background: getRiskColor(risk) }} />
-                        ))}
-                      </div>
-                      <div className="rr-bottom">
-                        <span className="rr-risk" style={{ color: r.worstLevel.color }}>
-                          {r.worstLevel.label === 'CRÍTICO' ? '🔴' : r.worstLevel.label === 'ALTO' ? '🟡' : r.worstLevel.label === 'MEDIO' ? '🔵' : '🟢'}
-                          {' '}Riesgo: {r.worstLevel.label}{r.critCount ? ` (${r.critCount} críticos)` : ''}
-                        </span>
-                        <span className="rr-dest" style={{ color: r.destRiskLevel.color }}>
-                          Destino: {r.destRiskLevel.label}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="ruteo-legend">
-                  {[
-                    { label: 'CRÍTICO', color: '#ff1744' },
-                    { label: 'ALTO', color: '#ffab00' },
-                    { label: 'MEDIO', color: '#2979ff' },
-                    { label: 'BAJO', color: '#00c853' },
-                  ].map(({ label, color }) => (
-                    <div key={label} className="rl-item">
-                      <span style={{ background: color }} />{label}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {routeLoading && <div className="ruteo-loading"><div className="spinner" /></div>}
-          </div>
-        )}
 
         <div className="dash-riskbar">
           {Object.entries(NIVEL_STYLES).map(([nivel, style]) => {
@@ -695,7 +485,7 @@ export default function Mapa() {
             ticker.map((t, i) => (
               <div key={i} className="ticker-line">
                 <span className="ticker-time">{t.time}</span>
-                <span className={`ticker-${t.dir}`}>{(t.dir === 'up' ? '↑' : '↓')}</span>
+                <span className={`ticker-${t.dir}`}>{t.dir === 'up' ? <span style={{display:'inline-flex'}}>{ArrowUp}</span> : <span style={{display:'inline-flex'}}>{ArrowDown}</span>}</span>
                 <span className="ticker-msg">{t.label}</span>
                 <span className="ticker-dir">{t.newV}</span>
               </div>
@@ -707,9 +497,16 @@ export default function Mapa() {
           {Object.entries(NIVEL_STYLES).map(([n, s]) => (
             <div key={n} className="mapa-legend-item"><span style={{ background: s.color }} />{n}</div>
           ))}
+          {trafficOn && (
+            <div className="mapa-legend-item traffic-legend">
+              <span style={{ background: '#00c853' }} />Libre
+              <span style={{ background: '#ffab00', marginLeft: 6 }} />Moderado
+              <span style={{ background: '#ff1744', marginLeft: 6 }} />Congestionado
+            </div>
+          )}
         </div>
         {events.length > 0 && (
-          <div className="mapa-events">
+        <div className="mapa-events">
             <div className="mapa-events-title">Eventos ({events.length})</div>
             {events.slice(0, 4).map(e => (
               <div key={e.id} className="mapa-event-item">
@@ -719,7 +516,73 @@ export default function Mapa() {
             ))}
           </div>
         )}
+
+          <button className="mapa-report-fab" onClick={openReportModal} title="Reportar incidente">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+        </div>
+
+        {showReportModal && (
+          <div className="report-modal-overlay" onClick={closeReportModal}>
+            <div className="report-modal" onClick={e => e.stopPropagation()}>
+              <div className="report-modal-header">
+                <span>Reportar incidente</span>
+                <button className="report-modal-close" onClick={closeReportModal}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="report-modal-body">
+                <label className="report-label">Tipo de incidente</label>
+                <div className="report-types">
+                  {REPORT_TYPES.map(t => (
+                    <div key={t.key} className={`report-type-btn ${reportType === t.key ? 'active' : ''}`}
+                      style={reportType === t.key ? { borderColor: t.color, color: t.color } : {}}
+                      onClick={() => setReportType(t.key)}>
+                      <span>{t.icon}</span>
+                      <span>{t.label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <label className="report-label">Ubicación</label>
+                <div className="report-location">
+                  {reportCoords ? (
+                    <span className="report-coords">{reportCoords.lat.toFixed(5)}, {reportCoords.lng.toFixed(5)}</span>
+                  ) : (
+                    <span className="report-coords report-coords-muted">Haz clic en el mapa para marcar la ubicación</span>
+                  )}
+                  {userPos && (
+                    <button className="report-gps-btn" onClick={() => {
+                      setReportCoords({ lat: userPos.lat, lng: userPos.lng })
+                      placeReportPin(userPos.lat, userPos.lng)
+                    }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="3" fill="currentColor" />
+                      </svg>
+                      Usar mi ubicación
+                    </button>
+                  )}
+                </div>
+
+                <label className="report-label">Descripción (opcional)</label>
+                <textarea className="report-desc" placeholder="Describe lo que ocurrió..." value={reportDesc}
+                  onChange={e => setReportDesc(e.target.value)} rows={3} />
+              </div>
+
+              <div className="report-modal-footer">
+                <button className="btn btn-secondary btn-sm" onClick={closeReportModal}>Cancelar</button>
+                <button className="btn btn-primary btn-sm" onClick={submitReport} disabled={reportSubmitting || !reportCoords}>
+                  {reportSubmitting ? 'Enviando...' : 'Enviar reporte'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
-  )
-}
+    )
+  }

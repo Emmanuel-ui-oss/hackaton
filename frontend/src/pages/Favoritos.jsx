@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Loading from '../components/common/Loading'
+import { Star, Trash } from '../icons'
 
 export default function Favoritos() {
   const [favs, setFavs] = useState([])
@@ -45,7 +46,7 @@ export default function Favoritos() {
     <div className="page">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 className="page-title">⭐ Favoritos</h1>
+          <h1 className="page-title">{Star} Favoritos</h1>
           <p className="page-subtitle">Tus lugares guardados</p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ Nuevo</button>
@@ -53,7 +54,7 @@ export default function Favoritos() {
 
       {favs.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">⭐</div>
+          <div className="empty-state-icon">{Star}</div>
           <div className="empty-state-text">No tienes favoritos guardados</div>
         </div>
       ) : (
@@ -66,7 +67,7 @@ export default function Favoritos() {
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 4 }}>{f.direccion}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>{f.latitud?.toFixed(4)}, {f.longitud?.toFixed(4)}</div>
                 </div>
-                <button className="btn btn-sm btn-ghost" onClick={() => handleDelete(f.id)} style={{ color: 'var(--red)' }}>🗑</button>
+                <button className="btn btn-sm btn-ghost" onClick={() => handleDelete(f.id)} style={{ color: 'var(--red)' }}>{Trash}</button>
               </div>
             </div>
           ))}

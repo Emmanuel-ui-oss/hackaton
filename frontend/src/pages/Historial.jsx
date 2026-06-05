@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import Loading from '../components/common/Loading'
+import { Clock } from '../icons'
 
 export default function Historial() {
   const [viajes, setViajes] = useState([])
@@ -20,13 +21,13 @@ export default function Historial() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">🕐 Historial de Viajes</h1>
+        <h1 className="page-title">{Clock} Historial de Viajes</h1>
         <p className="page-subtitle">Tus rutas y desplazamientos anteriores</p>
       </div>
 
       {viajes.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">🕐</div>
+          <div className="empty-state-icon">{Clock}</div>
           <div className="empty-state-text">No hay viajes registrados</div>
         </div>
       ) : (

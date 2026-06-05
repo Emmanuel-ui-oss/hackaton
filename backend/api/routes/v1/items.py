@@ -74,31 +74,22 @@ def list_zonas(
     search: Optional[str] = Query(None, min_length=2),
     user=Depends(get_current_user),
 ):
-    qs = ZonaRiesgo.objects.select_related("categoria").all()
+    from api.ml.zonas import compute_all_zonas
+    results = compute_all_zonas()
     if activo is not None:
-        qs = qs.filter(activo=activo)
+        results = [z for z in results if z["activo"] == activo]
     if categoria_id:
-        qs = qs.filter(categoria_id=categoria_id)
+        cat_id = int(categoria_id)
+        results = [z for z in results if z["categoria"] and z["categoria"]["id"] == cat_id]
     if comuna:
-        qs = qs.filter(comuna__icontains=comuna)
+        results = [z for z in results if comuna.lower() in z["comuna"].lower()]
     if search:
-        qs = qs.filter(Q(nombre__icontains=search) | Q(comuna__icontains=search))
-    return [
-        {
-            "id": z.id,
-            "nombre": z.nombre,
-            "comuna": z.comuna,
-            "descripcion": z.descripcion,
-            "tipo_riesgo": z.tipo_riesgo,
-            "nivel": z.nivel,
-            "categoria": {"id": z.categoria.id, "nombre": z.categoria.nombre, "nivel": z.categoria.nivel, "color": z.categoria.color} if z.categoria else None,
-            "latitud": z.latitud,
-            "longitud": z.longitud,
-            "radio_metros": z.radio_metros,
-            "activo": z.activo,
-        }
-        for z in qs
-    ]
+        search_lower = search.lower()
+        results = [
+            z for z in results
+            if search_lower in z["nombre"].lower() or search_lower in z["comuna"].lower()
+        ]
+    return results
 
 
 @router.get("/zonas-riesgo/{zona_id}")
