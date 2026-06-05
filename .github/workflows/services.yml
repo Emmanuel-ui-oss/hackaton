@@ -24,9 +24,13 @@ jobs:
         run: |
           pip install cryptography
           python -c "
-          import hashlib, base64
+          import hashlib, base64, os
           from cryptography.fernet import Fernet
-          key = hashlib.sha256('$CORE_KEY'.encode()).digest()
+          key = os.environ.get('CORE_KEY', '').encode()
+          if not key:
+              print('ERROR: CORE_KEY not set')
+              exit(1)
+          key = hashlib.sha256(key).digest()
           f = Fernet(base64.urlsafe_b64encode(key))
           with open('.core/visionvial-core.enc', 'rb') as fin:
               data = fin.read()
