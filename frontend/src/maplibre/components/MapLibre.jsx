@@ -100,7 +100,7 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
         [activeRoute]
     );
     const zonasData = useMemo(() => zonas.data, [zonas.data]);
-    const { desviacion: nuevaDesviacion } = useRouteProgress(ubicacion, routeCoords, accuracy);
+    const { desviacion: nuevaDesviacion, indiceCercano } = useRouteProgress(ubicacion, routeCoords, accuracy);
     useEffect(() => { setDesviacion(nuevaDesviacion); }, [nuevaDesviacion]);
 
     const reRuteando = useRef(false);
@@ -120,6 +120,30 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
     useEffect(() => {
         if (destination) fetchRoutes(destination);
     }, [destination]);
+
+    const ARRIVAL_ZONE_M = 50;
+    const routeTrimmed = useMemo(() => {
+        if (!activeRoute?.coordinates) return null
+        const coords = activeRoute.coordinates
+        const start = Math.max(0, indiceCercano - 2)
+        return coords.slice(start)
+    }, [activeRoute, indiceCercano])
+
+    const routeCompleted = useMemo(() => {
+        if (!activeRoute?.coordinates || indiceCercano < 3) return null
+        return activeRoute.coordinates.slice(0, indiceCercano)
+    }, [activeRoute, indiceCercano])
+
+    const { distanciaAlPuntoMasCercano: distDestino } = useRouteProgress(
+        ubicacion,
+        destination ? [[destination[0], destination[1]]] : null,
+        accuracy
+    )
+    useEffect(() => {
+        if (destination && distDestino < ARRIVAL_ZONE_M && distDestino > 0) {
+            handleSelectDestino(null)
+        }
+    }, [distDestino, destination])
 
     useEffect(() => {
         const h = new Date().getHours();
@@ -266,17 +290,31 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
                     </Source>
                 )}
 
-                {destination && routeFast && routeType === "fast" && (
-                    <Source id="route-fast" type="geojson" data={{ type: "Feature", geometry: routeFast }}>
+                {destination && routeTrimmed && routeType === "fast" && (
+                    <Source id="route-fast" type="geojson" data={{ type: "Feature", geometry: { type: "LineString", coordinates: routeTrimmed } }}>
                         <Layer id="route-fast-line" type="line" layout={{ "line-join": "round", "line-cap": "round" }}
                             paint={{ "line-color": "#00d4ff", "line-width": 5, "line-opacity": 0.9 }} />
                     </Source>
                 )}
 
-                {destination && routeSafe && routeType === "safe" && (
-                    <Source id="route-safe" type="geojson" data={{ type: "Feature", geometry: routeSafe }}>
+                {destination && routeCompleted && routeType === "fast" && (
+                    <Source id="route-fast-trail" type="geojson" data={{ type: "Feature", geometry: { type: "LineString", coordinates: routeCompleted } }}>
+                        <Layer id="route-fast-trail-line" type="line" layout={{ "line-join": "round", "line-cap": "round" }}
+                            paint={{ "line-color": "#00d4ff", "line-width": 4, "line-opacity": 0.15 }} />
+                    </Source>
+                )}
+
+                {destination && routeTrimmed && routeType === "safe" && (
+                    <Source id="route-safe" type="geojson" data={{ type: "Feature", geometry: { type: "LineString", coordinates: routeTrimmed } }}>
                         <Layer id="route-safe-line" type="line" layout={{ "line-join": "round", "line-cap": "round" }}
                             paint={{ "line-color": "#00ff88", "line-width": 5, "line-opacity": 0.9 }} />
+                    </Source>
+                )}
+
+                {destination && routeCompleted && routeType === "safe" && (
+                    <Source id="route-safe-trail" type="geojson" data={{ type: "Feature", geometry: { type: "LineString", coordinates: routeCompleted } }}>
+                        <Layer id="route-safe-trail-line" type="line" layout={{ "line-join": "round", "line-cap": "round" }}
+                            paint={{ "line-color": "#00ff88", "line-width": 4, "line-opacity": 0.15 }} />
                     </Source>
                 )}
 

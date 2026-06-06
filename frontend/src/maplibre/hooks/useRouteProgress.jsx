@@ -18,6 +18,7 @@ const PERSISTENCE_COUNT = 3;
 export default function useRouteProgress(ubicacion, route, accuracy = 0) {
     const [desviacion, setDesviacion] = useState(false);
     const [distancia, setDistancia] = useState(0);
+    const [indiceCercano, setIndiceCercano] = useState(0);
     const contadorDesviacion = useRef(0);
 
     useEffect(() => {
@@ -30,6 +31,7 @@ export default function useRouteProgress(ubicacion, route, accuracy = 0) {
             if (d < minDist) { minDist = d; minIndex = i; }
         }
 
+        setIndiceCercano(minIndex);
         setDistancia(Math.round(minDist));
 
         const gpsAccuracy = accuracy > 0 ? accuracy : DEVIATION_THRESHOLD;
@@ -51,6 +53,7 @@ export default function useRouteProgress(ubicacion, route, accuracy = 0) {
 
     return {
         desviacion,
-        distanciaAlPuntoMasCercano: distancia
+        distanciaAlPuntoMasCercano: distancia,
+        indiceCercano,
     };
 }
