@@ -1,0 +1,85 @@
+.ctrl-panel {
+    position: absolute;
+    top: 64px;
+    right: 8px;
+    z-index: 15;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 6px;
+    background: rgba(13, 13, 13, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(42, 42, 42, 0.5);
+    border-radius: 10px;
+}
+
+.ctrl-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: left;
+    font-family: inherit;
+    min-width: 110px;
+}
+
+.ctrl-btn:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.ctrl-btn--active {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--accent, #4aa3ff);
+    box-shadow: inset 0 0 0 1px var(--accent, #4aa3ff);
+}
+
+.ctrl-btn-icon {
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9aa0a6;
+    width: 18px;
+    height: 18px;
+}
+
+.ctrl-btn--active .ctrl-btn-icon {
+    color: var(--accent, #4aa3ff);
+}
+
+.ctrl-btn-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #5f6368;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.ctrl-btn--active .ctrl-btn-label {
+    color: #9aa0a6;
+}
+
+@media (max-width: 768px) {
+    .ctrl-panel {
+        top: 50px;
+        right: 4px;
+        padding: 4px;
+        gap: 2px;
+    }
+    .ctrl-btn {
+        min-width: auto;
+        padding: 4px 8px;
+        gap: 6px;
+    }
+    .ctrl-btn-icon { font-size: 14px; width: 16px; height: 16px; }
+    .ctrl-btn-label { font-size: 9px; }
+}

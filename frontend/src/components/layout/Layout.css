@@ -146,7 +146,16 @@
 
 .topbar-name { font-size: 0.8rem; font-weight: 600; color: var(--text); }
 
-.content { padding: 20px; }
+.topbar-weather {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #9aa0a6;
+  font-family: var(--font-mono);
+}
+
 .content.fullscreen { padding: 0; max-width: none; }
 
 .connection-dot {
@@ -194,5 +203,4 @@
   .main-area { margin-left: 0; }
   .menu-toggle { display: flex; }
   .bottom-nav { display: block; }
-  .content { padding-bottom: 80px; }
 }

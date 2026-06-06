@@ -40,8 +40,8 @@ export default function App() {
           <Route path="/contactos" element={<Contactos />} />
           <Route path="/historial" element={<Historial />} />
           <Route path="/perfil" element={<Perfil />} />
-          <Route path="/planificar-ruta" element={<PlanificarRuta />} />
-          <Route path="/trafico" element={<Trafico />} />
+          <Route path="/planificar-ruta" element={<Navigate to="/mapa?mode=route" replace />} />
+          <Route path="/trafico" element={<Navigate to="/mapa?mode=traffic" replace />} />
           <Route path="/riesgos" element={<Riesgos />} />
           <Route element={<AdminRoute />}>
             <Route path="/admin" element={<Admin />} />

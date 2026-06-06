@@ -392,3 +392,60 @@ class HistorialViaje(models.Model):
 
     def __str__(self):
         return f"{self.origen_nombre} → {self.destino_nombre} ({self.usuario.username})"
+
+
+class IncidenteHomicidio(models.Model):
+    latitud = models.FloatField()
+    longitud = models.FloatField()
+    barrio = models.CharField(max_length=200, blank=True)
+    comuna = models.CharField(max_length=100, blank=True)
+    anio = models.IntegerField(null=True, blank=True)
+    fuente = models.CharField(max_length=100, blank=True)
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Incidentes de Homicidio"
+        indexes = [
+            models.Index(fields=["latitud", "longitud"]),
+        ]
+
+    def __str__(self):
+        return f"Homicidio en {self.barrio or 'N/A'} ({self.latitud}, {self.longitud})"
+
+
+class IncidenteTransito(models.Model):
+    latitud = models.FloatField()
+    longitud = models.FloatField()
+    tipo = models.CharField(max_length=100, blank=True)
+    gravedad = models.CharField(max_length=50, blank=True)
+    comuna = models.CharField(max_length=100, blank=True)
+    anio = models.IntegerField(null=True, blank=True)
+    fuente = models.CharField(max_length=100, blank=True)
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Incidentes de Tránsito"
+        indexes = [
+            models.Index(fields=["latitud", "longitud"]),
+        ]
+
+    def __str__(self):
+        return f"Incidente tránsito en ({self.latitud}, {self.longitud})"
+
+
+class EstacionPolicia(models.Model):
+    nombre = models.CharField(max_length=200)
+    direccion = models.CharField(max_length=255, blank=True)
+    latitud = models.FloatField()
+    longitud = models.FloatField()
+    telefono = models.CharField(max_length=50, blank=True)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name_plural = "Estaciones de Policía"
+        indexes = [
+            models.Index(fields=["latitud", "longitud"]),
+        ]
+
+    def __str__(self):
+        return self.nombre

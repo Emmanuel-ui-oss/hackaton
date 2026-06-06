@@ -22,6 +22,7 @@ export default function Layout() {
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const isDashboard = location.pathname === '/dashboard'
+  const isFullscreen = isDashboard || location.pathname === '/mapa'
 
   const handleLogout = () => {
     logout()
@@ -41,6 +42,7 @@ export default function Layout() {
                 {Menu}
               </button>
               <div className={`connection-dot ${connected ? 'online' : 'offline'}`} />
+              <div id="topbar-weather" />
             </div>
             <div className="topbar-right">
               <div className="topbar-user" onClick={() => navigate('/perfil')}>
@@ -55,7 +57,7 @@ export default function Layout() {
             </div>
           </header>
         )}
-        <main className={`content ${isDashboard ? 'fullscreen' : ''}`}>
+        <main className={`content ${isFullscreen ? 'fullscreen' : ''}`}>
           <AnimatedPage><Outlet /></AnimatedPage>
         </main>
       </div>

@@ -3,17 +3,26 @@ const s2 = (children, w = 2) => <svg width="1em" height="1em" viewBox="0 0 24 24
 
 export const User = s('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2', 1.8)
 export const UserCircle = s2([<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" key="u1" />, <circle cx="12" cy="7" r="4" key="u2" />], 1.8)
-export const MapPin = s('M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z', 1.8)
-MapPin.circle = <circle cx="12" cy="10" r="3" />
-MapPin.withDot = s2([<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" key="p1" />, <circle cx="12" cy="10" r="3" key="p2" />], 1.8)
+
+const _MapPin = s('M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z', 1.8)
+export const MapPin = Object.assign(
+  { ..._MapPin, $$typeof: _MapPin.$$typeof },
+  { withDot: s2([<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" key="p1" />, <circle cx="12" cy="10" r="3" key="p2" />], 1.8) }
+)
+
 export const Star = s('M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', 1.8)
-export const Warning = s('M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z', 1.8)
-Warning.line = <line x1="12" y1="9" x2="12" y2="13" />
-Warning.line2 = <line x1="12" y1="17" x2="12.01" y2="17" />
-Warning.full = s2([<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" key="w1" />, <line x1="12" y1="9" x2="12" y2="13" key="w2" />, <line x1="12" y1="17" x2="12.01" y2="17" key="w3" />], 1.8)
-export const Bell = s('M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9', 1.8)
-Bell.line = <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-Bell.full = s2([<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" key="b1" />, <path d="M13.73 21a2 2 0 0 1-3.46 0" key="b2" />], 1.8)
+
+const _Warning = s('M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z', 1.8)
+export const Warning = Object.assign(
+  { ..._Warning, $$typeof: _Warning.$$typeof },
+  { full: s2([<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" key="w1" />, <line x1="12" y1="9" x2="12" y2="13" key="w2" />, <line x1="12" y1="17" x2="12.01" y2="17" key="w3" />], 1.8) }
+)
+
+const _Bell = s('M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9', 1.8)
+export const Bell = Object.assign(
+  { ..._Bell, $$typeof: _Bell.$$typeof },
+  { full: s2([<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" key="b1" />, <path d="M13.73 21a2 2 0 0 1-3.46 0" key="b2" />], 1.8) }
+)
 export const Phone = s('M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z', 1.8)
 export const Mail = s2([<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" key="m1" />, <polyline points="22,6 12,13 2,6" key="m2" />], 1.8)
 export const Clock = s2([<circle cx="12" cy="12" r="10" key="c1" />, <polyline points="12 6 12 12 16 14" key="c2" />], 1.8)
@@ -25,7 +34,6 @@ export const Search = s2([<circle cx="11" cy="11" r="8" key="s1" />, <line x1="2
 export const AlertTriangle = s2([<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" key="a1" />, <line x1="12" y1="9" x2="12" y2="13" key="a2" />, <line x1="12" y1="17" x2="12.01" y2="17" key="a3" />], 1.8)
 export const AlertCircle = s2([<circle cx="12" cy="12" r="10" key="a1" />, <line x1="12" y1="8" x2="12" y2="12" key="a2" />, <line x1="12" y1="16" x2="12.01" y2="16" key="a3" />], 1.8)
 export const Shield = s2([<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" key="s1" />], 1.8)
-Shield.check = s2([<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" key="s1" />, <polyline points="9 12 11 14 15 10" key="s2" />], 1.8)
 export const Target = s2([<circle cx="12" cy="12" r="10" key="t1" />, <circle cx="12" cy="12" r="3" key="t2" />], 1.8)
 export const Lightning = s('M13 2L3 14h9l-1 8 10-12h-9l1-8z', 1.8)
 export const Prohibited = s2([<circle cx="12" cy="12" r="10" key="p1" />, <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" key="p2" />], 1.8)
@@ -38,6 +46,7 @@ export const Map = s2([<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 
 export const Navigation = s2([<polygon points="3 11 22 2 13 21 11 13 3 11" key="n1" />], 1.8)
 export const TrafficLight = s2([<rect x="8" y="2" width="8" height="20" rx="2" key="t1" />, <circle cx="12" cy="8" r="1.5" key="t2" />, <circle cx="12" cy="12" r="1.5" key="t3" />, <circle cx="12" cy="16" r="1.5" key="t4" />], 1.8)
 export const Sun = s2([<circle cx="12" cy="12" r="5" key="s1" />, <line x1="12" y1="1" x2="12" y2="3" key="s2" />, <line x1="12" y1="21" x2="12" y2="23" key="s3" />, <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" key="s4" />, <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" key="s5" />, <line x1="1" y1="12" x2="3" y2="12" key="s6" />, <line x1="21" y1="12" x2="23" y2="12" key="s7" />, <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" key="s8" />, <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" key="s9" />], 1.5)
+export const Moon = s('M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z', 1.8)
 export const Droplet = s('M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z', 1.8)
 export const CloudRain = s2([<path d="M16 13v8" key="c1" />, <path d="M8 13v8" key="c2" />, <path d="M12 15v8" key="c3" />, <path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 0 0 4 15.25" key="c4" />], 1.8)
 export const Train = s2([<rect x="3" y="3" width="18" height="14" rx="2" key="t1" />, <line x1="3" y1="12" x2="21" y2="12" key="t2" />, <circle cx="8" cy="16" r="1.5" key="t3" />, <circle cx="16" cy="16" r="1.5" key="t4" />, <line x1="10" y1="3" x2="8" y2="21" key="t5" />, <line x1="14" y1="3" x2="16" y2="21" key="t6" />], 1.8)
