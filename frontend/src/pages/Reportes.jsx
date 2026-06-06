@@ -1,24 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import api from '../services/api'
 import { useToast } from '../contexts/ToastContext'
-import Loading from '../components/common/Loading'
+import usePageData from '../hooks/usePageData'
 import { Clipboard, ThumbsUp, ThumbsDown, EmptyBox } from '../icons'
 
 export default function Reportes() {
-  const [reportes, setReportes] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { data: reportes, loading, load } = usePageData(() => api.get('/api/v1/reportes'))
   const [tab, setTab] = useState('list')
   const [form, setForm] = useState({ tipo: 'otro', descripcion: '', ubicacion_texto: '', latitud: 6.2442, longitud: -75.5812 })
   const { success, error: showError } = useToast()
-
-  const load = () => {
-    api.get('/api/v1/reportes')
-      .then(r => setReportes(r.data || []))
-      .catch(() => showError('Error al cargar reportes'))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => { load() }, [])
 
   const handleVote = async (id, positivo) => {
     try {
@@ -44,8 +34,6 @@ export default function Reportes() {
     }
   }
 
-  if (loading) return <Loading />
-
   const tipos = ['accidente', 'bloqueo', 'zona_peligrosa', 'robo', 'clima', 'otro']
 
   return (
@@ -62,7 +50,7 @@ export default function Reportes() {
 
       {tab === 'list' && (
         <div className="table-container">
-          {reportes.length === 0 ? (
+          {(reportes ?? []).length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">{EmptyBox}</div>
               <div className="empty-state-text">No hay reportes aún</div>

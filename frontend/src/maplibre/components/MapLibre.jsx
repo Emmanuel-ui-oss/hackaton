@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import Map, { Marker, Source, Layer } from "react-map-gl/maplibre";
+import Map, { Marker, Source, Layer, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import "../css/Map.css";
@@ -25,16 +25,17 @@ import useAlertas from "../hooks/useAlertas";
 import useEventosSOS from "../hooks/useEventosSOS";
 import useFavoritos from "../hooks/useFavoritos";
 import useParadas from "../hooks/useParadas";
+import useVoiceNavigation from "../hooks/useVoiceNavigation";
 
 import useConfigGps from "../config/useConfigGps";
 import getVisionCone from "../utils/getVisionCone";
 
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY;
-const TOMTOM_KEY   = import.meta.env.VITE_TOMTOM_KEY;
-const hasValidKey  = MAPTILER_KEY && !MAPTILER_KEY.startsWith("get_your_key");
+const TOMTOM_KEY = import.meta.env.VITE_TOMTOM_KEY;
+const hasValidKey = MAPTILER_KEY && !MAPTILER_KEY.startsWith("get_your_key");
 
 const MAP_STYLES = {
-    dark:  hasValidKey
+    dark: hasValidKey
         ? `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${MAPTILER_KEY}`
         : "https://demotiles.maplibre.org/style.json",
     light: hasValidKey
@@ -48,21 +49,31 @@ const NIVEL_COLORS = {
     CRITICO: "#ff1744", ALTO: "#ffab00", MEDIO: "#2979ff", BAJO: "#00c853",
 };
 
+const CUSTOM_LAYERS = [
+    "reportes-circle", "reportes-glow",
+    "alertas-bg", "alertas-glow", "alertas-icon",
+    "favoritos-icon",
+    "paradas-glow", "paradas-bg", "paradas-circle", "paradas-dot",
+    "lineas-bg", "lineas-fg",
+    "zonas-fill",
+];
+
 export default function MapMapLibre({ onMapClick, stats } = {}) {
-    const [darkMode,   setDarkMode]   = useState(true);
-    const [userMoved,  setUserMoved]  = useState(false);
-    const [following,  setFollowing]  = useState(true);
-    const [cone,       setCone]       = useState(null);
+    const [darkMode, setDarkMode] = useState(true);
+    const [userMoved, setUserMoved] = useState(false);
+    const [following, setFollowing] = useState(true);
+    const [cone, setCone] = useState(null);
     const [desviacion, setDesviacion] = useState(false);
 
-    const [showZonas,    setShowZonas]    = useState(false);
-    const [showReportes, setShowReportes]  = useState(false);
-    const [showAlertas,  setShowAlertas]   = useState(false);
-    const [showSos,      setShowSos]       = useState(false);
-    const [showFavoritos,setShowFavoritos] = useState(false);
-    const [showParadas,  setShowParadas]   = useState(false);
+    const [showZonas, setShowZonas] = useState(false);
+    const [showReportes, setShowReportes] = useState(false);
+    const [showAlertas, setShowAlertas] = useState(false);
+    const [showSos, setShowSos] = useState(false);
+    const [showFavoritos, setShowFavoritos] = useState(false);
+    const [showParadas, setShowParadas] = useState(false);
 
     const [viewState, setViewState] = useState({ longitude: -75.5636, latitude: 6.2518, zoom: 13 });
+    const [selectedFeature, setSelectedFeature] = useState(null);
     const mapRef = useRef(null);
 
     const { ubicacion, cargando } = useLocation();
@@ -76,12 +87,12 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
         handleSelectDestino, fetchRoutes,
     } = useMapRoutes(ubicacion);
 
-    const zonas    = useZonasRiesgo(showZonas);
+    const zonas = useZonasRiesgo(showZonas);
     const reportes = useReportes(showReportes);
-    const alertas  = useAlertas(showAlertas);
-    const sos      = useEventosSOS(showSos);
-    const favoritos= useFavoritos(showFavoritos);
-    const paradas  = useParadas(showParadas);
+    const alertas = useAlertas(showAlertas);
+    const sos = useEventosSOS(showSos);
+    const favoritos = useFavoritos(showFavoritos);
+    const paradas = useParadas(showParadas);
 
     const activeRoute = routeType === "fast" ? routeFast : routeSafe;
     const routeCoords = activeRoute?.coordinates?.map(([lng, lat]) => [lat, lng]);
@@ -107,16 +118,24 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
         setCone(getVisionCone(ubicacion, heading || 0));
     }, [ubicacion, heading]);
 
+    const [voiceActive, setVoiceActive] = useState(false)
+    useVoiceNavigation({
+        ubicacion,
+        routeCoords,
+        zonasRiesgo: zonas.data,
+        activo: voiceActive && !!destination,
+    })
+
     const toggles = { zonas: showZonas, reportes: showReportes, alertas: showAlertas, sos: showSos, favoritos: showFavoritos, paradas: showParadas };
 
     const onToggle = useCallback((layer) => {
         switch (layer) {
-            case "zonas":     setShowZonas(v => !v); break;
-            case "reportes":  setShowReportes(v => !v); break;
-            case "alertas":   setShowAlertas(v => !v); break;
-            case "sos":       setShowSos(v => !v); break;
+            case "zonas": setShowZonas(v => !v); break;
+            case "reportes": setShowReportes(v => !v); break;
+            case "alertas": setShowAlertas(v => !v); break;
+            case "sos": setShowSos(v => !v); break;
             case "favoritos": setShowFavoritos(v => !v); break;
-            case "paradas":   setShowParadas(v => !v); break;
+            case "paradas": setShowParadas(v => !v); break;
         }
     }, []);
 
@@ -144,6 +163,43 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
     }, [handleSelectDestino]);
 
     const handleMapClick = useCallback((e) => {
+        if (!mapRef.current) return;
+        const map = mapRef.current.getMap();
+        const existingLayers = CUSTOM_LAYERS.filter(id => map.getLayer(id));
+        if (existingLayers.length === 0) {
+            setSelectedFeature(null);
+            if (onMapClick) onMapClick(e.lngLat);
+            return;
+        }
+        const features = map.queryRenderedFeatures(e.point, { layers: existingLayers });
+        if (features.length > 0) {
+            const f = features[0];
+            const lid = f.layer.id;
+            const coords = f.geometry.type === "Point"
+                ? f.geometry.coordinates
+                : f.geometry.type === "LineString"
+                    ? (() => {
+                        const pts = f.geometry.coordinates;
+                        const s = pts.reduce((a, c) => [a[0] + c[0], a[1] + c[1]], [0, 0]);
+                        return [s[0] / pts.length, s[1] / pts.length];
+                    })()
+                    : (() => {
+                        const ring = f.geometry.coordinates[0];
+                        const s = ring.reduce((a, c) => [a[0] + c[0], a[1] + c[1]], [0, 0]);
+                        return [s[0] / ring.length, s[1] / ring.length];
+                    })();
+            let type = "desconocido";
+            if (lid.startsWith("reportes")) type = "reporte";
+            else if (lid.startsWith("alertas")) type = "alerta";
+            else if (lid.startsWith("favoritos")) type = "favorito";
+            else if (lid.startsWith("paradas")) type = "parada";
+            else if (lid.startsWith("lineas")) type = "linea";
+            else if (lid.startsWith("sos")) type = "sos";
+            else if (lid.startsWith("zonas")) type = "zona";
+            setSelectedFeature({ type, properties: f.properties, coordinates: coords });
+            return;
+        }
+        setSelectedFeature(null);
         if (onMapClick) onMapClick(e.lngLat);
     }, [onMapClick]);
 
@@ -159,6 +215,14 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
                 showRadar={layers.showRadar} setShowRadar={layers.setShowRadar}
                 following={following} handleRecenter={handleRecenter}
             />
+
+                        <button
+                className={`btn ${voiceActive ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setVoiceActive(v => !v)}
+                title="Navegación por voz"
+            >
+                🔊
+            </button>
 
             <Map
                 ref={mapRef}
@@ -215,66 +279,204 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
 
                 {reportes.data && (
                     <Source id="reportes" type="geojson" data={reportes.data}>
+                        <Layer id="reportes-glow" type="circle"
+                            paint={{
+                                "circle-radius": 22,
+                                "circle-color": ["get", "color"],
+                                "circle-opacity": 0.5,
+                                "circle-blur": 1,
+                            }} />
                         <Layer id="reportes-circle" type="circle"
                             paint={{
-                                "circle-radius": 5,
+                                "circle-radius": 12,
                                 "circle-color": ["get", "color"],
-                                "circle-stroke-width": 1.5,
+                                "circle-opacity": 1,
+                                "circle-stroke-width": 3,
                                 "circle-stroke-color": "#fff",
-                                "circle-stroke-opacity": 0.6,
                             }} />
                     </Source>
                 )}
 
                 {alertas.data && (
                     <Source id="alertas" type="geojson" data={alertas.data}>
-                        <Layer id="alertas-circle" type="circle"
+                        <Layer id="alertas-glow" type="circle"
                             paint={{
-                                "circle-radius": 6,
+                                "circle-radius": 30,
                                 "circle-color": ["match", ["get", "nivel"], "CRITICO", "#ff1744", "ALTO", "#ffab00", "MEDIO", "#2979ff", "#00c853"],
-                                "circle-stroke-width": 1.5,
-                                "circle-stroke-color": "#fff",
-                                "circle-opacity": 0.85,
+                                "circle-opacity": 0.5,
+                                "circle-blur": 1,
                             }} />
+                        <Layer id="alertas-bg" type="circle"
+                            paint={{
+                                "circle-radius": 20,
+                                "circle-color": ["match", ["get", "nivel"], "CRITICO", "#ff1744", "ALTO", "#ffab00", "MEDIO", "#2979ff", "#00c853"],
+                                "circle-opacity": 1,
+                                "circle-stroke-width": 3,
+                                "circle-stroke-color": "#fff",
+                            }} />
+                        <Layer id="alertas-icon" type="symbol"
+                            layout={{ "text-field": "!", "text-size": 20 }}
+                            paint={{ "text-color": "#fff" }} />
                     </Source>
                 )}
 
-                {sos.data && (
-                    <Source id="sos" type="geojson" data={sos.data}>
-                        <Layer id="sos-circle" type="circle"
-                            paint={{
-                                "circle-radius": 7,
-                                "circle-color": "#d500f9",
-                                "circle-stroke-width": 2,
-                                "circle-stroke-color": "#fff",
-                                "circle-opacity": 0.9,
-                            }} />
-                    </Source>
-                )}
+                {sos.data && sos.data.features.map(f => (
+                    <Marker
+                        key={f.properties.id}
+                        longitude={f.geometry.coordinates[0]}
+                        latitude={f.geometry.coordinates[1]}
+                        anchor="center"
+                    >
+                        <div
+                            className="sos-map-marker"
+                            onClick={() => setSelectedFeature({
+                                type: "sos",
+                                properties: f.properties,
+                                coordinates: f.geometry.coordinates,
+                            })}
+                        >
+                            <div className="sos-map-pulse"></div>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff1744" strokeWidth="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                        </div>
+                    </Marker>
+                ))}
 
                 {favoritos.data && (
                     <Source id="favoritos" type="geojson" data={favoritos.data}>
-                        <Layer id="favoritos-circle" type="circle"
-                            paint={{
-                                "circle-radius": 5,
-                                "circle-color": "#ffab00",
-                                "circle-stroke-width": 1,
-                                "circle-stroke-color": "#fff",
-                            }} />
+                        <Layer id="favoritos-icon" type="symbol"
+                            layout={{ "text-field": "⭐", "text-size": 28 }}
+                            paint={{ "text-color": "#f58220", "text-halo-color": "#fff", "text-halo-width": 3 }} />
                     </Source>
                 )}
 
                 {paradas.data && (
                     <Source id="paradas" type="geojson" data={paradas.data}>
+                        <Layer id="lineas-bg" type="line"
+                            paint={{
+                                "line-color": "#000",
+                                "line-width": 8,
+                                "line-opacity": 0.25,
+                                "line-blur": 3,
+                            }} />
+                        <Layer id="lineas-fg" type="line"
+                            paint={{
+                                "line-color": ["get", "color"],
+                                "line-width": 4,
+                                "line-opacity": 0.8,
+                            }} />
+                        <Layer id="paradas-glow" type="circle"
+                            paint={{
+                                "circle-radius": 18,
+                                "circle-color": ["get", "color"],
+                                "circle-opacity": 0.4,
+                                "circle-blur": 1,
+                            }} />
+                        <Layer id="paradas-bg" type="circle"
+                            paint={{
+                                "circle-radius": 12,
+                                "circle-color": "#fff",
+                                "circle-opacity": 1,
+                            }} />
                         <Layer id="paradas-circle" type="circle"
+                            paint={{
+                                "circle-radius": 6,
+                                "circle-color": "transparent",
+                                "circle-stroke-width": 4,
+                                "circle-stroke-color": ["get", "color"],
+                                "circle-opacity": 1,
+                            }} />
+                        <Layer id="paradas-dot" type="circle"
                             paint={{
                                 "circle-radius": 4,
                                 "circle-color": ["get", "color"],
-                                "circle-stroke-width": 1,
-                                "circle-stroke-color": "#fff",
-                                "circle-stroke-opacity": 0.5,
+                                "circle-opacity": 1,
                             }} />
                     </Source>
+                )}
+
+                {selectedFeature && (
+                    <Popup
+                        longitude={selectedFeature.coordinates[0]}
+                        latitude={selectedFeature.coordinates[1]}
+                        onClose={() => setSelectedFeature(null)}
+                        closeButton={true}
+                        anchor="bottom"
+                        offset={10}
+                    >
+                        <div className="map-popup">
+                            {selectedFeature.type === "reporte" && (
+                                <>
+                                    <div className="map-popup__title">{(selectedFeature.properties.tipo || "").replace(/_/g, " ")}</div>
+                                    <div className="map-popup__body">
+                                        {selectedFeature.properties.descripcion && <div style={{ marginBottom: 4 }}>{selectedFeature.properties.descripcion}</div>}
+                                        {selectedFeature.properties.ubicacion_texto && <div style={{ fontSize: 11, opacity: 0.7 }}>{selectedFeature.properties.ubicacion_texto}</div>}
+                                        <div style={{ fontSize: 11, marginTop: 4 }}>👍{selectedFeature.properties.votos_positivos} 👎{selectedFeature.properties.votos_negativos}</div>
+                                        {selectedFeature.properties.creado && <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>{new Date(selectedFeature.properties.creado).toLocaleString()}</div>}
+                                    </div>
+                                </>
+                            )}
+                            {selectedFeature.type === "alerta" && (
+                                <>
+                                    <div className="map-popup__title">⚠️ {selectedFeature.properties.nivel}</div>
+                                    <div className="map-popup__body">
+                                        <div style={{ marginBottom: 4 }}>{selectedFeature.properties.mensaje}</div>
+                                        {(selectedFeature.properties.zona_nombre || selectedFeature.properties.comuna) && (
+                                            <div style={{ fontSize: 11, opacity: 0.7 }}>
+                                                {selectedFeature.properties.zona_nombre}{selectedFeature.properties.zona_nombre && selectedFeature.properties.comuna ? " · " : ""}{selectedFeature.properties.comuna}
+                                            </div>
+                                        )}
+                                        {selectedFeature.properties.creado && <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>{new Date(selectedFeature.properties.creado).toLocaleString()}</div>}
+                                    </div>
+                                </>
+                            )}
+                            {selectedFeature.type === "zona" && (
+                                <>
+                                    <div className="map-popup__title">{selectedFeature.properties.nombre}</div>
+                                    <div className="map-popup__body">
+                                        <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 4 }}>{selectedFeature.properties.nivel} · {selectedFeature.properties.tipo_riesgo}</div>
+                                        {selectedFeature.properties.comuna && <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4 }}>{selectedFeature.properties.comuna}</div>}
+                                        {selectedFeature.properties.descripcion && <div>{selectedFeature.properties.descripcion}</div>}
+                                        {selectedFeature.properties.radio_metros > 0 && <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>Radio: {selectedFeature.properties.radio_metros}m</div>}
+                                    </div>
+                                </>
+                            )}
+                            {selectedFeature.type === "favorito" && (
+                                <>
+                                    <div className="map-popup__title">{selectedFeature.properties.nombre}</div>
+                                    {selectedFeature.properties.direccion && <div className="map-popup__body">{selectedFeature.properties.direccion}</div>}
+                                </>
+                            )}
+                            {selectedFeature.type === "parada" && (
+                                <>
+                                    <div className="map-popup__title">{selectedFeature.properties.nombre}</div>
+                                    <div className="map-popup__body">
+                                        <div style={{ fontSize: 11, opacity: 0.7 }}>{selectedFeature.properties.linea}{selectedFeature.properties.orden > 0 ? ` · Parada #${selectedFeature.properties.orden}` : ""}</div>
+                                    </div>
+                                </>
+                            )}
+                            {selectedFeature.type === "linea" && (
+                                <>
+                                    <div className="map-popup__title">{selectedFeature.properties.linea}</div>
+                                    <div className="map-popup__body">
+                                        <div style={{ fontSize: 11, opacity: 0.7 }}>Línea de transporte</div>
+                                    </div>
+                                </>
+                            )}
+                            {selectedFeature.type === "sos" && (
+                                <>
+                                    <div className="map-popup__title">🆘 SOS</div>
+                                    <div className="map-popup__body">
+                                        <div style={{ fontSize: 11, opacity: 0.7 }}>{selectedFeature.properties.nombre_completo}</div>
+                                        {selectedFeature.properties.creado && <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>{new Date(selectedFeature.properties.creado).toLocaleString()}</div>}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </Popup>
                 )}
 
                 {ubicacion && (

@@ -1,26 +1,21 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
 import { useToast } from '../contexts/ToastContext'
-import Loading from '../components/common/Loading'
+import usePageData from '../hooks/usePageData'
 import { Phone, Mail, User, Trash, AlertCircle } from '../icons'
 
 export default function Contactos() {
-  const [contactos, setContactos] = useState([])
+  const { data: contactos, loading, error, load } = usePageData(() => api.get('/api/v1/contactos-emergencia'))
   const [sosActivo, setSosActivo] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ nombre: '', telefono: '', email: '' })
   const { success, error: showError } = useToast()
 
-  const load = () => {
-    api.get('/api/v1/contactos-emergencia')
-      .then(r => setContactos(r.data || []))
-      .catch(() => showError('Error al cargar contactos'))
-      .finally(() => setLoading(false))
-    api.get('/api/v1/sos').catch(() => {})
-  }
+  useEffect(() => { if (error) showError('Error al cargar contactos') }, [error])
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    api.get('/api/v1/sos').then(r => r.data?.activo && setSosActivo(r.data)).catch(() => { })
+  }, [])
 
   const handleCreate = async (e) => {
     e.preventDefault()
@@ -62,8 +57,6 @@ export default function Contactos() {
     } catch { showError('Error al cerrar SOS') }
   }
 
-  if (loading) return <Loading />
-
   return (
     <div className="page">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -86,7 +79,7 @@ export default function Contactos() {
         )}
       </div>
 
-      {contactos.length === 0 ? (
+      {(contactos ?? []).length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon">{Phone}</div>
           <div className="empty-state-text">No tienes contactos de emergencia</div>

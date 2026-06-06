@@ -72,9 +72,7 @@ export default function SOSButton() {
         setTiempo(t => t + 1)
       }, 1000)
 
-      if ('vibrate' in navigator) {
-        navigator.vibrate([200, 100, 200])
-      }
+
 
       if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission()
@@ -136,6 +134,7 @@ export default function SOSButton() {
         const email = u.email || ''
         const telefono = u.telefono || ''
         const info = [nombre, email, telefono].filter(Boolean).join(' · ')
+        try { if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]) } catch {}
         success(`🚨 SOS activado — ${info || 'contactos notificados'}`)
         break
       } catch (err) {

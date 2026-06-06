@@ -96,10 +96,10 @@ Proporcionar a ciudadanos, conductores y autoridades una herramienta integral pa
 
 ### Requisitos
 - Python 3.12+
-- MySQL 8.0+ (o usar SQLite por defecto)
-- Node.js (opcional)
+- Node.js 18+
+- SQLite (por defecto) o MySQL 8.0+
 
-### Paso a paso
+### Método recomendado (npm)
 
 ```bash
 # 1. Clonar el repositorio
@@ -109,30 +109,48 @@ cd hackaton
 # 2. Configurar variables de entorno
 cp .env.example .env
 
-# 3. Instalar dependencias
-cd backend
-pip install -r requirements.txt
+# 3. Instalar todo (backend + frontend) y migrar la base de datos
+npm install        # instala concurrently
+npm run setup      # instala dependencias, migra y puebla la BD
 
-# 4. Ejecutar migraciones
-py manage.py migrate
-
-# 5. Poblar base de datos con datos de Medellín
-py seed.py
-
-# 6. Iniciar servidor
-py -m uvicorn api.main:app --host 0.0.0.0 --port 8000
+# 4. Levantar backend y frontend simultáneamente
+npm run dev
 ```
 
 ### Acceso
-- **Frontend:** http://localhost:8000/
-- **API Docs (Swagger):** http://localhost:8000/docs
-- **Admin Django:** http://localhost:8000/admin/
+- **Frontend:** http://localhost:5173/
+- **Backend API:** http://localhost:8001/
+- **API Docs (Swagger):** http://localhost:8001/docs
+- **Admin Django:** http://localhost:8001/admin/
 
-### Usuarios por defecto
-| Usuario | Contraseña | Rol |
-|---------|-----------|-----|
-| `admin` | `admin123` | Superusuario |
-| `demo` | `demo123` | Usuario demo |
+### Comandos disponibles
+
+| Comando | Descripción |
+|---------|-------------|
+| `npm run i` | Instala dependencias de backend y frontend |
+| `npm run migrate` | Ejecuta migraciones de Django |
+| `npm run seed` | Puebla la BD con datos de Medellín |
+| `npm run setup` | Todo lo anterior en un solo paso |
+| `npm run dev` | Levanta backend y frontend simultáneamente |
+| `npm run build` | Compila el frontend para producción |
+
+### Método manual (sin npm)
+
+```bash
+# Backend
+cd backend
+python -m venv venv
+venv\Scripts\activate        # Windows
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py seed
+uvicorn api.main:app --reload --port 8001
+
+# Frontend (en otra terminal)
+cd frontend
+npm install
+npm run dev
+```
 
 ### Con Docker
 
@@ -140,7 +158,11 @@ py -m uvicorn api.main:app --host 0.0.0.0 --port 8000
 docker-compose up --build
 ```
 
----
+### Usuarios por defecto
+| Usuario | Contraseña | Rol |
+|---------|-----------|-----|
+| `admin` | `admin123` | Superusuario |
+| `demo` | `demo123` | Usuario demo |
 
 ## 🧪 Pruebas
 

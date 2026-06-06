@@ -43,8 +43,8 @@ export default function RainLayer({ visible }) {
             const map = getMapInstance();
             if (!map) return;
             try {
-                if (map.getLayer("rain-layer")) map.removeLayer("rain-layer");
-                if (map.getSource("rain")) map.removeSource("rain");
+                if (typeof map.getLayer === 'function' && map.getLayer("rain-layer")) map.removeLayer("rain-layer");
+                if (typeof map.getSource === 'function' && map.getSource("rain")) map.removeSource("rain");
             } catch (err) { console.warn(err); }
         };
     }, [visible, mapRef]);

@@ -1,27 +1,17 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
-import { useToast } from '../contexts/ToastContext'
-import Loading from '../components/common/Loading'
+import usePageData from '../hooks/usePageData'
 import { Warning as WarningIcon, MapPin, Search, Circle } from '../icons'
 
 export default function Zonas() {
-  const [zonas, setZonas] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { data: zonas, loading, error } = usePageData(() => api.get('/api/v1/zonas-riesgo'))
   const [filter, setFilter] = useState('')
-  const { error: showError } = useToast()
 
-  useEffect(() => {
-    api.get('/api/v1/zonas-riesgo')
-      .then(r => setZonas(r.data || []))
-      .catch(() => showError('Error al cargar zonas'))
-      .finally(() => setLoading(false))
-  }, [])
+  useEffect(() => { if (error) console.error('Error al cargar zonas', error) }, [error])
 
-  const filtered = zonas.filter(z =>
+  const filtered = (zonas ?? []).filter(z =>
     !filter || z.nombre.toLowerCase().includes(filter.toLowerCase()) || z.comuna?.toLowerCase().includes(filter.toLowerCase())
   )
-
-  if (loading) return <Loading />
 
   return (
     <div className="page">

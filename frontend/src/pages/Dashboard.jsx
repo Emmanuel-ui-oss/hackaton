@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import api from '../services/api'
+import usePageData from '../hooks/usePageData'
 import { useSocket } from '../contexts/SocketContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
@@ -51,10 +52,9 @@ const CARD_CONFIG = [
 ]
 
 export default function Dashboard() {
-  const [stats, setStats] = useState(null)
+  const { data: stats, loading, setData } = usePageData(() => api.get('/api/v1/stats'))
   const [weather, setWeather] = useState(null)
   const [ticker, setTicker] = useState([])
-  const [loading, setLoading] = useState(true)
   const [reportHistory, setReportHistory] = useState([])
   const [zoneHistory, setZoneHistory] = useState([])
   const [forecast, setForecast] = useState([])
@@ -65,67 +65,15 @@ export default function Dashboard() {
   const { error: showError } = useToast()
   const navigate = useNavigate()
 
-  const load = useCallback(async () => {
-    try {
-      const [statsRes, weatherRes] = await Promise.all([
-        api.get('/api/v1/stats'),
-        api.get('/api/v1/weather').catch(() => null),
-      ])
-      const data = statsRes.data
-      setStats(data)
-      setWeather(weatherRes?.data)
-      setLastUpdate(new Date())
-      if (data.zonas_por_nivel) {
-        setZoneHistory([{ CRITICO: 0, ALTO: 0, MEDIO: 0, BAJO: 0, ...data.zonas_por_nivel }])
-      }
-      if (data.reportes_por_tipo) {
-        setReportHistory([{ ...data.reportes_por_tipo }])
-      }
-    } catch { showError('Error al cargar datos') }
-    finally { setLoading(false) }
+  useEffect(() => {
+    api.get('/api/v1/weather').then(r => setWeather(r.data)).catch(() => {})
   }, [])
-
-  useEffect(() => { load() }, [load])
 
   useEffect(() => {
     api.get('/api/v1/predict/congestion/forecast')
       .then(res => setForecast(res.data.forecast || []))
       .catch(() => {})
   }, [])
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      api.get('/api/v1/stats').then(r => {
-        const data = r.data
-        setStats(data)
-        setLastUpdate(new Date())
-        if (data.zonas_por_nivel) {
-          setZoneHistory(prev => prev.length > 0
-            ? [...prev, { CRITICO: 0, ALTO: 0, MEDIO: 0, BAJO: 0, ...data.zonas_por_nivel }].slice(-20)
-            : [{ ...data.zonas_por_nivel }]
-          )
-        }
-        if (data.reportes_por_tipo) {
-          setReportHistory(prev => prev.length > 0
-            ? [...prev, { ...data.reportes_por_tipo }].slice(-20)
-            : [{ ...data.reportes_por_tipo }]
-          )
-        }
-      }).catch(() => {})
-      api.get('/api/v1/predict/congestion/forecast')
-        .then(r => setForecast(r.data.forecast || []))
-        .catch(() => {})
-    }, 30000)
-    return () => clearInterval(id)
-  }, [])
-
-
-
-  const getVal = (s, cfg) => {
-    let v = s?.[cfg.key]
-    if (v === undefined && cfg.altKey) v = s?.[cfg.altKey]
-    return v ?? 0
-  }
 
   useEffect(() => {
     if (!socketStats || !stats) return
@@ -144,7 +92,7 @@ export default function Dashboard() {
         ...t,
       ].slice(0, 30))
     }
-    setStats(prev => prev ? { ...prev, ...socketStats } : socketStats)
+    setData(prev => prev ? { ...prev, ...socketStats } : socketStats)
     setLastUpdate(new Date())
 
     if (socketStats.reportes_por_tipo) {
@@ -154,6 +102,12 @@ export default function Dashboard() {
       setZoneHistory(prev => [...prev, { CRITICO: 0, ALTO: 0, MEDIO: 0, BAJO: 0, ...socketStats.zonas_por_nivel }].slice(-20))
     }
   }, [socketStats])
+
+  const getVal = (s, cfg) => {
+    let v = s?.[cfg.key]
+    if (v === undefined && cfg.altKey) v = s?.[cfg.altKey]
+    return v ?? 0
+  }
 
   const s = stats || {}
 
@@ -236,15 +190,6 @@ export default function Dashboard() {
   const lastUpdateStr = lastUpdate
     ? `Hace ${Math.floor((Date.now() - lastUpdate.getTime()) / 1000)}s`
     : '...'
-
-  if (loading) {
-    return (
-      <div className="dash-loading">
-        <div className="dash-loading-spinner" />
-        <span>Cargando dashboard...</span>
-      </div>
-    )
-  }
 
   return (
     <div className="dash-vision">

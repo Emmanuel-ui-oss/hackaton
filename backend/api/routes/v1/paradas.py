@@ -20,6 +20,8 @@ def list_paradas(user=Depends(get_current_user)):
             "linea_nombre": p.linea.nombre,
             "linea_codigo": p.linea.codigo,
             "linea_color": p.linea.color,
+            "linea_tipo": p.linea.tipo,
+            "linea_ruta_geojson": p.linea.ruta_geojson,
         }
         for p in qs
     ]

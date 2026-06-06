@@ -1,19 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import api from '../services/api'
-import Loading from '../components/common/Loading'
+import usePageData from '../hooks/usePageData'
 import { Train, Bus, CableCar } from '../icons'
 
 export default function Transporte() {
-  const [lineas, setLineas] = useState([])
+  const { data: lineas, loading } = usePageData(() => api.get('/api/v1/lineas-transporte'))
   const [selected, setSelected] = useState(null)
   const [paradas, setParadas] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    api.get('/api/v1/lineas-transporte')
-      .then(r => setLineas(r.data || []))
-      .finally(() => setLoading(false))
-  }, [])
 
   const selectLinea = async (l) => {
     setSelected(l)
@@ -23,9 +16,7 @@ export default function Transporte() {
     } catch { setParadas([]) }
   }
 
-  if (loading) return <Loading />
-
-  const tipos = [...new Set(lineas.map(l => l.tipo))]
+  const tipos = [...new Set((lineas ?? []).map(l => l.tipo))]
 
   return (
     <div className="page">
@@ -41,7 +32,7 @@ export default function Transporte() {
               {t === 'METRO' ? <span style={{ color: 'var(--neon-cyan)' }}>{Train}</span> : t === 'METROPLUS' ? <span style={{ color: 'var(--neon-green)' }}>{Bus}</span> : t === 'TRANVIA' ? <span style={{ color: 'var(--neon-purple)' }}>{Train}</span> : t === 'CABLE' ? <span style={{ color: 'var(--neon-amber)' }}>{CableCar}</span> : <span style={{ color: 'var(--text-secondary)' }}>{Bus}</span>}
             </div>
             <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>{t}</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{lineas.filter(l => l.tipo === t).length} líneas</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{(lineas ?? []).filter(l => l.tipo === t).length} líneas</div>
           </div>
         ))}
       </div>
@@ -50,7 +41,7 @@ export default function Transporte() {
         <div>
           <h3 style={{ marginBottom: 12, color: 'var(--text)' }}>Líneas</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {lineas.map(l => (
+            {(lineas ?? []).map(l => (
               <div
                 key={l.id}
                 className="card"

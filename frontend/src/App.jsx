@@ -1,30 +1,33 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import Layout from './components/layout/Layout'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import AdminRoute from './components/common/AdminRoute'
-import Landing from './pages/Landing'
+import ErrorBoundary from './components/common/ErrorBoundary'
+import Loading from './components/common/Loading'
 
-import Dashboard from './pages/Dashboard'
-import Mapa from './pages/Mapa'
-import Zonas from './pages/Zonas'
-import Reportes from './pages/Reportes'
-import Transporte from './pages/Transporte'
-import Alertas from './pages/Alertas'
-import Favoritos from './pages/Favoritos'
-import Contactos from './pages/Contactos'
-import Historial from './pages/Historial'
-import Perfil from './pages/Perfil'
-import PlanificarRuta from './pages/PlanificarRuta'
-import Trafico from './pages/Trafico'
-import Riesgos from './pages/Riesgos'
-import Admin from './pages/Admin'
+const Landing    = lazy(() => import('./pages/Landing'))
+const Dashboard  = lazy(() => import('./pages/Dashboard'))
+const Mapa       = lazy(() => import('./pages/Mapa'))
+const Zonas      = lazy(() => import('./pages/Zonas'))
+const Reportes   = lazy(() => import('./pages/Reportes'))
+const Transporte = lazy(() => import('./pages/Transporte'))
+const Alertas    = lazy(() => import('./pages/Alertas'))
+const Favoritos  = lazy(() => import('./pages/Favoritos'))
+const Contactos  = lazy(() => import('./pages/Contactos'))
+const Historial  = lazy(() => import('./pages/Historial'))
+const Perfil     = lazy(() => import('./pages/Perfil'))
+const Riesgos    = lazy(() => import('./pages/Riesgos'))
+const Admin      = lazy(() => import('./pages/Admin'))
 
 export default function App() {
   const location = useLocation()
 
   return (
     <AnimatePresence mode="wait">
+      <ErrorBoundary>
+      <Suspense fallback={null}>
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Landing />} />
 
@@ -40,14 +43,14 @@ export default function App() {
           <Route path="/contactos" element={<Contactos />} />
           <Route path="/historial" element={<Historial />} />
           <Route path="/perfil" element={<Perfil />} />
-          <Route path="/planificar-ruta" element={<Navigate to="/mapa?mode=route" replace />} />
-          <Route path="/trafico" element={<Navigate to="/mapa?mode=traffic" replace />} />
           <Route path="/riesgos" element={<Riesgos />} />
           <Route element={<AdminRoute />}>
             <Route path="/admin" element={<Admin />} />
           </Route>
         </Route>
       </Routes>
+      </Suspense>
+      </ErrorBoundary>
     </AnimatePresence>
   )
 }

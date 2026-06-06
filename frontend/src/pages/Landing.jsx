@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import LoginDropdown from '../components/common/LoginDropdown'
 import MapBackground from '../components/common/MapBackground'
@@ -158,8 +158,7 @@ export default function Landing() {
   }, [splash])
 
   if (user) {
-    navigate('/dashboard', { replace: true })
-    return null
+    return <Navigate to="/dashboard" replace />
   }
 
   if (splash) return <SplashMap />

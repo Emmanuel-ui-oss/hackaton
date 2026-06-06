@@ -55,15 +55,21 @@
 }
 
 .User {
-    background: #4aa3ff;
+    background: #2979ff;
     border: 3px solid white;
-    box-shadow: 0 0 10px rgba(74, 163, 255, 0.8);
+    box-shadow: 0 0 0 2px rgba(41, 121, 255, 0.3);
+    animation: user-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes user-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
 }
 
 .Destiny {
-    background: red;
+    background: #ff1744;
     border: 3px solid white;
-    box-shadow: 0 0 12px rgba(255, 0, 0, 0.6);
+    box-shadow: 0 0 12px rgba(255, 23, 68, 0.6);
 }
 
 .map-controls {
@@ -152,6 +158,29 @@
 
 .maplibregl-popup-tip {
     display: none !important;
+}
+
+.sos-map-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    position: relative;
+    cursor: pointer;
+}
+
+.sos-map-pulse {
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 23, 68, 0.4);
+    animation: sosMapRipple 1.5s infinite;
+}
+
+@keyframes sosMapRipple {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(2); opacity: 0; }
 }
 
 .map-ctrl-btn--active {

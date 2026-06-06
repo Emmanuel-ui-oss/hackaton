@@ -345,7 +345,8 @@ def list_lineas(tipo: str = None):
         qs = qs.filter(tipo=tipo)
     return [
         {"id": l.id, "nombre": l.nombre, "tipo": l.tipo,
-         "codigo": l.codigo, "color": l.color, "descripcion": l.descripcion}
+         "codigo": l.codigo, "color": l.color, "descripcion": l.descripcion,
+         "ruta_geojson": l.ruta_geojson}
         for l in qs
     ]
 

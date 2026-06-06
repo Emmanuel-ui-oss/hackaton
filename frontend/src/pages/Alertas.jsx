@@ -1,23 +1,16 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
 import { useToast } from '../contexts/ToastContext'
-import Loading from '../components/common/Loading'
+import usePageData from '../hooks/usePageData'
 import { Bell, MapPin, Check } from '../icons'
 
 export default function Alertas() {
-  const [alertas, setAlertas] = useState([])
-  const [loading, setLoading] = useState(true)
   const [noLeidas, setNoLeidas] = useState(false)
   const { success, error: showError } = useToast()
-
-  const load = () => {
-    const url = noLeidas ? '/api/v1/alertas?no_leidas=true' : '/api/v1/alertas'
-    api.get(url)
-      .then(r => setAlertas(r.data || []))
-      .catch(() => showError('Error al cargar alertas'))
-      .finally(() => setLoading(false))
-  }
-
+  const { data: alertas, loading, error, load } = usePageData(
+    () => api.get(noLeidas ? '/api/v1/alertas?no_leidas=true' : '/api/v1/alertas')
+  )
+  useEffect(() => { if (error) console.error('Error al cargar alertas', error) }, [error])
   useEffect(() => { load() }, [noLeidas])
 
   const markRead = async (id) => {
@@ -27,8 +20,6 @@ export default function Alertas() {
       load()
     } catch { showError('Error al marcar alerta') }
   }
-
-  if (loading) return <Loading />
 
   return (
     <div className="page">
@@ -42,7 +33,7 @@ export default function Alertas() {
         <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Solo no leídas</span>
       </label>
 
-      {alertas.length === 0 ? (
+      {(alertas ?? []).length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon">{Bell}</div>
           <div className="empty-state-text">No hay alertas</div>

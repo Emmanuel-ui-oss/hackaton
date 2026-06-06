@@ -21,9 +21,7 @@ const ICONS = {
 const mainNav = [
   { to: '/dashboard', icon: ICONS.dashboard, label: 'Dashboard' },
   { to: '/mapa', icon: ICONS.mapa, label: 'Mapa' },
-  { to: '/trafico', icon: ICONS.trafico, label: 'Tráfico' },
   { to: '/riesgos', icon: ICONS.riesgos, label: 'Riesgos' },
-  { to: '/planificar-ruta', icon: ICONS.rutas, label: 'Rutas' },
   { to: '/zonas', icon: ICONS.zonas, label: 'Zonas' },
   { to: '/reportes', icon: ICONS.reportes, label: 'Reportes' },
   { to: '/transporte', icon: ICONS.transporte, label: 'Transporte' },

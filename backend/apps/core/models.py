@@ -244,6 +244,7 @@ class LineaTransporte(models.Model):
     color = models.CharField(max_length=7, default="#666666")
     descripcion = models.TextField(blank=True)
     activo = models.BooleanField(default=True)
+    ruta_geojson = models.TextField(blank=True, null=True)
 
     class Meta:
         verbose_name_plural = "Líneas de Transporte"

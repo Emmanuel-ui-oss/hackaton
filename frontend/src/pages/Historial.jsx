@@ -1,22 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import api from '../services/api'
-import { useToast } from '../contexts/ToastContext'
-import Loading from '../components/common/Loading'
+import usePageData from '../hooks/usePageData'
 import { Clock } from '../icons'
 
 export default function Historial() {
-  const [viajes, setViajes] = useState([])
-  const [loading, setLoading] = useState(true)
-  const { error: showError } = useToast()
+  const { data: viajes, loading, error } = usePageData(() => api.get('/api/v1/historial-viajes'))
+  useEffect(() => { if (error) console.error('Error al cargar historial', error) }, [error])
 
-  useEffect(() => {
-    api.get('/api/v1/historial-viajes')
-      .then(r => setViajes(r.data || []))
-      .catch(() => showError('Error al cargar historial'))
-      .finally(() => setLoading(false))
-  }, [])
-
-  if (loading) return <Loading />
+  if (loading) return (
+    <div className="page">
+      <div className="empty-state">
+        <div className="empty-state-icon">{Clock}</div>
+        <div className="empty-state-text">Cargando historial...</div>
+      </div>
+    </div>
+  )
 
   return (
     <div className="page">
@@ -25,7 +23,7 @@ export default function Historial() {
         <p className="page-subtitle">Tus rutas y desplazamientos anteriores</p>
       </div>
 
-      {viajes.length === 0 ? (
+      {(viajes ?? []).length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon">{Clock}</div>
           <div className="empty-state-text">No hay viajes registrados</div>

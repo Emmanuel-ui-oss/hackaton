@@ -1,34 +1,21 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import api from '../services/api'
 import { useToast } from '../contexts/ToastContext'
-import Loading from '../components/common/Loading'
+import usePageData from '../hooks/usePageData'
 import { Settings as SettingsIcon } from '../icons'
 
 export default function Admin() {
   const [tab, setTab] = useState('zonas')
-  const [zonas, setZonas] = useState([])
-  const [reportes, setReportes] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { data: zonas, loading: loadingZ, load: loadZonas } = usePageData(
+    () => api.get('/api/v1/zonas-riesgo'),
+    tab === 'zonas'
+  )
+  const { data: reportes, loading: loadingR, load: loadReportes } = usePageData(
+    () => api.get('/api/v1/reportes'),
+    tab === 'reportes'
+  )
+  const loading = tab === 'zonas' ? loadingZ : loadingR
   const { success, error: showError } = useToast()
-
-  const loadZonas = () => {
-    api.get('/api/v1/zonas-riesgo')
-      .then(r => setZonas(r.data || []))
-      .catch(() => showError('Error al cargar zonas'))
-      .finally(() => setLoading(false))
-  }
-
-  const loadReportes = () => {
-    api.get('/api/v1/reportes')
-      .then(r => setReportes(r.data || []))
-      .catch(() => showError('Error al cargar reportes'))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => {
-    if (tab === 'zonas') loadZonas()
-    else loadReportes()
-  }, [tab])
 
   const toggleZona = async (zona) => {
     try {
@@ -54,8 +41,6 @@ export default function Admin() {
       loadReportes()
     } catch { showError('Error al eliminar reporte') }
   }
-
-  if (loading && zonas.length === 0 && reportes.length === 0) return <Loading />
 
   return (
     <div className="page">
@@ -83,7 +68,7 @@ export default function Admin() {
               </tr>
             </thead>
             <tbody>
-              {zonas.map(z => (
+              {(zonas ?? []).map(z => (
                 <tr key={z.id}>
                   <td style={{ fontWeight: 600 }}>{z.nombre}</td>
                   <td>{z.comuna}</td>
@@ -115,7 +100,7 @@ export default function Admin() {
               </tr>
             </thead>
             <tbody>
-              {reportes.map(r => (
+              {(reportes ?? []).map(r => (
                 <tr key={r.id}>
                   <td><span className="badge badge-info">{r.tipo}</span></td>
                   <td>{r.usuario_username}</td>

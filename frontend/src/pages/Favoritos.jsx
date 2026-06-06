@@ -1,24 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import api from '../services/api'
 import { useToast } from '../contexts/ToastContext'
-import Loading from '../components/common/Loading'
+import usePageData from '../hooks/usePageData'
 import { Star, Trash } from '../icons'
 
 export default function Favoritos() {
-  const [favs, setFavs] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { data: favs, loading, load } = usePageData(() => api.get('/api/v1/favoritos'))
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ nombre: '', direccion: '', latitud: 6.2442, longitud: -75.5812 })
   const { success, error: showError } = useToast()
-
-  const load = () => {
-    api.get('/api/v1/favoritos')
-      .then(r => setFavs(r.data || []))
-      .catch(() => showError('Error al cargar favoritos'))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => { load() }, [])
 
   const handleCreate = async (e) => {
     e.preventDefault()
@@ -40,8 +30,6 @@ export default function Favoritos() {
     } catch { showError('Error al eliminar') }
   }
 
-  if (loading) return <Loading />
-
   return (
     <div className="page">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -52,7 +40,7 @@ export default function Favoritos() {
         <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ Nuevo</button>
       </div>
 
-      {favs.length === 0 ? (
+      {(favs ?? []).length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon">{Star}</div>
           <div className="empty-state-text">No tienes favoritos guardados</div>

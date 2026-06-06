@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import api from '../services/api'
+import usePageData from '../hooks/usePageData'
 import { useSocket } from '../contexts/SocketContext'
 import { useToast } from '../contexts/ToastContext'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -48,10 +49,9 @@ const REPORT_TYPES = [
 
 export default function Mapa() {
   const [searchParams] = useSearchParams()
-  const [stats, setStats] = useState(null)
+  const { data: stats, loading, setData, load } = usePageData(() => api.get('/api/v1/stats'))
   const [weather, setWeather] = useState(null)
   const [ticker, setTicker] = useState([])
-  const [dataLoading, setDataLoading] = useState(true)
   const [events, setEvents] = useState([])
   const [userPos, setUserPos] = useState(null)
   const [showReportModal, setShowReportModal] = useState(false)
@@ -65,19 +65,9 @@ export default function Mapa() {
 
   const mode = searchParams.get('mode') || 'explore'
 
-  const loadStats = useCallback(async () => {
-    try {
-      const [statsRes, weatherRes] = await Promise.all([
-        api.get('/api/v1/stats'),
-        api.get('/api/v1/weather').catch(() => null),
-      ])
-      setStats(statsRes.data)
-      setWeather(weatherRes?.data)
-    } catch { showError('Error al cargar datos') }
-    finally { setDataLoading(false) }
+  useEffect(() => {
+    api.get('/api/v1/weather').then(r => setWeather(r.data)).catch(() => {})
   }, [])
-
-  useEffect(() => { loadStats() }, [loadStats])
 
   useEffect(() => {
     if (!socketStats || !stats) return
@@ -96,7 +86,7 @@ export default function Mapa() {
         ...t,
       ].slice(0, 30))
     }
-    setStats(prev => prev ? { ...prev, ...socketStats } : socketStats)
+    setData(prev => prev ? { ...prev, ...socketStats } : socketStats)
   }, [socketStats])
 
   useEffect(() => {
@@ -138,7 +128,7 @@ export default function Mapa() {
       })
       showInfo('Reporte enviado correctamente ✅')
       closeReportModal()
-      loadStats()
+      load()
     } catch {
       showError('Error al enviar reporte')
     } finally { setReportSubmitting(false) }
