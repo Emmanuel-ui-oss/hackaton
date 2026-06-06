@@ -35,3 +35,22 @@ async def proxy_geocode(q: str, limit: int = 10):
         for f in data.get("features", [])
     ]
     return {"features": features}
+
+
+@router.get("/proxy/reverse-geocode")
+async def proxy_reverse_geocode(lat: float, lng: float):
+    url = f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lng}&format=json&accept-language=es"
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(url, timeout=10, headers={"User-Agent": "VisionVial/1.0"})
+        if resp.status_code != 200:
+            return {"road": None}
+        data = resp.json()
+        road = (
+            data.get("address", {}).get("road")
+            or data.get("address", {}).get("street")
+            or data.get("address", {}).get("pedestrian")
+            or data.get("address", {}).get("path")
+            or data.get("address", {}).get("cycleway")
+            or (data.get("display_name", "").split(",")[0] if data.get("display_name") else None)
+        )
+        return {"road": road}

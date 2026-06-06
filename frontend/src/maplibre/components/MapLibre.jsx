@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Map, { Marker, Source, Layer, Popup } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -76,7 +76,7 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
     const [selectedFeature, setSelectedFeature] = useState(null);
     const mapRef = useRef(null);
 
-    const { ubicacion, cargando } = useLocation();
+    const { ubicacion, accuracy, cargando } = useLocation();
     const heading = useHeading();
 
     const layers = useMapLayers();
@@ -95,13 +95,26 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
     const paradas = useParadas(showParadas);
 
     const activeRoute = routeType === "fast" ? routeFast : routeSafe;
-    const routeCoords = activeRoute?.coordinates?.map(([lng, lat]) => [lat, lng]);
-    const { desviacion: nuevaDesviacion } = useRouteProgress(ubicacion, routeCoords);
+    const routeCoords = useMemo(
+        () => activeRoute?.coordinates?.map(([lng, lat]) => [lat, lng]),
+        [activeRoute]
+    );
+    const zonasData = useMemo(() => zonas.data, [zonas.data]);
+    const { desviacion: nuevaDesviacion } = useRouteProgress(ubicacion, routeCoords, accuracy);
     useEffect(() => { setDesviacion(nuevaDesviacion); }, [nuevaDesviacion]);
 
+    const reRuteando = useRef(false);
+    const ultimaReRuta = useRef(0);
     useEffect(() => {
-        if (!desviacion || !ubicacion || !destination) return;
-        fetchRoutes(destination);
+        if (!desviacion || !ubicacion || !destination || reRuteando.current) return;
+        const ahora = Date.now();
+        if (ahora - ultimaReRuta.current < 8000) return;
+        ultimaReRuta.current = ahora;
+        reRuteando.current = true;
+        setDesviacion(false);
+        fetchRoutes(destination).finally(() => {
+            setTimeout(() => { reRuteando.current = false; }, 5000);
+        });
     }, [desviacion]);
 
     useEffect(() => {
@@ -122,8 +135,9 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
     useVoiceNavigation({
         ubicacion,
         routeCoords,
-        zonasRiesgo: zonas.data,
+        zonasRiesgo: zonasData,
         activo: voiceActive && !!destination,
+        heading,
     })
 
     const toggles = { zonas: showZonas, reportes: showReportes, alertas: showAlertas, sos: showSos, favoritos: showFavoritos, paradas: showParadas };
@@ -217,7 +231,7 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
             />
 
                         <button
-                className={`btn ${voiceActive ? 'btn-primary' : 'btn-ghost'}`}
+                className={`voice-btn ${voiceActive ? 'voice-btn--on' : ''}`}
                 onClick={() => setVoiceActive(v => !v)}
                 title="Navegación por voz"
             >

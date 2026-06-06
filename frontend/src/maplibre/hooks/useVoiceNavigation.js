@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
+import reverseGeocode from '../utils/reverseGeocode'
 
 function distanciaMetros([lat1, lng1], [lat2, lng2]) {
     const R = 6371000
@@ -35,10 +36,48 @@ function interpretarGiro(angleDiff) {
     return 'gire fuertemente a la izquierda'
 }
 
-export default function useVoiceNavigation({ ubicacion, routeCoords, zonasRiesgo, activo }) {
+function cardinal(bearing) {
+    if (bearing >= 337.5 || bearing < 22.5) return 'norte'
+    if (bearing >= 22.5 && bearing < 67.5) return 'nororiente'
+    if (bearing >= 67.5 && bearing < 112.5) return 'oriente'
+    if (bearing >= 112.5 && bearing < 157.5) return 'suroriente'
+    if (bearing >= 157.5 && bearing < 202.5) return 'sur'
+    if (bearing >= 202.5 && bearing < 247.5) return 'suroccidente'
+    if (bearing >= 247.5 && bearing < 292.5) return 'occidente'
+    return 'noroccidente'
+}
+
+let streetCache = {}
+let cachePromise = null
+
+async function preloadStreetNames(routeCoords) {
+    if (!routeCoords?.length) return
+    const step = Math.max(1, Math.floor(routeCoords.length / 20))
+    const points = []
+    for (let i = 0; i < routeCoords.length; i += step) {
+        const [lat, lng] = routeCoords[i]
+        const key = `${lat.toFixed(5)},${lng.toFixed(5)}`
+        if (!streetCache[key]) points.push({ key, lat, lng })
+    }
+    await Promise.all(points.map(({ key, lat, lng }) =>
+        reverseGeocode(lat, lng).then(name => { streetCache[key] = name })
+    ))
+}
+
+async function getStreetName(lat, lng) {
+    const key = `${lat.toFixed(5)},${lng.toFixed(5)}`
+    if (streetCache[key]) return streetCache[key]
+    const name = await reverseGeocode(lat, lng)
+    streetCache[key] = name
+    return name
+}
+
+export default function useVoiceNavigation({ ubicacion, routeCoords, zonasRiesgo, activo, heading }) {
     const pasoAnunciadoRef = useRef(-1)
     const zonaAnunciadaRef = useRef(new Set())
     const iniciadoRef = useRef(false)
+    const activoAnteriorRef = useRef(false)
+    const cacheLoadedRef = useRef(false)
 
     const hablar = useCallback((texto, rate = 0.95) => {
         const synth = window.speechSynthesis
@@ -61,24 +100,45 @@ export default function useVoiceNavigation({ ubicacion, routeCoords, zonasRiesgo
 
     const cancelar = useCallback(() => {
         window.speechSynthesis?.cancel()
+        iniciadoRef.current = false
     }, [])
 
-    // Anunciar inicio de ruta
+    // Pre-cargar nombres de calles de la ruta
     useEffect(() => {
-        if (!activo || !routeCoords?.length) return
-        if (!iniciadoRef.current) {
+        if (!routeCoords?.length || cacheLoadedRef.current) return
+        cacheLoadedRef.current = true
+        streetCache = {}
+        preloadStreetNames(routeCoords)
+    }, [routeCoords])
+
+    // Anunciar inicio de ruta (solo cuando activo pasa de false → true)
+    useEffect(() => {
+        if (activo && !activoAnteriorRef.current && routeCoords?.length) {
             iniciadoRef.current = true
-            hablar('Ruta iniciada. Navegación por voz activada.')
+            let inicio = 'Ruta iniciada. Navegación por voz activada.'
+            if (heading !== undefined && heading !== null) {
+                inicio += ` Diríjase hacia el ${cardinal(heading)}.`
+            }
+            if (routeCoords.length > 1) {
+                const [lat, lng] = routeCoords[0]
+                getStreetName(lat, lng).then(nombre => {
+                    if (nombre) hablar(`${inicio} Siga por ${nombre}.`)
+                    else hablar(inicio)
+                })
+            } else {
+                hablar(inicio)
+            }
         }
-        return () => {
-            iniciadoRef.current = false
-            pasoAnunciadoRef.current = -1
-            zonaAnunciadaRef.current.clear()
-            window.speechSynthesis?.cancel()
-        }
+        activoAnteriorRef.current = activo
+
+        if (activo) return
+        pasoAnunciadoRef.current = -1
+        zonaAnunciadaRef.current.clear()
+        iniciadoRef.current = false
+        cacheLoadedRef.current = false
     }, [activo, routeCoords, hablar])
 
-    // Instrucciones de giro
+    // Instrucciones de giro con nombre de calle
     useEffect(() => {
         if (!activo || !ubicacion || !routeCoords?.length) return
 
@@ -93,7 +153,7 @@ export default function useVoiceNavigation({ ubicacion, routeCoords, zonasRiesgo
             const distAlPunto = distanciaMetros(ubicacion, routeCoords[i])
             if (distAlPunto > 250) break
             if (distAlPunto < 15) continue
-            if (pasoAnunciadoRef.current === i) break
+            if (pasoAnunciadoRef.current === i) continue
 
             const dirActual = calcularDireccion(routeCoords[i - 1], routeCoords[i])
             const dirSiguiente = calcularDireccion(routeCoords[i], routeCoords[i + 1])
@@ -102,13 +162,20 @@ export default function useVoiceNavigation({ ubicacion, routeCoords, zonasRiesgo
 
             const instruccion = interpretarGiro(dirSiguiente - dirActual)
             const metros = Math.round(distAlPunto)
-            pasoAnunciadoRef.current = i
 
-            if (metros > 80) {
-                hablar(`En ${metros} metros, ${instruccion}`)
-            } else {
-                hablar(`Ahora, ${instruccion}`)
-            }
+            const [lat, lng] = routeCoords[i + 1]
+            getStreetName(lat, lng).then(nombre => {
+                if (pasoAnunciadoRef.current >= i) return
+                pasoAnunciadoRef.current = i
+                const conDireccion = nombre
+                    ? `${instruccion} en ${nombre}`
+                    : instruccion
+                if (metros > 80) {
+                    hablar(`En ${metros} metros, ${conDireccion}.`)
+                } else {
+                    hablar(`Ahora, ${conDireccion}.`)
+                }
+            })
             break
         }
     }, [ubicacion, routeCoords, activo, hablar])

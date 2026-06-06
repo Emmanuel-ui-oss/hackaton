@@ -12,7 +12,7 @@ function haversine(a, b) {
     return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-const DEVIATION_THRESHOLD = 10;
+const DEVIATION_THRESHOLD = 12;
 const PERSISTENCE_COUNT = 3;
 
 export default function useRouteProgress(ubicacion, route, accuracy = 0) {
@@ -24,19 +24,22 @@ export default function useRouteProgress(ubicacion, route, accuracy = 0) {
         if (!ubicacion || !route || route.length < 2) return;
 
         let minDist = Infinity;
+        let minIndex = 0;
         for (let i = 0; i < route.length; i++) {
             const d = haversine(ubicacion, route[i]);
-            if (d < minDist) minDist = d;
+            if (d < minDist) { minDist = d; minIndex = i; }
         }
 
         setDistancia(Math.round(minDist));
 
-        const effectiveThreshold = Math.max(DEVIATION_THRESHOLD, accuracy);
+        const gpsAccuracy = accuracy > 0 ? accuracy : DEVIATION_THRESHOLD;
+        const effectiveThreshold = Math.max(DEVIATION_THRESHOLD, gpsAccuracy);
+
         const estaFuera = minDist > effectiveThreshold;
 
-        if (estaFuera) {
+        if (estaFuera && minIndex > 2) {
             contadorDesviacion.current += 1;
-        } else {
+        } else if (!estaFuera) {
             contadorDesviacion.current = 0;
             setDesviacion(false);
         }

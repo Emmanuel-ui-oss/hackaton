@@ -8,6 +8,7 @@ const Geo_options = {
 
 function useLocation() {
     const [ubicacion, setUbicacion] = useState(null)
+    const [accuracy, setAccuracy] = useState(null)
     const [cargando, setCargando] = useState(true)
     const [error, setError] = useState(null)
 
@@ -18,6 +19,7 @@ function useLocation() {
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 setUbicacion([pos.coords.latitude, pos.coords.longitude])
+                setAccuracy(pos.coords.accuracy)
                 setCargando(false)
             },
             () => { },
@@ -27,6 +29,7 @@ function useLocation() {
         const id = navigator.geolocation.watchPosition(
             (pos) => {
                 setUbicacion([pos.coords.latitude, pos.coords.longitude])
+                setAccuracy(pos.coords.accuracy)
                 setCargando(false)
                 setError(null)
             },
@@ -59,7 +62,7 @@ function useLocation() {
         start();
     }, [start]);
 
-    return { ubicacion, cargando, error, reintentar };
+    return { ubicacion, accuracy, cargando, error, reintentar };
 }
 
 export default useLocation
