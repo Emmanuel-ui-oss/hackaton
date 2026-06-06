@@ -1,18 +1,27 @@
-const CACHE_NAME = 'visionvial-v2'
+const CACHE_NAME = 'visionvial-v3'
+const API_CACHE = 'visionvial-api-v3'
 
-self.addEventListener('install', (e) => {
+const PRECACHE_URLS = [
+  '/',
+  '/static/manifest.json',
+]
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_URLS))
+  )
   self.skipWaiting()
 })
 
-self.addEventListener('activate', (e) => {
+self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME && k !== API_CACHE).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
   )
 })
 
-self.addEventListener('fetch', (e) => {
+self.addEventListener('fetch', e => {
   const { request } = e
   const url = new URL(request.url)
 
@@ -30,21 +39,27 @@ self.addEventListener('fetch', (e) => {
     return
   }
 
-  // Network-first for HTML navigation and API calls
-  if (request.mode === 'navigate' || url.pathname.startsWith('/api/')) {
-    e.respondWith(networkFirst(request))
+  // API calls: Network First with cache fallback
+  if (url.pathname.startsWith('/api/')) {
+    e.respondWith(networkFirst(request, API_CACHE))
     return
   }
 
-  // Cache-first for everything else (assets, static, CDN CSS)
-  e.respondWith(cacheFirst(request))
+  // HTML navigation: Network First
+  if (request.mode === 'navigate') {
+    e.respondWith(networkFirst(request, CACHE_NAME))
+    return
+  }
+
+  // Static assets (JS, CSS, images): Cache First
+  e.respondWith(cacheFirst(request, CACHE_NAME))
 })
 
-async function networkFirst(request) {
+async function networkFirst(request, cacheName) {
   try {
     const response = await fetch(request)
     if (response.ok) {
-      const cache = await caches.open(CACHE_NAME)
+      const cache = await caches.open(cacheName)
       cache.put(request, response.clone())
     }
     return response
@@ -54,13 +69,13 @@ async function networkFirst(request) {
   }
 }
 
-async function cacheFirst(request) {
+async function cacheFirst(request, cacheName) {
   const cached = await caches.match(request)
   if (cached) return cached
   try {
     const response = await fetch(request)
     if (response.ok) {
-      const cache = await caches.open(CACHE_NAME)
+      const cache = await caches.open(cacheName)
       cache.put(request, response.clone())
     }
     return response
