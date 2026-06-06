@@ -38,6 +38,8 @@ api.interceptors.response.use(
   async (err) => {
     const original = err.config
     if (err.response?.status !== 401 || original._retry) return Promise.reject(err)
+    const authEndpoints = ['/api/auth/login', '/api/auth/register', '/api/auth/refresh']
+    if (authEndpoints.some(url => original.url.includes(url))) return Promise.reject(err)
     if (isRefreshing) {
       return new Promise((resolve) => {
         pendingQueue.push((newToken) => {

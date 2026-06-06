@@ -6,6 +6,7 @@ services:
       - "443:443"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
       - media_data:/app/media:ro
     depends_on:
       app:
@@ -19,13 +20,20 @@ services:
       DOMAIN: ${DOMAIN}
       CORE_HOST: core
       CORE_PORT: "9100"
+      REDIS_HOST: redis
     depends_on:
       db:
         condition: service_healthy
       core:
         condition: service_started
+      redis:
+        condition: service_started
     volumes:
       - media_data:/app/media
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
     restart: unless-stopped
 
   core:

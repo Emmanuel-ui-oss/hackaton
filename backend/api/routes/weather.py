@@ -1,14 +1,12 @@
-import time, logging
+import logging
 from datetime import datetime
 from fastapi import APIRouter, Query
 import httpx
 from api.weather import get_coords
+from api.cache import make_key, get_cached, set_cached
 
 router = APIRouter()
 log = logging.getLogger("weather")
-
-CACHE = {}
-CACHE_TTL = 300
 
 WMO_CODES = {
     0: "Despejado", 1: "Mayormente despejado", 2: "Parcialmente nublado",
@@ -22,14 +20,12 @@ WMO_CODES = {
     95: "Tormenta", 96: "Tormenta con granizo ligero", 99: "Tormenta con granizo intenso",
 }
 
-
 @router.get("/weather")
 def get_weather(comuna: str = Query(None, description="Nombre de la comuna")):
-    cache_key = comuna or "_default"
-    now = time.time()
-
-    if cache_key in CACHE and (now - CACHE[cache_key]["ts"]) < CACHE_TTL:
-        return CACHE[cache_key]["data"]
+    cache_key = make_key("weather", comuna or "_default")
+    cached = get_cached(cache_key)
+    if cached:
+        return cached
 
     coords = get_coords(comuna)
     url = (
@@ -69,7 +65,7 @@ def get_weather(comuna: str = Query(None, description="Nombre de la comuna")):
             "_fallback": True,
         }
 
-    CACHE[cache_key] = {"data": result, "ts": now}
+    set_cached(cache_key, result, 300)
     return result
 
 

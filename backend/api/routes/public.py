@@ -2,6 +2,7 @@ import logging, httpx
 from datetime import datetime, timedelta
 from fastapi import APIRouter
 from apps.core.models import ZonaRiesgo, EventoRiesgo, ReporteIncidente, Testimonial
+from api.cache import make_key, get_cached, set_cached
 
 router = APIRouter()
 log = logging.getLogger("public")
@@ -89,6 +90,11 @@ def _score_a_comuna(comuna: str, zonas_por_comuna: dict, eventos_despues: dateti
 
 @router.get("/public/testimonials")
 def get_public_testimonials():
+    cache_key = make_key("public", "testimonials")
+    cached = get_cached(cache_key)
+    if cached:
+        return cached
+
     testimonios = Testimonial.objects.filter(activo=True)
     result = []
     for t in testimonios:
@@ -100,17 +106,24 @@ def get_public_testimonials():
             "avatar_url": t.avatar_url or "",
             "calificacion": t.calificacion,
         })
-    return {
+    response = {
         "testimonials": result,
         "total": len(result),
         "promedio": round(
             sum(t.calificacion for t in testimonios) / max(len(result), 1), 1
         ),
     }
+    set_cached(cache_key, response, 600)
+    return response
 
 
 @router.get("/public/zonas-riesgo")
 def get_public_zonas_riesgo():
+    cache_key = make_key("public", "zonas-riesgo")
+    cached = get_cached(cache_key)
+    if cached:
+        return cached
+
     zonas = ZonaRiesgo.objects.filter(activo=True)
     result = []
     zonas_por_nivel = {"CRITICO": 0, "ALTO": 0, "MEDIO": 0, "BAJO": 0}
@@ -129,15 +142,22 @@ def get_public_zonas_riesgo():
             "radio_metros": z.radio_metros or 500,
         })
 
-    return {
+    response = {
         "zonas": result,
         "zonas_por_nivel": zonas_por_nivel,
         "total": len(result),
     }
+    set_cached(cache_key, response, 600)
+    return response
 
 
 @router.get("/public/landing")
 def get_public_landing():
+    cache_key = make_key("public", "landing")
+    cached = get_cached(cache_key)
+    if cached:
+        return cached
+
     ahora = datetime.now()
     hace_30_meses = ahora - timedelta(days=30 * 30)
 
@@ -202,7 +222,7 @@ def get_public_landing():
         })
     comunas_con_score.sort(key=lambda x: x["probabilidad"], reverse=True)
 
-    return {
+    response = {
         "zonas": zonas_json,
         "zonas_por_nivel": zonas_por_nivel,
         "total_zonas": len(zonas_json),
@@ -215,3 +235,5 @@ def get_public_landing():
         "weather": _fetch_weather(),
         "timestamp": ahora.isoformat(),
     }
+    set_cached(cache_key, response, 120)
+    return response
