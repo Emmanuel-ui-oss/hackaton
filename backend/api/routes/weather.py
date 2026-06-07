@@ -1,24 +1,13 @@
 import logging
 from datetime import datetime
 from fastapi import APIRouter, Query
-import httpx
 from api.weather import get_coords
 from api.cache import make_key, get_cached, set_cached
+from api.utils.weather_map import weather_condition
+from api.services.weather import fetch_current_weather, extract_current
 
 router = APIRouter()
 log = logging.getLogger("weather")
-
-WMO_CODES = {
-    0: "Despejado", 1: "Mayormente despejado", 2: "Parcialmente nublado",
-    3: "Nublado", 45: "Niebla", 48: "Niebla con escarcha",
-    51: "Lluvia ligera", 53: "Lluvia moderada", 55: "Lluvia intensa",
-    56: "Lluvia helada ligera", 57: "Lluvia helada intensa",
-    61: "Lluvia ligera", 63: "Lluvia moderada", 65: "Lluvia intensa",
-    66: "Lluvia helada ligera", 67: "Lluvia helada intensa",
-    71: "Nevada ligera", 73: "Nevada moderada", 75: "Nevada intensa",
-    80: "Chubascos ligeros", 81: "Chubascos moderados", 82: "Chubascos intensos",
-    95: "Tormenta", 96: "Tormenta con granizo ligero", 99: "Tormenta con granizo intenso",
-}
 
 @router.get("/weather")
 def get_weather(comuna: str = Query(None, description="Nombre de la comuna")):
@@ -29,7 +18,7 @@ def get_weather(comuna: str = Query(None, description="Nombre de la comuna")):
 
     coords = get_coords(comuna)
     url = (
-        f"https://api.open-meteo.com/v1/forecast"
+        "https://api.open-meteo.com/v1/forecast"
         f"?latitude={coords['lat']}&longitude={coords['lng']}"
         f"&current=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,wind_speed_10m"
         f"&hourly=temperature_2m,precipitation_probability,precipitation,weather_code"
@@ -37,13 +26,14 @@ def get_weather(comuna: str = Query(None, description="Nombre de la comuna")):
     )
 
     try:
+        import httpx
         resp = httpx.get(url, timeout=10)
         resp.raise_for_status()
         data = resp.json()
         cur = data["current"]
         result = {
             "temp": cur["temperature_2m"],
-            "condition": WMO_CODES.get(cur["weather_code"], "Desconocido"),
+            "condition": weather_condition(cur["weather_code"]),
             "humidity": cur["relative_humidity_2m"],
             "precipitation": cur["precipitation"],
             "rain": cur["rain"],
@@ -54,7 +44,7 @@ def get_weather(comuna: str = Query(None, description="Nombre de la comuna")):
             "hourly": _build_hourly(data["hourly"]),
         }
     except Exception as e:
-        log.warning(f"Error fetching weather: {e}")
+        log.debug(f"Error fetching weather: {e}")
         result = {
             "temp": 23.0, "condition": "Dato no disponible",
             "humidity": 70, "precipitation": 0, "rain": 0,
@@ -78,6 +68,6 @@ def _build_hourly(hourly: dict) -> list:
             "rain_prob": hourly["precipitation_probability"][i],
             "precipitation": hourly["precipitation"][i],
             "weather_code": hourly["weather_code"][i],
-            "condition": WMO_CODES.get(hourly["weather_code"][i], ""),
+            "condition": weather_condition(hourly["weather_code"][i]),
         })
     return result

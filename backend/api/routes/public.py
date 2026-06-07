@@ -1,8 +1,10 @@
-import logging, httpx
+import logging
 from datetime import datetime, timedelta
 from fastapi import APIRouter
 from apps.core.models import ZonaRiesgo, EventoRiesgo, ReporteIncidente, Testimonial
 from api.cache import make_key, get_cached, set_cached
+from api.utils.weather_map import weather_condition
+from api.services.weather import fetch_current_weather, extract_current
 
 router = APIRouter()
 log = logging.getLogger("public")
@@ -12,37 +14,19 @@ NIVELES = ["CRITICO", "ALTO", "MEDIO", "BAJO"]
 ZONA_NIVEL_PESOS = {"CRITICO": 4, "ALTO": 3, "MEDIO": 2, "BAJO": 1}
 EVENTO_NIVEL_PESOS = {"critico": 4, "alto": 3, "medio": 2, "bajo": 1}
 
-WMO_CODES = {
-    0: "Despejado", 1: "Mayormente despejado", 2: "Parcialmente nublado",
-    3: "Nublado", 45: "Niebla", 48: "Niebla con escarcha",
-    51: "Lluvia ligera", 53: "Lluvia moderada", 55: "Lluvia intensa",
-    61: "Lluvia ligera", 63: "Lluvia moderada", 65: "Lluvia intensa",
-    71: "Nevada ligera", 73: "Nevada moderada", 75: "Nevada intensa",
-    80: "Chubascos ligeros", 81: "Chubascos moderados", 82: "Chubascos intensos",
-    95: "Tormenta", 96: "Tormenta con granizo ligero", 99: "Tormenta con granizo intenso",
-}
 
-
-def _fetch_weather():
-    try:
-        resp = httpx.get(
-            "https://api.open-meteo.com/v1/forecast"
-            "?latitude=6.2476&longitude=-75.5658"
-            "&current=temperature_2m,relative_humidity_2m,weather_code"
-            "&timezone=America%2FBogota",
-            timeout=10,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        cur = data["current"]
-        return {
-            "temp": cur["temperature_2m"],
-            "condition": WMO_CODES.get(cur["weather_code"], "Desconocido"),
-            "humidity": cur["relative_humidity_2m"],
-        }
-    except Exception as e:
-        log.warning(f"Error fetching weather in public: {e}")
+def _get_weather():
+    data = fetch_current_weather()
+    if not data:
         return None
+    cur = extract_current(data)
+    if not cur:
+        return None
+    return {
+        "temp": cur["temp"],
+        "condition": weather_condition(cur["weather_code"]),
+        "humidity": cur["humidity"],
+    }
 
 
 def _time_factor(hora: int) -> float:
@@ -62,17 +46,14 @@ def _time_factor(hora: int) -> float:
         return 0.2
 
 
-def _score_a_comuna(comuna: str, zonas_por_comuna: dict, eventos_despues: datetime, hora: int) -> dict:
+def _score_a_comuna(comuna: str, zonas_por_comuna: dict, eventos: list, hora: int) -> dict:
     score_base = 15
     nivel = "BAJO"
 
     for z in zonas_por_comuna.get(comuna, []):
         score_base += ZONA_NIVEL_PESOS.get(z.nivel, 1) * 12
 
-    eventos_cerca = EventoRiesgo.objects.filter(
-        activo=True, creado__gte=eventos_despues
-    )
-    for e in eventos_cerca:
+    for e in eventos:
         score_base += EVENTO_NIVEL_PESOS.get(e.nivel, 1)
 
     score_base = int(score_base * _time_factor(hora))
@@ -95,7 +76,7 @@ def get_public_testimonials():
     if cached:
         return cached
 
-    testimonios = Testimonial.objects.filter(activo=True)
+    testimonios = list(Testimonial.objects.filter(activo=True))
     result = []
     for t in testimonios:
         result.append({
@@ -161,11 +142,13 @@ def get_public_landing():
     ahora = datetime.now()
     hace_30_meses = ahora - timedelta(days=30 * 30)
 
-    zonas = ZonaRiesgo.objects.filter(activo=True)
+    zonas = list(ZonaRiesgo.objects.filter(activo=True))
     zonas_json = []
     zonas_por_comuna = {}
+    zonas_por_nivel = {"CRITICO": 0, "ALTO": 0, "MEDIO": 0, "BAJO": 0}
     for z in zonas:
         nivel = z.nivel if z.nivel in NIVELES else "BAJO"
+        zonas_por_nivel[nivel] += 1
         zonas_json.append({
             "id": z.id,
             "nombre": z.nombre,
@@ -181,16 +164,12 @@ def get_public_landing():
             zonas_por_comuna[c] = []
         zonas_por_comuna[c].append(z)
 
-    zonas_por_nivel = {"CRITICO": 0, "ALTO": 0, "MEDIO": 0, "BAJO": 0}
-    for z in zonas:
-        n = z.nivel if z.nivel in NIVELES else "BAJO"
-        zonas_por_nivel[n] += 1
-
-    eventos = EventoRiesgo.objects.filter(
+    eventos = list(EventoRiesgo.objects.filter(
         activo=True, creado__gte=hace_30_meses
-    ).order_by("-creado")[:200]
+    ).order_by("-creado")[:200])
 
     eventos_json = []
+    eventos_por_nivel = {"critico": 0, "alto": 0, "medio": 0, "bajo": 0}
     for e in eventos:
         eventos_json.append({
             "id": e.id,
@@ -203,9 +182,6 @@ def get_public_landing():
             "longitud": float(e.longitud),
             "creado": e.creado.isoformat(),
         })
-
-    eventos_por_nivel = {"critico": 0, "alto": 0, "medio": 0, "bajo": 0}
-    for e in eventos:
         n = e.nivel if e.nivel in eventos_por_nivel else "bajo"
         eventos_por_nivel[n] += 1
 
@@ -214,7 +190,7 @@ def get_public_landing():
 
     comunas_con_score = []
     for c_name in zonas_por_comuna:
-        score = _score_a_comuna(c_name, zonas_por_comuna, hace_30_meses, ahora.hour)
+        score = _score_a_comuna(c_name, zonas_por_comuna, eventos, ahora.hour)
         comunas_con_score.append({
             "comuna": c_name,
             "probabilidad": score["probabilidad"],
@@ -232,7 +208,7 @@ def get_public_landing():
         "total_eventos": len(eventos_json),
         "incidentes_hoy": incidentes_hoy,
         "total_incidentes": total_incidentes,
-        "weather": _fetch_weather(),
+        "weather": _get_weather(),
         "timestamp": ahora.isoformat(),
     }
     set_cached(cache_key, response, 120)

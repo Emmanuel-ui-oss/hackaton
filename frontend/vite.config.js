@@ -14,7 +14,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
-          leaflet: ['leaflet', 'react-leaflet'],
+          leaflet: ['leaflet'],
           charts: ['chart.js', 'react-chartjs-2'],
           motion: ['framer-motion'],
         },
@@ -26,7 +26,6 @@ export default defineConfig({
     proxy: {
       '/api': { target: 'http://localhost:8001', changeOrigin: true },
       '/ws': { target: 'ws://localhost:8001', ws: true },
-      '/static': { target: 'http://localhost:8001', changeOrigin: true },
     },
   },
 })

@@ -11,12 +11,10 @@ __pycache__
 venv
 env
 node_modules
-frontend/src
-frontend/node_modules
-frontend/public
-frontend/vite.config.js
-frontend/package.json
-frontend/package-lock.json
+frontend
+backend/static/frontend
+backend/venv
 infra
+media
 .DS_Store
 Thumbs.db

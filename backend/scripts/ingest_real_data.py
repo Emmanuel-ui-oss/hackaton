@@ -14,11 +14,10 @@ import httpx
 from django.utils import timezone
 from django.contrib.auth.models import User
 from apps.core.models import EventoRiesgo, ReporteIncidente, ZonaRiesgo
+from api.services.weather import BASE_URL, MEDELLIN_LAT, MEDELLIN_LNG
 
 log = logging.getLogger("ingestor")
 logging.basicConfig(level=logging.INFO, format="[INGEST] %(message)s")
-
-MEDELLIN_LAT, MEDELLIN_LNG = 6.2476, -75.5658
 
 COMUNAS = {
     "Comuna 10 - La Candelaria": (6.2430, -75.5750),
@@ -50,7 +49,7 @@ NIVELES = ["bajo", "medio", "alto", "critico"]
 def fetch_real_weather():
     """Obtiene clima real de Medellín desde Open-Meteo (gratis, sin API key)."""
     url = (
-        f"https://api.open-meteo.com/v1/forecast"
+        f"{BASE_URL}"
         f"?latitude={MEDELLIN_LAT}&longitude={MEDELLIN_LNG}"
         f"&hourly=temperature_2m,precipitation,precipitation_probability,weather_code"
         f"&past_days=7&forecast_days=3&timezone=America%2FBogota"

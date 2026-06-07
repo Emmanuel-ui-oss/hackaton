@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import math
+import os
 import re
 import socket
 from pathlib import Path
@@ -10,7 +11,9 @@ from datetime import datetime, date, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, Request
+from django.db import IntegrityError
 from django.db.models import Count, Q
+from django.db.models.deletion import ProtectedError
 from django.utils import timezone
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -24,9 +27,6 @@ from apps.core.audit import log_audit
 from api.dependencies import get_current_user
 from api.limiter import limiter
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-
-ALLOWED_UPLOAD_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf", ".doc", ".docx"}
-MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
 
 security = HTTPBearer(auto_error=False)
 
@@ -156,11 +156,23 @@ def votar_reporte(reporte_id: int, data: dict, user=Depends(get_current_user)):
 def eliminar_reporte(reporte_id: int, user=Depends(get_current_user)):
     if not user.is_staff:
         raise HTTPException(status_code=403, detail="Solo administradores pueden eliminar reportes")
-    reporte = ReporteIncidente.objects.filter(id=reporte_id).first()
-    if not reporte:
-        raise HTTPException(status_code=404, detail="Reporte no encontrado")
-    reporte.delete()
-    return {"detail": "Reporte eliminado"}
+    try:
+        reporte = ReporteIncidente.objects.filter(id=reporte_id).first()
+        if not reporte:
+            raise HTTPException(status_code=404, detail="Reporte no encontrado")
+        if reporte.foto:
+            try:
+                if os.path.isfile(reporte.foto.path):
+                    os.remove(reporte.foto.path)
+            except (OSError, IOError) as e:
+                log_audit(user, "eliminar_reporte_foto_error", "ReporteIncidente", reporte_id, {"error": str(e)})
+        reporte.delete()
+        log_audit(user, "eliminar_reporte", "ReporteIncidente", reporte_id, {})
+        return {"detail": "Reporte eliminado"}
+    except IntegrityError:
+        raise HTTPException(status_code=409, detail="Error de integridad al eliminar el reporte")
+    except ProtectedError:
+        raise HTTPException(status_code=409, detail="No se puede eliminar: el reporte tiene dependencias")
 
 
 # ── FAVORITOS ──
@@ -194,10 +206,12 @@ def crear_favorito(data: FavoritoCreate, user=Depends(get_current_user)):
 
 @router.delete("/favoritos/{fav_id}", status_code=204)
 def eliminar_favorito(fav_id: int, user=Depends(get_current_user)):
-    fav = Favorito.objects.filter(id=fav_id, usuario=user).first()
-    if not fav:
-        raise HTTPException(status_code=404, detail="Favorito no encontrado")
-    fav.delete()
+    try:
+        deleted = Favorito.objects.filter(id=fav_id, usuario=user).delete()
+        if deleted[0] == 0:
+            raise HTTPException(status_code=404, detail="Favorito no encontrado")
+    except IntegrityError:
+        raise HTTPException(status_code=409, detail="Error al eliminar el favorito")
 
 
 # ── CONTACTOS DE EMERGENCIA ──
@@ -229,11 +243,12 @@ def crear_contacto(data: ContactoCreate, user=Depends(get_current_user)):
 
 @router.delete("/contactos-emergencia/{contacto_id}", status_code=204)
 def eliminar_contacto(contacto_id: int, user=Depends(get_current_user)):
-    c = ContactoEmergencia.objects.filter(id=contacto_id, usuario=user).first()
-    if not c:
-        raise HTTPException(status_code=404, detail="Contacto no encontrado")
-    c.activo = False
-    c.save()
+    try:
+        deleted = ContactoEmergencia.objects.filter(id=contacto_id, usuario=user).delete()
+        if deleted[0] == 0:
+            raise HTTPException(status_code=404, detail="Contacto no encontrado")
+    except IntegrityError:
+        raise HTTPException(status_code=409, detail="Error al eliminar el contacto")
 
 
 # ── SOS ──
@@ -692,41 +707,3 @@ def import_items(request: Request, file: UploadFile = File(...), user=Depends(ge
 
     log_audit(user, "importar_reportes", "ReporteIncidente", detalles={"creados": creados, "errores": len(errores)})
     return {"creados": creados, "errores": errores}
-
-
-@router.post("/upload")
-@limiter.limit("5/hour")
-async def upload_file(request: Request, file: UploadFile = File(...), user=Depends(get_current_user)):
-    import aiofiles
-    from django.conf import settings
-
-    ext = Path(file.filename or "").suffix.lower()
-    if ext not in ALLOWED_UPLOAD_EXTENSIONS:
-        raise HTTPException(status_code=400, detail=f"Extensión no permitida: {ext}. Permitidas: {', '.join(sorted(ALLOWED_UPLOAD_EXTENSIONS))}")
-
-    if file.content_type:
-        allowed_types = {"image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
-        if file.content_type not in allowed_types:
-            raise HTTPException(status_code=400, detail=f"Tipo de contenido no permitido: {file.content_type}")
-
-    safe_name = re.sub(r'[^\w\.\-]', '_', file.filename or "upload")
-    if not safe_name:
-        safe_name = "upload.bin"
-
-    upload_dir = Path(settings.MEDIA_ROOT) / "uploads"
-    upload_dir.mkdir(parents=True, exist_ok=True)
-
-    file_path = upload_dir / safe_name
-    async with aiofiles.open(file_path, "wb") as f:
-        content = await file.read()
-        if len(content) > MAX_UPLOAD_SIZE:
-            raise HTTPException(status_code=413, detail=f"Archivo demasiado grande. Máximo: {MAX_UPLOAD_SIZE // (1024*1024)} MB")
-        await f.write(content)
-
-    log_audit(user, "subir_archivo", "Upload", detalles={"filename": file.filename, "size": len(content)})
-
-    return {
-        "filename": safe_name,
-        "size": len(content),
-        "url": f"/media/uploads/{safe_name}",
-    }

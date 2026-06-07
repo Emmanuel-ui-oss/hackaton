@@ -5,8 +5,6 @@ import Layout from './components/layout/Layout'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import AdminRoute from './components/common/AdminRoute'
 import ErrorBoundary from './components/common/ErrorBoundary'
-import Loading from './components/common/Loading'
-
 const Landing    = lazy(() => import('./pages/Landing'))
 const Dashboard  = lazy(() => import('./pages/Dashboard'))
 const Mapa       = lazy(() => import('./pages/Mapa'))
@@ -26,31 +24,29 @@ export default function App() {
 
   return (
     <AnimatePresence mode="wait">
-      <ErrorBoundary>
-      <Suspense fallback={null}>
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<Landing />} />
+    <Suspense fallback={null}>
+    <Routes location={location} key={location.pathname}>
+      <Route path="/" element={<ErrorBoundary name="Inicio"><Landing /></ErrorBoundary>} />
 
-        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/mapa" element={<Mapa />} />
-          <Route path="/zonas" element={<Zonas />} />
-          <Route path="/reportes" element={<Reportes />} />
-          <Route path="/transporte" element={<Transporte />} />
-          <Route path="/alertas" element={<Alertas />} />
-          <Route path="/favoritos" element={<Favoritos />} />
-          <Route path="/contactos" element={<Contactos />} />
-          <Route path="/historial" element={<Historial />} />
-          <Route path="/perfil" element={<Perfil />} />
-          <Route path="/riesgos" element={<Riesgos />} />
-          <Route element={<AdminRoute />}>
-            <Route path="/admin" element={<Admin />} />
-          </Route>
+      <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<ErrorBoundary name="Dashboard"><Dashboard /></ErrorBoundary>} />
+        <Route path="/mapa" element={<ErrorBoundary name="Mapa"><Mapa /></ErrorBoundary>} />
+        <Route path="/zonas" element={<ErrorBoundary name="Zonas"><Zonas /></ErrorBoundary>} />
+        <Route path="/reportes" element={<ErrorBoundary name="Reportes"><Reportes /></ErrorBoundary>} />
+        <Route path="/transporte" element={<ErrorBoundary name="Transporte"><Transporte /></ErrorBoundary>} />
+        <Route path="/alertas" element={<ErrorBoundary name="Alertas"><Alertas /></ErrorBoundary>} />
+        <Route path="/favoritos" element={<ErrorBoundary name="Favoritos"><Favoritos /></ErrorBoundary>} />
+        <Route path="/contactos" element={<ErrorBoundary name="Contactos"><Contactos /></ErrorBoundary>} />
+        <Route path="/historial" element={<ErrorBoundary name="Historial"><Historial /></ErrorBoundary>} />
+        <Route path="/perfil" element={<ErrorBoundary name="Perfil"><Perfil /></ErrorBoundary>} />
+        <Route path="/riesgos" element={<ErrorBoundary name="Riesgos"><Riesgos /></ErrorBoundary>} />
+        <Route element={<AdminRoute />}>
+          <Route path="/admin" element={<ErrorBoundary name="Admin"><Admin /></ErrorBoundary>} />
         </Route>
-      </Routes>
-      </Suspense>
-      </ErrorBoundary>
+      </Route>
+    </Routes>
+    </Suspense>
     </AnimatePresence>
   )
 }

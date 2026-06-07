@@ -1,10 +1,10 @@
-import math
 import asyncio
 import logging
 from datetime import timedelta
 from django.utils import timezone
 from django.db.models import Q, Count
 from apps.core.models import ReporteIncidente, EventoRiesgo, ZonaRiesgo
+from api.utils.geo import haversine, bounding_box
 
 log = logging.getLogger("ml_congestion")
 
@@ -86,12 +86,7 @@ def _get_nivel(prob):
     return "bajo"
 
 
-def _haversine(lat1, lng1, lat2, lng2):
-    R = 6371
-    dlat = math.radians(lat2 - lat1)
-    dlng = math.radians(lng2 - lng1)
-    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng / 2) ** 2
-    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
 
 
 def _find_nearest_comuna(lat, lng):
@@ -105,7 +100,7 @@ def _find_nearest_comuna(lat, lng):
     best = None
     best_dist = float("inf")
     for z in _zonas_cache:
-        d = _haversine(lat, lng, z["latitud"], z["longitud"])
+        d = haversine(lat, lng, z["latitud"], z["longitud"])
         if d < best_dist:
             best_dist = d
             best = z
@@ -156,15 +151,19 @@ async def _weather_factor():
 
 def _db_event_factor(lat, lng, radio_km=1.0):
     now = timezone.now()
+    bbox = bounding_box(lat, lng, radio_km)
     eventos = EventoRiesgo.objects.filter(
         activo=True,
+        latitud__gte=bbox["lat__gte"],
+        latitud__lte=bbox["lat__lte"],
+        longitud__gte=bbox["lng__gte"],
+        longitud__lte=bbox["lng__lte"],
     ).filter(
         Q(expira_en__isnull=True) | Q(expira_en__gte=now)
     )
     count = 0
-    seen = 0
     for e in eventos:
-        d = _haversine(lat, lng, e.latitud, e.longitud)
+        d = haversine(lat, lng, e.latitud, e.longitud)
         if d <= radio_km:
             count += 1
             if count > 30:
@@ -175,10 +174,17 @@ def _db_event_factor(lat, lng, radio_km=1.0):
 
 
 def _db_report_factor(lat, lng, radio_km=1.0):
-    reportes = ReporteIncidente.objects.filter(activo=True)
+    bbox = bounding_box(lat, lng, radio_km)
+    reportes = ReporteIncidente.objects.filter(
+        activo=True,
+        latitud__gte=bbox["lat__gte"],
+        latitud__lte=bbox["lat__lte"],
+        longitud__gte=bbox["lng__gte"],
+        longitud__lte=bbox["lng__lte"],
+    )
     count = 0
     for r in reportes:
-        d = _haversine(lat, lng, r.latitud, r.longitud)
+        d = haversine(lat, lng, r.latitud, r.longitud)
         if d <= radio_km:
             count += 1
     if count == 0:
@@ -241,9 +247,7 @@ def predict_congestion(lat=None, lng=None, comuna=None, hora=None, dia_semana=No
 
     # Weather
     try:
-        loop = asyncio.new_event_loop()
-        weather_w = loop.run_until_complete(_weather_factor())
-        loop.close()
+        weather_w = asyncio.run(_weather_factor())
     except Exception:
         weather_w = 0.0
     adjustments += weather_w

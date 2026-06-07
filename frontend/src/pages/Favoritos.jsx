@@ -27,7 +27,9 @@ export default function Favoritos() {
       await api.delete(`/api/v1/favoritos/${id}`)
       success('Favorito eliminado')
       load()
-    } catch { showError('Error al eliminar') }
+    } catch (err) {
+      showError(err?.response?.data?.detail || 'Error al eliminar')
+    }
   }
 
   return (

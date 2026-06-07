@@ -25,10 +25,12 @@ export default function useMapRoutes(ubicacion) {
             setRouteFast(fast.geometry);
             setRouteInfo({ distance: fast.distance, duration: fast.duration });
 
-            const midLat = (ubicacion[0] + dest[0]) / 2 + 0.005;
-            const midLng = (ubicacion[1] + dest[1]) / 2 + 0.005;
-            const leg1 = await getRoute(ubicacion, [midLat, midLng]);
-            const leg2 = await getRoute([midLat, midLng], dest);
+    const midLat = (ubicacion[0] + dest[0]) / 2 + 0.005;
+    const midLng = (ubicacion[1] + dest[1]) / 2 + 0.005;
+    const [leg1, leg2] = await Promise.all([
+      getRoute(ubicacion, [midLat, midLng]),
+      getRoute([midLat, midLng], dest),
+    ]);
             setRouteSafe({ type: "LineString", coordinates: [...(leg1.geometry.coordinates || []), ...(leg2.geometry.coordinates || [])] });
         } catch (err) {
             console.error("Error calculando rutas:", err);

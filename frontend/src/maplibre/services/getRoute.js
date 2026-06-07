@@ -12,29 +12,3 @@ export default async function getRoute(start, end) {
         duration: route.duration_s,
     };
 }
-
-export async function getBaseRoute(start, end) {
-    const route = await getRoute(start, end);
-    if (!route) throw new Error("No route");
-    return {
-        geometry: route.geometry,
-        distance: route.distance,
-        duration: route.duration,
-        legs: [],
-    };
-}
-
-export function buildSmartRoutes(baseRoute, riskZones) {
-    const riskScore = baseRoute.distance || 0;
-    return {
-        fast: { ...baseRoute, score: riskScore * 0.5 },
-        safe: { ...baseRoute, score: riskScore * 2 },
-        balanced: { ...baseRoute, score: riskScore },
-    };
-}
-
-export function scoreRoute(route, riskZones, trafficData) {
-    const risk = route.distance || 0;
-    const traffic = trafficData?.length ? risk * 0.2 : 0;
-    return risk + traffic;
-}

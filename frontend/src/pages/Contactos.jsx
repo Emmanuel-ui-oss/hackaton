@@ -34,7 +34,9 @@ export default function Contactos() {
       await api.delete(`/api/v1/contactos-emergencia/${id}`)
       success('Contacto eliminado')
       load()
-    } catch { showError('Error al eliminar') }
+    } catch (err) {
+      showError(err?.response?.data?.detail || 'Error al eliminar')
+    }
   }
 
   const activarSOS = async () => {

@@ -1,9 +1,9 @@
 import asyncio
-import math
 import logging
 from django.utils import timezone
 from django.db.models import Q
 from apps.core.models import EventoRiesgo, ZonaRiesgo
+from api.utils.geo import haversine, bounding_box
 
 log = logging.getLogger("ml_routes")
 
@@ -45,16 +45,28 @@ async def _weather_risk():
 
 
 def safe_route(origin_lat, origin_lng, dest_lat, dest_lng):
+    max_radio_km = 2.0
+    bbox = bounding_box(origin_lat, origin_lng, max_radio_km)
     eventos = EventoRiesgo.objects.filter(
         activo=True,
+        latitud__gte=bbox["lat__gte"],
+        latitud__lte=bbox["lat__lte"],
+        longitud__gte=bbox["lng__gte"],
+        longitud__lte=bbox["lng__lte"],
     ).filter(
         Q(expira_en__isnull=True) | Q(expira_en__gte=timezone.now())
     )
-    zonas = ZonaRiesgo.objects.filter(activo=True)
+    zonas = ZonaRiesgo.objects.filter(
+        activo=True,
+        latitud__gte=bbox["lat__gte"],
+        latitud__lte=bbox["lat__lte"],
+        longitud__gte=bbox["lng__gte"],
+        longitud__lte=bbox["lng__lte"],
+    )
 
     peligros = []
     for evento in eventos:
-        dist = _haversine(origin_lat, origin_lng, evento.latitud, evento.longitud)
+        dist = haversine(origin_lat, origin_lng, evento.latitud, evento.longitud)
         if dist <= (evento.radio_impacto_metros or 500) / 1000:
             peligros.append({
                 "tipo": evento.tipo, "nivel": evento.nivel,
@@ -63,7 +75,7 @@ def safe_route(origin_lat, origin_lng, dest_lat, dest_lng):
                 "lat": evento.latitud, "lng": evento.longitud,
             })
     for zona in zonas:
-        dist = _haversine(origin_lat, origin_lng, zona.latitud, zona.longitud)
+        dist = haversine(origin_lat, origin_lng, zona.latitud, zona.longitud)
         if dist <= (zona.radio_metros or 500) / 1000:
             peligros.append({
                 "tipo": zona.tipo_riesgo, "nivel": zona.nivel,
@@ -72,13 +84,11 @@ def safe_route(origin_lat, origin_lng, dest_lat, dest_lng):
                 "lat": zona.latitud, "lng": zona.longitud,
             })
 
-    dist_total = _haversine(origin_lat, origin_lng, dest_lat, dest_lng)
+    dist_total = haversine(origin_lat, origin_lng, dest_lat, dest_lng)
     tiempo_base = dist_total / 40 * 60
 
     try:
-        loop = asyncio.new_event_loop()
-        weather_r = loop.run_until_complete(_weather_risk())
-        loop.close()
+        weather_r = asyncio.run(_weather_risk())
     except Exception:
         weather_r = 0.0
 
@@ -124,10 +134,3 @@ def safe_route(origin_lat, origin_lng, dest_lat, dest_lng):
         },
     }
 
-
-def _haversine(lat1, lng1, lat2, lng2):
-    R = 6371
-    dlat = math.radians(lat2 - lat1)
-    dlng = math.radians(lng2 - lng1)
-    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng / 2) ** 2
-    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))

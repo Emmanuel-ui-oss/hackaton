@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
-import usePageData from '../hooks/usePageData'
+import useProgressiveData from '../hooks/useProgressiveData'
 import { useSocket } from '../contexts/SocketContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
 import AnimatedNumber from '../components/common/AnimatedNumber'
+import Skeleton from '../components/common/Skeleton'
 import { Sun, Droplet, CloudRain, Map as MapIcon } from '../icons'
 import {
   Chart as ChartJS,
@@ -52,12 +53,12 @@ const CARD_CONFIG = [
 ]
 
 export default function Dashboard() {
-  const { data: stats, loading, setData } = usePageData(() => api.get('/api/v1/stats'))
-  const [weather, setWeather] = useState(null)
+  const stats = useProgressiveData(() => api.get('/api/v1/stats'))
+  const weather = useProgressiveData(() => api.get('/api/v1/weather'))
+  const forecast = useProgressiveData(() => api.get('/api/v1/predict/congestion/forecast'))
   const [ticker, setTicker] = useState([])
   const [reportHistory, setReportHistory] = useState([])
   const [zoneHistory, setZoneHistory] = useState([])
-  const [forecast, setForecast] = useState([])
   const [lastUpdate, setLastUpdate] = useState(null)
   const socketStats = useSocket().stats
   const wsConnected = useSocket().connected
@@ -65,21 +66,13 @@ export default function Dashboard() {
   const { error: showError } = useToast()
   const navigate = useNavigate()
 
-  useEffect(() => {
-    api.get('/api/v1/weather').then(r => setWeather(r.data)).catch(() => {})
-  }, [])
+  const displayStats = socketStats || stats.data || {}
 
   useEffect(() => {
-    api.get('/api/v1/predict/congestion/forecast')
-      .then(res => setForecast(res.data.forecast || []))
-      .catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    if (!socketStats || !stats) return
+    if (!socketStats || !stats.data) return
     const changes = []
     CARD_CONFIG.forEach(({ key, altKey }) => {
-      const oldV = stats[key] ?? stats[altKey]
+      const oldV = stats.data[key] ?? stats.data[altKey]
       const newV = socketStats[key] ?? socketStats[altKey]
       if (oldV !== undefined && newV !== undefined && oldV !== newV) {
         const dir = newV > oldV ? 'up' : 'down'
@@ -92,7 +85,6 @@ export default function Dashboard() {
         ...t,
       ].slice(0, 30))
     }
-    setData(prev => prev ? { ...prev, ...socketStats } : socketStats)
     setLastUpdate(new Date())
 
     if (socketStats.reportes_por_tipo) {
@@ -108,8 +100,6 @@ export default function Dashboard() {
     if (v === undefined && cfg.altKey) v = s?.[cfg.altKey]
     return v ?? 0
   }
-
-  const s = stats || {}
 
   const latestRpt = { accidente: 0, bloqueo: 0, robo: 0, otro: 0, clima: 0, zona_peligrosa: 0, ...(reportHistory.length > 0 ? reportHistory[reportHistory.length - 1] : {}) }
   const latestZonas = { CRITICO: 0, ALTO: 0, MEDIO: 0, BAJO: 0, ...(zoneHistory.length > 0 ? zoneHistory[zoneHistory.length - 1] : {}) }
@@ -158,13 +148,9 @@ export default function Dashboard() {
     }],
   }
 
-  const lineValues = forecast.length
-    ? forecast.map(f => f.probabilidad ?? 0)
-    : []
-
-  const lineLabels = forecast.length
-    ? forecast.map(f => f.hora_label?.slice(0, 5) ?? '')
-    : []
+  const forecastArr = forecast.data?.forecast || []
+  const lineValues = forecastArr.length ? forecastArr.map(f => f.probabilidad ?? 0) : []
+  const lineLabels = forecastArr.length ? forecastArr.map(f => f.hora_label?.slice(0, 5) ?? '') : []
 
   const lineData = {
     labels: lineLabels,
@@ -198,17 +184,19 @@ export default function Dashboard() {
       {/* ── TOP BAR ── */}
       <div className="dash-topbar">
         <div className="dash-top-left">
-          {weather && (
+          {weather.isLoading ? (
+            <Skeleton width={200} height={14} />
+          ) : weather.data ? (
             <div className="dash-weather">
-              <span>{Sun} {weather.temp}°C</span>
+              <span>{Sun} {weather.data.temp}°C</span>
               <span className="ws-sep">·</span>
-              <span>{weather.condition}</span>
+              <span>{weather.data.condition}</span>
               <span className="ws-sep">·</span>
-              <span>{Droplet} {weather.humidity}%</span>
+              <span>{Droplet} {weather.data.humidity}%</span>
               <span className="ws-sep">·</span>
-              <span>{CloudRain} {weather.precipitation ?? weather.rain_prob}%</span>
+              <span>{CloudRain} {weather.data.precipitation ?? weather.data.rain_prob}%</span>
             </div>
-          )}
+          ) : null}
           <div className="dash-live">
             <span className={`live-dot ${wsConnected ? 'live-on' : 'live-off'}`} />
             <span className="live-text">{lastUpdateStr}</span>
@@ -228,45 +216,61 @@ export default function Dashboard() {
 
       {/* ── STATS ROW ── */}
       <div className="dash-stats">
-        {CARD_CONFIG.map(cfg => (
-          <div key={cfg.key} className="stat-ticker" style={{ borderTopColor: CARD_COLORS[cfg.colorKey] }}>
-            <div className="stat-icon-label">
-              <span className="stat-icon-svg">{cfg.icon}</span>
-              <span className="stat-label">{cfg.label}</span>
-            </div>
-            <div className="stat-value" style={{ color: CARD_COLORS[cfg.colorKey] }}>
-              <AnimatedNumber value={getVal(s, cfg)} />
-            </div>
-          </div>
-        ))}
+        {stats.isLoading
+          ? Array.from({ length: 8 }, (_, i) => (
+              <div key={i} className="stat-ticker" style={{ borderTopColor: '#1a1a2e' }}>
+                <Skeleton variant="stat-card" height={100} />
+              </div>
+            ))
+          : CARD_CONFIG.map(cfg => (
+              <div key={cfg.key} className="stat-ticker" style={{ borderTopColor: CARD_COLORS[cfg.colorKey] }}>
+                <div className="stat-icon-label">
+                  <span className="stat-icon-svg">{cfg.icon}</span>
+                  <span className="stat-label">{cfg.label}</span>
+                </div>
+                <div className="stat-value" style={{ color: CARD_COLORS[cfg.colorKey] }}>
+                  <AnimatedNumber value={getVal(displayStats, cfg)} />
+                </div>
+              </div>
+            ))}
       </div>
 
       {/* ── RISK BAR ── */}
-      <div className="dash-riskbar">
-        {Object.entries(NIVEL_STYLES).map(([nivel, style]) => {
-          const count = stats?.zonas_por_nivel?.[nivel] ?? 0
-          return (
-            <div key={nivel} className="riskbar-item" style={{ color: style.color }}>
-              <span className="riskbar-dot" style={{ background: style.color, boxShadow: `0 0 8px ${style.color}` }} />
-              {nivel} <span className="riskbar-count">{count}</span>
-            </div>
-          )
-        })}
-      </div>
+      {stats.isLoading ? (
+        <div className="dash-riskbar"><Skeleton width={400} height={14} /></div>
+      ) : (
+        <div className="dash-riskbar">
+          {Object.entries(NIVEL_STYLES).map(([nivel, style]) => {
+            const count = displayStats.zonas_por_nivel?.[nivel] ?? 0
+            return (
+              <div key={nivel} className="riskbar-item" style={{ color: style.color }}>
+                <span className="riskbar-dot" style={{ background: style.color, boxShadow: `0 0 8px ${style.color}` }} />
+                {nivel} <span className="riskbar-count">{count}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* ── CHARTS CENTER ── */}
       <div className="dash-charts">
         <div className="chart-card">
           <span className="chart-title">REPORTES POR TIPO</span>
-          <div className="chart-wrap"><Doughnut data={doughnutData} options={chartOpts()} /></div>
+          <div className="chart-wrap">
+            {stats.isLoading ? <Skeleton variant="chart" /> : <Doughnut data={doughnutData} options={chartOpts()} />}
+          </div>
         </div>
         <div className="chart-card">
           <span className="chart-title">ZONAS POR NIVEL</span>
-          <div className="chart-wrap"><Bar data={barData} options={chartOpts('bar')} /></div>
+          <div className="chart-wrap">
+            {stats.isLoading ? <Skeleton variant="chart" /> : <Bar data={barData} options={chartOpts('bar')} />}
+          </div>
         </div>
         <div className="chart-card chart-card-wide">
           <span className="chart-title">CONGESTIÓN 24H</span>
-          <div className="chart-wrap"><Line data={lineData} options={chartOpts('line')} /></div>
+          <div className="chart-wrap">
+            {forecast.isLoading ? <Skeleton variant="chart" /> : <Line data={lineData} options={chartOpts('line')} />}
+          </div>
         </div>
       </div>
 

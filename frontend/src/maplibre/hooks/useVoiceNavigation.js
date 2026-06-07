@@ -14,25 +14,24 @@ function distanciaMetros([lat1, lng1], [lat2, lng2]) {
 }
 
 function calcularDireccion([lat1, lng1], [lat2, lng2]) {
-    const dLng = lng2 - lng1
-    const y = Math.sin((dLng * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180)
+    const dLng = ((lng2 - lng1) * Math.PI) / 180
+    const rLat1 = (lat1 * Math.PI) / 180
+    const rLat2 = (lat2 * Math.PI) / 180
+    const y = Math.sin(dLng) * Math.cos(rLat2)
     const x =
-        Math.cos((lat1 * Math.PI) / 180) * Math.sin((lat2 * Math.PI) / 180) -
-        Math.sin((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.cos((dLng * Math.PI) / 180)
-    const bearing = (Math.atan2(y, x) * 180) / Math.PI
-    return (bearing + 360) % 360
+        Math.cos(rLat1) * Math.sin(rLat2) -
+        Math.sin(rLat1) * Math.cos(rLat2) * Math.cos(dLng)
+    return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360
 }
 
 function interpretarGiro(angleDiff) {
     const a = ((angleDiff + 180) % 360) - 180
-    if (Math.abs(a) < 20) return 'continúe recto'
-    if (a > 0 && a < 60) return 'gire suavemente a la derecha'
-    if (a > 60 && a < 120) return 'gire a la derecha'
-    if (a >= 120) return 'gire fuertemente a la derecha'
-    if (a < 0 && a > -60) return 'gire suavemente a la izquierda'
-    if (a < -60 && a > -120) return 'gire a la izquierda'
+    if (Math.abs(a) < 15) return 'continúe recto'
+    if (a > 0 && a < 50) return 'gire suavemente a la derecha'
+    if (a > 50 && a < 110) return 'gire a la derecha'
+    if (a >= 110) return 'gire fuertemente a la derecha'
+    if (a < 0 && a > -50) return 'gire suavemente a la izquierda'
+    if (a < -50 && a > -110) return 'gire a la izquierda'
     return 'gire fuertemente a la izquierda'
 }
 
@@ -48,7 +47,6 @@ function cardinal(bearing) {
 }
 
 let streetCache = {}
-let cachePromise = null
 
 async function preloadStreetNames(routeCoords) {
     if (!routeCoords?.length) return
@@ -78,29 +76,52 @@ export default function useVoiceNavigation({ ubicacion, routeCoords, zonasRiesgo
     const iniciadoRef = useRef(false)
     const activoAnteriorRef = useRef(false)
     const cacheLoadedRef = useRef(false)
+    const colaRef = useRef([])
+    const hablandoRef = useRef(false)
+    const ultimoProgresoRef = useRef(0)
+    const ultimoProgresoTsRef = useRef(0)
 
     const hablar = useCallback((texto, rate = 0.95) => {
         const synth = window.speechSynthesis
         if (!synth) return
-        synth.cancel()
-        const utt = new SpeechSynthesisUtterance(texto)
-        utt.lang = 'es-CO'
-        utt.rate = rate
-        utt.pitch = 1
-        utt.volume = 1
-        const voces = synth.getVoices()
-        const voz =
-            voces.find(v => v.lang === 'es-CO') ||
-            voces.find(v => v.lang.startsWith('es-CO')) ||
-            voces.find(v => v.lang === 'es-ES') ||
-            voces.find(v => v.lang.startsWith('es'))
-        if (voz) utt.voice = voz
-        synth.speak(utt)
+
+        const emitir = (t, r) => {
+            hablandoRef.current = true
+            const utt = new SpeechSynthesisUtterance(t)
+            utt.lang = 'es-CO'
+            utt.rate = r
+            utt.pitch = 1
+            utt.volume = 1
+            const voces = synth.getVoices()
+            const voz =
+                voces.find(v => v.lang === 'es-CO') ||
+                voces.find(v => v.lang.startsWith('es-CO')) ||
+                voces.find(v => v.lang === 'es-ES') ||
+                voces.find(v => v.lang.startsWith('es'))
+            if (voz) utt.voice = voz
+            utt.onend = () => {
+                hablandoRef.current = false
+                if (colaRef.current.length > 0) {
+                    const sig = colaRef.current.shift()
+                    emitir(sig.texto, sig.rate)
+                }
+            }
+            utt.onerror = () => { hablandoRef.current = false }
+            synth.speak(utt)
+        }
+
+        if (hablandoRef.current) {
+            colaRef.current.push({ texto, rate })
+            return
+        }
+        emitir(texto, rate)
     }, [])
 
     const cancelar = useCallback(() => {
         window.speechSynthesis?.cancel()
+        colaRef.current = []
         iniciadoRef.current = false
+        hablandoRef.current = false
     }, [])
 
     // Pre-cargar nombres de calles de la ruta
@@ -136,9 +157,13 @@ export default function useVoiceNavigation({ ubicacion, routeCoords, zonasRiesgo
         zonaAnunciadaRef.current.clear()
         iniciadoRef.current = false
         cacheLoadedRef.current = false
+        colaRef.current = []
+        hablandoRef.current = false
+        ultimoProgresoRef.current = 0
+        ultimoProgresoTsRef.current = 0
     }, [activo, routeCoords, hablar])
 
-    // Instrucciones de giro con nombre de calle
+    // Instrucciones de giro + anuncios de progreso en recto
     useEffect(() => {
         if (!activo || !ubicacion || !routeCoords?.length) return
 
@@ -149,17 +174,22 @@ export default function useVoiceNavigation({ ubicacion, routeCoords, zonasRiesgo
             if (d < minDist) { minDist = d; indiceCercano = i }
         })
 
+        let turnoEncontrado = false
         for (let i = indiceCercano + 1; i < routeCoords.length - 1; i++) {
             const distAlPunto = distanciaMetros(ubicacion, routeCoords[i])
-            if (distAlPunto > 250) break
-            if (distAlPunto < 15) continue
+            if (distAlPunto > 400) break
+            if (distAlPunto < 20) continue
             if (pasoAnunciadoRef.current === i) continue
 
-            const dirActual = calcularDireccion(routeCoords[i - 1], routeCoords[i])
-            const dirSiguiente = calcularDireccion(routeCoords[i], routeCoords[i + 1])
-            const diff = Math.abs(dirSiguiente - dirActual)
-            if (diff < 25) continue
+            const iAntes = Math.max(0, i - 2)
+            const iDespues = Math.min(routeCoords.length - 1, i + 2)
+            const dirActual = calcularDireccion(routeCoords[iAntes], routeCoords[i])
+            const dirSiguiente = calcularDireccion(routeCoords[i], routeCoords[iDespues])
+            const absDiff = Math.abs(dirSiguiente - dirActual)
+            const normDiff = Math.min(absDiff, 360 - absDiff)
+            if (normDiff < 20) continue
 
+            turnoEncontrado = true
             const instruccion = interpretarGiro(dirSiguiente - dirActual)
             const metros = Math.round(distAlPunto)
 
@@ -167,6 +197,8 @@ export default function useVoiceNavigation({ ubicacion, routeCoords, zonasRiesgo
             getStreetName(lat, lng).then(nombre => {
                 if (pasoAnunciadoRef.current >= i) return
                 pasoAnunciadoRef.current = i
+                ultimoProgresoRef.current = i
+                ultimoProgresoTsRef.current = Date.now()
                 const conDireccion = nombre
                     ? `${instruccion} en ${nombre}`
                     : instruccion
@@ -177,6 +209,19 @@ export default function useVoiceNavigation({ ubicacion, routeCoords, zonasRiesgo
                 }
             })
             break
+        }
+
+        if (!turnoEncontrado && minDist < 400 && minDist > 0) {
+            const avance = indiceCercano - ultimoProgresoRef.current
+            const ahora = Date.now()
+            if (avance >= 5 || (ahora - ultimoProgresoTsRef.current > 20000 && avance >= 2)) {
+                ultimoProgresoRef.current = indiceCercano
+                ultimoProgresoTsRef.current = ahora
+                const [lat, lng] = routeCoords[indiceCercano]
+                getStreetName(lat, lng).then(nombre => {
+                    if (nombre) hablar(`Continúe recto por ${nombre}.`)
+                })
+            }
         }
     }, [ubicacion, routeCoords, activo, hablar])
 

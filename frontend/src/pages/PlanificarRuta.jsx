@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import api from '../services/api'
+import useProgressiveData from '../hooks/useProgressiveData'
 import './PlanificarRuta.css'
 
 const GOOGLE_TILES = {
@@ -52,11 +53,13 @@ export default function PlanificarRuta() {
   const [watchingLocation, setWatchingLocation] = useState(false)
   const [tileStyle, setTileStyle] = useState('roadmap')
   const [trafficOn, setTrafficOn] = useState(false)
-  const [trafficData, setTrafficData] = useState([])
-  const [trafficLoading, setTrafficLoading] = useState(false)
   const trafficLayer = useRef(null)
 
-  // ── Map init ──
+  // ── Preload risk zones and traffic (independent, no blocking) ──
+  const riskZones = useProgressiveData(() => api.get('/api/v1/public/zonas-riesgo'))
+  const traffic = useProgressiveData(() => api.get('/api/v1/trafico/mapa'))
+
+  // ── Map init (immediate) ──
   useEffect(() => {
     if (mapInstance.current) return
     const map = L.map(mapRef.current, {
@@ -72,24 +75,21 @@ export default function PlanificarRuta() {
     return () => { map.remove(); mapInstance.current = null }
   }, [])
 
-  // ── Tile style switch ──
   useEffect(() => {
     if (!mapInstance.current || !tileLayerRef.current) return
     tileLayerRef.current.setUrl(GOOGLE_TILES[tileStyle])
   }, [tileStyle])
 
-  // ── Passive user GPS ──
   useEffect(() => {
     if (!mapInstance.current) return
     const id = navigator.geolocation.watchPosition(
       pos => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => { console.warn('GPS pasivo no disponible') },
+      () => {},
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
     )
     return () => navigator.geolocation.clearWatch(id)
   }, [])
 
-  // ── Cleanup on unmount ──
   useEffect(() => {
     return () => {
       if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current)
@@ -97,7 +97,6 @@ export default function PlanificarRuta() {
     }
   }, [])
 
-  // ── Autocomplete ──
   const fetchSugs = async (q, setter) => {
     try {
       const res = await api.get('/api/v1/geocode/autocomplete', { params: { q, limit: 5 } })
@@ -124,7 +123,6 @@ export default function PlanificarRuta() {
     return () => { if (sugsTimeout.current) clearTimeout(sugsTimeout.current) }
   }, [dest, focusField])
 
-  // ── Map helpers ──
   const initMap = () => {
     if (mapInstance.current) return
     const map = L.map(mapRef.current, { center: [6.2442, -75.5812], zoom: 12, zoomControl: false })
@@ -302,8 +300,7 @@ export default function PlanificarRuta() {
         geometry: { coordinates: r.coords.map(c => [c[1], c[0]]) },
       }))}
       const wazeUrl = routeData.waze_url || `https://waze.com/ul?ll=${destC.lat},${destC.lng}&navigate=yes`
-      const zonasRes = await api.get('/api/v1/public/zonas-riesgo').catch(() => ({ data: { zonas: [] } }))
-      const zonas = zonasRes.data?.zonas || []
+      const zonas = riskZones.data?.zonas || []
       const computed = osrmData.routes.map(route => {
         const coords = route.geometry.coordinates.map(c => [c[1], c[0]])
         const segments = splitIntoSegments(coords, 15).map(seg => ({ coords: seg, avgRisk: avgRiskForCoords(seg, zonas) }))
@@ -338,29 +335,7 @@ export default function PlanificarRuta() {
     )
   }
 
-  // ── Traffic overlay ──
-  useEffect(() => {
-    if (!trafficOn) {
-      if (trafficLayer.current && mapInstance.current) {
-        mapInstance.current.removeLayer(trafficLayer.current)
-        trafficLayer.current = null
-      }
-      setTrafficData([])
-      return
-    }
-    setTrafficLoading(true)
-    api.get('/api/v1/trafico/mapa').then(res => {
-      setTrafficData(res.data?.comunas || [])
-      setTrafficLoading(false)
-    }).catch(() => setTrafficLoading(false))
-    const interval = setInterval(() => {
-      api.get('/api/v1/trafico/mapa').then(res => {
-        setTrafficData(res.data?.comunas || [])
-      }).catch(() => {})
-    }, 60000)
-    return () => clearInterval(interval)
-  }, [trafficOn])
-
+  // ── Traffic overlay (independent, updates when trafficOn or traffic.data changes) ──
   useEffect(() => {
     const map = mapInstance.current
     if (!map) return
@@ -368,39 +343,29 @@ export default function PlanificarRuta() {
       if (trafficLayer.current) { map.removeLayer(trafficLayer.current); trafficLayer.current = null }
       return
     }
+    if (!traffic.data?.comunas?.length) return
     if (!trafficLayer.current) {
       trafficLayer.current = L.layerGroup().addTo(map)
     } else {
       trafficLayer.current.clearLayers()
     }
     const layer = trafficLayer.current
-    trafficData.forEach(c => {
-      const colors = {
-        critico: '#ff1744', alto: '#ffab00', medio: '#2979ff', bajo: '#00c853',
-      }
-      const fills = {
-        critico: 'rgba(255,23,68,0.35)', alto: 'rgba(255,171,0,0.3)',
-        medio: 'rgba(41,121,255,0.25)', bajo: 'rgba(0,200,83,0.2)',
-      }
+    traffic.data.comunas.forEach(c => {
+      const colors = { critico: '#ff1744', alto: '#ffab00', medio: '#2979ff', bajo: '#00c853' }
+      const fills = { critico: 'rgba(255,23,68,0.35)', alto: 'rgba(255,171,0,0.3)', medio: 'rgba(41,121,255,0.25)', bajo: 'rgba(0,200,83,0.2)' }
       const color = colors[c.nivel] || colors.bajo
       const fill = fills[c.nivel] || fills.bajo
       const circle = L.circle([c.latitud, c.longitud], {
-        radius: c.radio_metros,
-        color,
-        fillColor: fill,
-        fillOpacity: 0.4,
-        weight: 2,
-        opacity: 0.6,
+        radius: c.radio_metros, color, fillColor: fill, fillOpacity: 0.4, weight: 2, opacity: 0.6,
       })
       circle.bindPopup(`<div style="color:#e0e0e0;font-size:12px"><b style="color:#fff">${c.nombre}</b><br><span style="color:${color};font-weight:700">${c.probabilidad}% congestión</span></div>`)
       layer.addLayer(circle)
     })
-  }, [trafficData, trafficOn])
+  }, [traffic.data, trafficOn])
 
   return (
     <div className="page" style={{ padding: 0 }}>
       <div className="ruta-wrap">
-        {/* ── ROUTE INPUT BAR ── */}
         <div className="ruta-bar">
           <div className="ruta-inputs">
             <div className="ruta-field">
@@ -486,7 +451,6 @@ export default function PlanificarRuta() {
           </div>}
         </div>
 
-        {/* ── TILE STYLE SWITCHER ── */}
         <div className="ruta-tile-bar">
           {Object.entries(TILE_LABELS).map(([key, label]) => (
             <label key={key}
@@ -500,10 +464,14 @@ export default function PlanificarRuta() {
           </label>
         </div>
 
-        {/* ── MAP ── */}
         <div ref={mapRef} className="ruta-map" />
 
-        {trafficOn && (
+        {trafficOn && traffic.isLoading && (
+          <div className="ruta-trafico-legend">
+            <span style={{fontSize:'0.55rem',color:'#888'}}>Cargando tráfico...</span>
+          </div>
+        )}
+        {trafficOn && !traffic.isLoading && traffic.data?.comunas?.length > 0 && (
           <div className="ruta-trafico-legend">
             {[
               { l: 'Crítico', c: '#ff1744' },
@@ -515,11 +483,9 @@ export default function PlanificarRuta() {
                 <span style={{ background: n.c }} />{n.l}
               </div>
             ))}
-            {trafficLoading && <span style={{fontSize:'0.55rem',color:'#888',marginLeft:6}}>...</span>}
           </div>
         )}
 
-        {/* ── ROUTE RESULTS ── */}
         {routes.length > 0 && (
           <div className="ruta-panel">
             <div className="rp-header">
@@ -562,7 +528,6 @@ export default function PlanificarRuta() {
           </div>
         )}
 
-        {/* ── LOADING ── */}
         {loading && <div className="ruta-loading"><div className="spinner" /></div>}
       </div>
     </div>

@@ -1,27 +1,25 @@
 import { useState } from 'react'
 import api from '../services/api'
 import { useToast } from '../contexts/ToastContext'
-import usePageData from '../hooks/usePageData'
+import useProgressiveData from '../hooks/useProgressiveData'
+import Skeleton from '../components/common/Skeleton'
 import { Settings as SettingsIcon } from '../icons'
 
 export default function Admin() {
   const [tab, setTab] = useState('zonas')
-  const { data: zonas, loading: loadingZ, load: loadZonas } = usePageData(
-    () => api.get('/api/v1/zonas-riesgo'),
-    tab === 'zonas'
+  const { data: zonas, isLoading: loadingZ, refetch: refetchZ } = useProgressiveData(
+    () => api.get('/api/v1/zonas-riesgo')
   )
-  const { data: reportes, loading: loadingR, load: loadReportes } = usePageData(
-    () => api.get('/api/v1/reportes'),
-    tab === 'reportes'
+  const { data: reportes, isLoading: loadingR, refetch: refetchR } = useProgressiveData(
+    () => api.get('/api/v1/reportes')
   )
-  const loading = tab === 'zonas' ? loadingZ : loadingR
   const { success, error: showError } = useToast()
 
   const toggleZona = async (zona) => {
     try {
       await api.put(`/api/v1/zonas-riesgo/${zona.id}`, { activo: !zona.activo })
       success(`Zona ${zona.activo ? 'desactivada' : 'activada'}`)
-      loadZonas()
+      refetchZ()
     } catch { showError('Error al actualizar zona') }
   }
 
@@ -29,7 +27,7 @@ export default function Admin() {
     try {
       await api.put(`/api/v1/items/${reporte.id}`, { activo: !reporte.activo })
       success(`Reporte ${reporte.activo ? 'ocultado' : 'mostrado'}`)
-      loadReportes()
+      refetchR()
     } catch { showError('Error al actualizar reporte') }
   }
 
@@ -38,8 +36,10 @@ export default function Admin() {
     try {
       await api.delete(`/api/v1/reportes/${reporte.id}`)
       success('Reporte eliminado permanentemente')
-      loadReportes()
-    } catch { showError('Error al eliminar reporte') }
+      refetchR()
+    } catch (err) {
+      showError(err?.response?.data?.detail || 'Error al eliminar reporte')
+    }
   }
 
   return (
@@ -56,70 +56,84 @@ export default function Admin() {
 
       {tab === 'zonas' && (
         <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Comuna</th>
-                <th>Nivel</th>
-                <th>Tipo</th>
-                <th>Estado</th>
-                <th>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(zonas ?? []).map(z => (
-                <tr key={z.id}>
-                  <td style={{ fontWeight: 600 }}>{z.nombre}</td>
-                  <td>{z.comuna}</td>
-                  <td><span className={`badge badge-${z.nivel?.toLowerCase()}`}>{z.nivel}</span></td>
-                  <td>{z.tipo_riesgo}</td>
-                  <td>{z.activo ? <span style={{ color: 'var(--green)', fontWeight: 600 }}>Activo</span> : <span style={{ color: 'var(--text-muted)' }}>Inactivo</span>}</td>
-                  <td>
-                    <button className={`btn btn-sm ${z.activo ? 'btn-ghost' : 'btn-primary'}`} onClick={() => toggleZona(z)}>
-                      {z.activo ? 'Desactivar' : 'Activar'}
-                    </button>
-                  </td>
+          {loadingZ && !zonas ? (
+            <div style={{ padding: '1rem' }}><Skeleton variant="line" count={8} /></div>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Comuna</th>
+                  <th>Nivel</th>
+                  <th>Tipo</th>
+                  <th>Estado</th>
+                  <th>Acción</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {(zonas ?? []).map(z => (
+                  <tr key={z.id}>
+                    <td style={{ fontWeight: 600 }}>{z.nombre}</td>
+                    <td>{z.comuna}</td>
+                    <td><span className={`badge badge-${z.nivel?.toLowerCase()}`}>{z.nivel}</span></td>
+                    <td>{z.tipo_riesgo}</td>
+                    <td>{z.activo ? <span style={{ color: 'var(--green)', fontWeight: 600 }}>Activo</span> : <span style={{ color: 'var(--text-muted)' }}>Inactivo</span>}</td>
+                    <td>
+                      <button className={`btn btn-sm ${z.activo ? 'btn-ghost' : 'btn-primary'}`} onClick={() => toggleZona(z)}>
+                        {z.activo ? 'Desactivar' : 'Activar'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {(zonas ?? []).length === 0 && !loadingZ && (
+                  <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay zonas de riesgo registradas.</td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
       {tab === 'reportes' && (
         <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Tipo</th>
-                <th>Usuario</th>
-                <th>Descripción</th>
-                <th>Estado</th>
-                <th>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(reportes ?? []).map(r => (
-                <tr key={r.id}>
-                  <td><span className="badge badge-info">{r.tipo}</span></td>
-                  <td>{r.usuario_username}</td>
-                  <td style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descripcion}</td>
-                  <td>{r.activo ? <span style={{ color: 'var(--green)', fontWeight: 600 }}>Visible</span> : <span style={{ color: 'var(--text-muted)' }}>Oculto</span>}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                      <button className={`btn btn-sm ${r.activo ? 'btn-ghost' : 'btn-primary'}`} onClick={() => toggleReporte(r)}>
-                        {r.activo ? 'Ocultar' : 'Mostrar'}
-                      </button>
-                      <button className="btn btn-sm btn-danger" onClick={() => eliminarReporte(r)}>
-                        Eliminar
-                      </button>
-                    </div>
-                  </td>
+          {loadingR && !reportes ? (
+            <div style={{ padding: '1rem' }}><Skeleton variant="line" count={8} /></div>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Usuario</th>
+                  <th>Descripción</th>
+                  <th>Estado</th>
+                  <th>Acción</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {(reportes ?? []).map(r => (
+                  <tr key={r.id}>
+                    <td><span className="badge badge-info">{r.tipo}</span></td>
+                    <td>{r.usuario_username}</td>
+                    <td style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descripcion}</td>
+                    <td>{r.activo ? <span style={{ color: 'var(--green)', fontWeight: 600 }}>Visible</span> : <span style={{ color: 'var(--text-muted)' }}>Oculto</span>}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        <button className={`btn btn-sm ${r.activo ? 'btn-ghost' : 'btn-primary'}`} onClick={() => toggleReporte(r)}>
+                          {r.activo ? 'Ocultar' : 'Mostrar'}
+                        </button>
+                        <button className="btn btn-sm btn-danger" onClick={() => eliminarReporte(r)}>
+                          Eliminar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {(reportes ?? []).length === 0 && !loadingR && (
+                  <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No hay reportes registrados.</td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
     </div>

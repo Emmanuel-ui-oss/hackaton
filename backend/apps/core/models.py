@@ -44,8 +44,8 @@ class ZonaRiesgo(models.Model):
     categoria = models.ForeignKey(
         CategoriaRiesgo, on_delete=models.CASCADE, related_name="zonas", null=True, blank=True
     )
-    latitud = models.FloatField()
-    longitud = models.FloatField()
+    latitud = models.FloatField(db_index=True)
+    longitud = models.FloatField(db_index=True)
     radio_metros = models.IntegerField(default=500)
     activo = models.BooleanField(default=True)
     creado = models.DateTimeField(auto_now_add=True)
@@ -89,9 +89,8 @@ class ReporteIncidente(models.Model):
     descripcion = models.TextField()
     ubicacion = models.CharField(max_length=255)
     ubicacion_texto = models.CharField(max_length=255, blank=True)
-    latitud = models.FloatField()
-    longitud = models.FloatField()
-    foto = models.ImageField(upload_to="incidentes/", blank=True, null=True)
+    latitud = models.FloatField(db_index=True)
+    longitud = models.FloatField(db_index=True)
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reportes"
     )

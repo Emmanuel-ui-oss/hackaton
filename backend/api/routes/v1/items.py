@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel
 from typing import Optional
+from django.db import IntegrityError
 from django.db.models import Q
+from django.db.models.deletion import ProtectedError
 
 from apps.core.models import CategoriaRiesgo, ZonaRiesgo
+from apps.core.audit import log_audit
 from api.dependencies import get_current_user
 
 router = APIRouter()
@@ -186,7 +189,12 @@ def update_zona(zona_id: int, data: ZonaRiesgoUpdate, user=Depends(get_current_u
 def delete_zona(zona_id: int, user=Depends(get_current_user)):
     if not user.is_staff:
         raise HTTPException(status_code=403, detail="Solo administradores")
-    zona = ZonaRiesgo.objects.filter(id=zona_id).first()
-    if not zona:
-        raise HTTPException(status_code=404, detail="Zona no encontrada")
-    zona.delete()
+    try:
+        deleted = ZonaRiesgo.objects.filter(id=zona_id).delete()
+        if deleted[0] == 0:
+            raise HTTPException(status_code=404, detail="Zona no encontrada")
+        log_audit(user, "eliminar_zona", "ZonaRiesgo", zona_id, {})
+    except ProtectedError:
+        raise HTTPException(status_code=409, detail="No se puede eliminar: la zona tiene alertas asociadas")
+    except IntegrityError:
+        raise HTTPException(status_code=409, detail="Error de integridad al eliminar la zona")

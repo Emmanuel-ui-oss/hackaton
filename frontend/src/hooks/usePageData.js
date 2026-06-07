@@ -12,7 +12,10 @@ export default function usePageData(fetchFn, active = true, transform = null) {
     fetched.current = true
     const doFetch = () => fetchFn()
       .then(res => setData(transform ? transform(res.data) : (res.data?.results ?? res.data ?? [])))
-      .catch(err => { setError(err); fetched.current = false })
+      .catch(err => {
+        setError(err)
+        setTimeout(() => { fetched.current = false }, 3000)
+      })
     setLoading(true)
     setError(null)
     doFetch().finally(() => setLoading(false))
@@ -24,7 +27,10 @@ export default function usePageData(fetchFn, active = true, transform = null) {
     fetched.current = true
     return fetchFn()
       .then(res => setData(transform ? transform(res.data) : (res.data?.results ?? res.data ?? [])))
-      .catch(err => { setError(err); fetched.current = false })
+      .catch(err => {
+        setError(err)
+        setTimeout(() => { fetched.current = false }, 3000)
+      })
       .finally(() => setLoading(false))
   }, [fetchFn])
 

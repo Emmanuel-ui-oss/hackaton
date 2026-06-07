@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from django.db.models import Count
 from apps.core.models import IncidenteHomicidio, IncidenteTransito, EstacionPolicia
 from api.dependencies import get_current_user
+from api.utils.geo import parse_bbox
 
 router = APIRouter()
 
@@ -24,36 +25,36 @@ def _grid_cluster(queryset, zoom: int):
 
 @router.get("/incidents/homicides")
 def list_homicides(
-    bbox: str = Query(None, regex="^-?[\d.]+,-?[\d.]+,-?[\d.]+,-?[\d.]+$"),
+    bbox: str = Query(None, pattern=r"^-?[\d.]+,-?[\d.]+,-?[\d.]+,-?[\d.]+$"),
     zoom: int = Query(12, ge=1, le=20),
 ):
     qs = IncidenteHomicidio.objects.all()
     if bbox:
-        parts = [float(x) for x in bbox.split(",")]
-        qs = qs.filter(latitud__gte=parts[1], latitud__lte=parts[3], longitud__gte=parts[0], longitud__lte=parts[2])
+        pb = parse_bbox(bbox)
+        qs = qs.filter(latitud__gte=pb["lat_min"], latitud__lte=pb["lat_max"], longitud__gte=pb["lng_min"], longitud__lte=pb["lng_max"])
     clusters = _grid_cluster(qs, zoom)
     return {"clusters": clusters, "total": len(clusters), "loading": False}
 
 
 @router.get("/incidents/traffic")
 def list_traffic_incidents(
-    bbox: str = Query(None, regex="^-?[\d.]+,-?[\d.]+,-?[\d.]+,-?[\d.]+$"),
+    bbox: str = Query(None, pattern=r"^-?[\d.]+,-?[\d.]+,-?[\d.]+,-?[\d.]+$"),
     zoom: int = Query(12, ge=1, le=20),
 ):
     qs = IncidenteTransito.objects.all()
     if bbox:
-        parts = [float(x) for x in bbox.split(",")]
-        qs = qs.filter(latitud__gte=parts[1], latitud__lte=parts[3], longitud__gte=parts[0], longitud__lte=parts[2])
+        pb = parse_bbox(bbox)
+        qs = qs.filter(latitud__gte=pb["lat_min"], latitud__lte=pb["lat_max"], longitud__gte=pb["lng_min"], longitud__lte=pb["lng_max"])
     clusters = _grid_cluster(qs, zoom)
     return {"clusters": clusters, "total": len(clusters), "loading": False}
 
 
 @router.get("/poi/police-stations")
-def list_police_stations(bbox: str = Query(None, regex="^-?[\d.]+,-?[\d.]+,-?[\d.]+,-?[\d.]+$")):
+def list_police_stations(bbox: str = Query(None, pattern=r"^-?[\d.]+,-?[\d.]+,-?[\d.]+,-?[\d.]+$")):
     qs = EstacionPolicia.objects.filter(activo=True)
     if bbox:
-        parts = [float(x) for x in bbox.split(",")]
-        qs = qs.filter(latitud__gte=parts[1], latitud__lte=parts[3], longitud__gte=parts[0], longitud__lte=parts[2])
+        pb = parse_bbox(bbox)
+        qs = qs.filter(latitud__gte=pb["lat_min"], latitud__lte=pb["lat_max"], longitud__gte=pb["lng_min"], longitud__lte=pb["lng_max"])
     return [
         {"id": p.id, "nombre": p.nombre, "direccion": p.direccion, "lat": p.latitud, "lng": p.longitud}
         for p in qs

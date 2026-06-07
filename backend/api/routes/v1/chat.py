@@ -104,21 +104,16 @@ def handle_intent(intent, msg):
 
     if intent == 'weather':
         try:
-            import httpx
-            resp = httpx.get(
-                "https://api.open-meteo.com/v1/forecast"
-                "?latitude=6.2476&longitude=-75.5658"
-                "&current=temperature_2m,relative_humidity_2m,precipitation,weather_code"
-                "&timezone=America%2FBogota",
-                timeout=10,
-            )
-            resp.raise_for_status()
-            cur = resp.json()["current"]
-            wmo = {0:"Despejado",1:"Mayormente despejado",2:"Parcialmente nublado",3:"Nublado",45:"Niebla",51:"Lluvia ligera",53:"Lluvia moderada",55:"Lluvia intensa",61:"Lluvia ligera",63:"Lluvia moderada",65:"Lluvia intensa",80:"Chubascos ligeros",81:"Chubascos moderados",82:"Chubascos intensos",95:"Tormenta",96:"Tormenta con granizo",99:"Tormenta con granizo intenso"}
-            temp = cur["temperature_2m"]
-            humidity = cur["relative_humidity_2m"]
+            from api.utils.weather_map import weather_condition
+            from api.services.weather import fetch_current_weather, extract_current
+            data = fetch_current_weather()
+            if not data:
+                return "🌤️ No pude obtener el clima en este momento. Intenta de nuevo más tarde."
+            cur = extract_current(data)
+            temp = cur["temp"]
+            humidity = cur["humidity"]
             rain = cur["precipitation"] or 0
-            cond = wmo.get(cur["weather_code"], "Desconocido")
+            cond = weather_condition(cur["weather_code"])
             return (
                 f"🌤️ **Clima en Medellín ahora**\n\n"
                 f"🌡️ Temperatura: {temp}°C\n"

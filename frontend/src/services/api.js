@@ -37,6 +37,11 @@ api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const original = err.config
+    if (!err.response && !original._retryNetwork) {
+      original._retryNetwork = true
+      await new Promise(r => setTimeout(r, 1500))
+      return api(original)
+    }
     if (err.response?.status !== 401 || original._retry) return Promise.reject(err)
     const authEndpoints = ['/api/auth/login', '/api/auth/register', '/api/auth/refresh']
     if (authEndpoints.some(url => original.url.includes(url))) return Promise.reject(err)

@@ -1,9 +1,11 @@
-import math
+import asyncio
 import logging
+import time
 from datetime import timedelta
 from django.utils import timezone
 from django.db.models import Q, Count
 from apps.core.models import ZonaRiesgo, EventoRiesgo, ReporteIncidente
+from api.utils.geo import haversine, bounding_box
 
 log = logging.getLogger("ml_zonas")
 
@@ -22,16 +24,11 @@ TIPO_PESOS = {
 
 NIVEL_PESOS = {"critico": 1.0, "alto": 0.7, "medio": 0.4, "bajo": 0.15}
 
+_zonas_cache = None
+_zonas_cache_ts = 0.0
+
 _weather_cache_val = 0.0
 _weather_cache_ts = 0.0
-
-
-def _haversine(lat1, lng1, lat2, lng2):
-    R = 6371
-    dlat = math.radians(lat2 - lat1)
-    dlng = math.radians(lng2 - lng1)
-    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng / 2) ** 2
-    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
 async def _weather_factor():
@@ -52,7 +49,7 @@ async def _weather_factor():
             resp.raise_for_status()
             data = resp.json()
     except Exception as e:
-        log.warning(f"Zonas weather fetch error: {e}")
+        log.debug(f"Zonas weather fetch error: {e}")
         return _weather_cache_val
     current = data.get("current", {})
     rain = current.get("rain", 0) or current.get("precipitation", 0) or 0
@@ -69,14 +66,19 @@ async def _weather_factor():
 
 def _eventos_score(lat, lng, radio_km):
     now = timezone.now()
+    bbox = bounding_box(lat, lng, radio_km)
     eventos = EventoRiesgo.objects.filter(
-        activo=True
+        activo=True,
+        latitud__gte=bbox["lat__gte"],
+        latitud__lte=bbox["lat__lte"],
+        longitud__gte=bbox["lng__gte"],
+        longitud__lte=bbox["lng__lte"],
     ).filter(
         Q(expira_en__isnull=True) | Q(expira_en__gte=now)
     )
     score = 0.0
     for e in eventos:
-        d = _haversine(lat, lng, e.latitud, e.longitud)
+        d = haversine(lat, lng, e.latitud, e.longitud)
         if d <= radio_km:
             tipo_w = TIPO_PESOS.get(e.tipo, 0.10)
             nivel_w = NIVEL_PESOS.get(e.nivel, 0.4)
@@ -91,10 +93,17 @@ def _eventos_score(lat, lng, radio_km):
 
 
 def _reportes_score(lat, lng, radio_km):
-    reportes = ReporteIncidente.objects.filter(activo=True)
+    bbox = bounding_box(lat, lng, radio_km)
+    reportes = ReporteIncidente.objects.filter(
+        activo=True,
+        latitud__gte=bbox["lat__gte"],
+        latitud__lte=bbox["lat__lte"],
+        longitud__gte=bbox["lng__gte"],
+        longitud__lte=bbox["lng__lte"],
+    )
     score = 0.0
     for r in reportes:
-        d = _haversine(lat, lng, r.latitud, r.longitud)
+        d = haversine(lat, lng, r.latitud, r.longitud)
         if d <= radio_km:
             score += 0.12
     return min(score, 0.5)
@@ -109,10 +118,7 @@ def compute_risk(zona):
     reportes = _reportes_score(lat, lng, radio_km)
 
     try:
-        import asyncio
-        loop = asyncio.new_event_loop()
-        weather = loop.run_until_complete(_weather_factor())
-        loop.close()
+        weather = asyncio.run(_weather_factor())
     except Exception:
         weather = 0.0
 
@@ -130,7 +136,11 @@ def compute_risk(zona):
     return nivel, round(score * 100, 1)
 
 
-def compute_all_zonas():
+def compute_all_zonas(force=False):
+    global _zonas_cache, _zonas_cache_ts
+    now = time.time()
+    if not force and _zonas_cache is not None and (now - _zonas_cache_ts) < 60:
+        return _zonas_cache
     zonas = ZonaRiesgo.objects.filter(activo=True).select_related("categoria")
     results = []
     for z in zonas:
@@ -150,4 +160,6 @@ def compute_all_zonas():
             "radio_metros": z.radio_metros,
             "activo": z.activo,
         })
+    _zonas_cache = results
+    _zonas_cache_ts = now
     return results

@@ -4,7 +4,10 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 from pathlib import Path
 TEST_DB = str(Path(__file__).resolve().parent / "test_db.sqlite3")
 if os.path.exists(TEST_DB):
-    os.remove(TEST_DB)
+    try:
+        os.remove(TEST_DB)
+    except OSError:
+        pass
 os.environ["DB_NAME"] = TEST_DB
 
 import django

@@ -25,7 +25,8 @@ async def autocomplete(q: str = Query(..., min_length=2), limit: int = Query(5, 
     else:
         result = await _nominatim(q, limit)
 
-    CACHE[cache_key] = {"data": result, "ts": now}
+    if result.get("suggestions"):
+        CACHE[cache_key] = {"data": result, "ts": now}
     return result
 
 
@@ -57,25 +58,37 @@ async def _geoapify(q: str, limit: int) -> dict:
 
 async def _nominatim(q: str, limit: int) -> dict:
     url = (
-        f"https://nominatim.openstreetmap.org/search"
-        f"?q={quote(q)}%2C+Medell%C3%ADn%2C+Colombia"
-        f"&format=json&limit={limit}&accept-language=es"
+        f"https://photon.komoot.io/api/"
+        f"?q={quote(q)}&limit={limit}&lat=6.2476&lon=-75.5658"
     )
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.get(url, headers={"User-Agent": "VisionVial/1.0"}, timeout=10)
             resp.raise_for_status()
             data = resp.json()
-        suggestions = [
-            {
-                "label": item.get("display_name", ""),
-                "lat": float(item["lat"]),
-                "lng": float(item["lon"]),
-                "type": "address",
-            }
-            for item in data
-        ]
-        return {"suggestions": suggestions, "source": "nominatim"}
+        suggestions = []
+        for f in data.get("features", []):
+            props = f.get("properties", {})
+            coords = f.get("geometry", {}).get("coordinates", [])
+            if len(coords) < 2: continue
+            nombre = props.get("name", "")
+            street = props.get("street", "")
+            ciudad = props.get("city", props.get("district", ""))
+            if nombre and street:
+                label = f"{nombre}, {street}, {ciudad}" if ciudad else f"{nombre}, {street}"
+            elif street:
+                label = f"{street}, {ciudad}" if ciudad else street
+            elif nombre:
+                label = f"{nombre}, {ciudad}" if ciudad else nombre
+            else:
+                label = props.get("osm_value", props.get("type", ""))
+            suggestions.append({
+                "label": label,
+                "lat": float(coords[1]),
+                "lng": float(coords[0]),
+                "type": props.get("type", "address"),
+            })
+        return {"suggestions": suggestions, "source": "photon"}
     except Exception as e:
-        log.warning(f"Nominatim error: {e}")
-        return {"suggestions": [], "source": "nominatim"}
+        log.warning(f"Photon error: {e}")
+        return {"suggestions": [], "source": "photon"}

@@ -1,8 +1,0 @@
-*.exe
-*.enc
-*.sha256
-dist/
-__pycache__/
-*.pyc
-db.sqlite3
-.env

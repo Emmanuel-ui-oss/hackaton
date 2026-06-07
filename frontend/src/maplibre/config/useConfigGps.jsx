@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-export default function useConfigGps({ ubicacion, setViewState, userMoved }) {
+export default function useConfigGps({ ubicacion, setViewState, userMoved, forceFollow }) {
     const firstFix = useRef(false);
 
     useEffect(() => {
@@ -10,9 +10,9 @@ export default function useConfigGps({ ubicacion, setViewState, userMoved }) {
             firstFix.current = true;
             const [lat, lng] = ubicacion;
             setViewState(prev => ({ ...prev, longitude: lng, latitude: lat }));
-        } else if (!userMoved) {
+        } else if (!userMoved || forceFollow) {
             const [lat, lng] = ubicacion;
             setViewState(prev => ({ ...prev, longitude: lng, latitude: lat }));
         }
-    }, [ubicacion]);
+    }, [ubicacion, forceFollow]);
 }

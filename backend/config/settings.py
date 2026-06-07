@@ -83,7 +83,7 @@ CACHES = {
         "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "PARSER_CLASS": "redis.connection.HiredisParser",
+            "PARSER_CLASS": "redis.connection.DefaultParser",
             "SOCKET_CONNECT_TIMEOUT": 2,
             "SOCKET_TIMEOUT": 2,
             "IGNORE_EXCEPTIONS": True,
@@ -107,9 +107,6 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
 
 LOGGING = {
     "version": 1,
