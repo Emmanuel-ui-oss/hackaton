@@ -12,20 +12,24 @@ function formatDuration(seconds) {
     return `${h}h ${min}min`;
 }
 
-export default function HUD({ desviacion, routeInfo }) {
+export default function HUD({ desviacion, distanciaRestante, tiempoRestante }) {
     return (
         <div className="map-hud">
             <div className="map-hud__label">Estado</div>
-            <div style={{ marginBottom: 10 }}>
-                <span className={`map-hud__badge ${desviacion ? "map-hud__badge--warn" : "map-hud__badge--ok"}`}>
-                    {desviacion ? "⚠ Fuera de ruta" : "✓ En ruta"}
-                </span>
-            </div>
+            <span className={`map-hud__badge ${desviacion ? "map-hud__badge--warn" : "map-hud__badge--ok"}`}>
+                {desviacion ? "⚠ Fuera de ruta" : "✓ En ruta"}
+            </span>
             <hr className="map-hud__divider" />
-            <div className="map-hud__label">Distancia</div>
-            <div className="map-hud__value--sm">{formatDistance(routeInfo?.distance)}</div>
-            <div className="map-hud__label">Tiempo estimado</div>
-            <div className="map-hud__value--sm">{formatDuration(routeInfo?.duration)}</div>
+            <div className="map-hud__row">
+                <div className="map-hud__col">
+                    <div className="map-hud__label">Restante</div>
+                    <div className="map-hud__value--sm">{formatDistance(distanciaRestante)}</div>
+                </div>
+                <div className="map-hud__col">
+                    <div className="map-hud__label">Tiempo</div>
+                    <div className="map-hud__value--sm">{formatDuration(tiempoRestante)}</div>
+                </div>
+            </div>
         </div>
     );
 }

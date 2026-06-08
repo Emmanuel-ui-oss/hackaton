@@ -39,6 +39,7 @@ export default function Sidebar({ open, onClose }) {
         <div className="sidebar-brand">
           <VisionVialLogo className="sidebar-brand-logo" />
           <div className="sidebar-brand-sub">Plataforma de Movilidad</div>
+          <div id="sidebar-weather" className="sidebar-weather" />
         </div>
         <nav className="sidebar-nav">
           <div className="nav-section-label">Principal</div>

@@ -3,6 +3,7 @@ import api from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import usePageData from '../hooks/usePageData'
 import { Clipboard, ThumbsUp, ThumbsDown, EmptyBox } from '../icons'
+import './Reportes.css'
 
 export default function Reportes() {
   const { data: reportes, loading, load } = usePageData(() => api.get('/api/v1/reportes'))
@@ -67,20 +68,20 @@ export default function Reportes() {
                 </tr>
               </thead>
               <tbody>
-                {reportes.map(r => (
-                  <tr key={r.id}>
-                    <td><span className={`badge badge-${r.tipo === 'accidente' ? 'critico' : r.tipo === 'bloqueo' ? 'alto' : 'info'}`}>{r.tipo}</span></td>
-                    <td style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descripcion}</td>
-                    <td>{r.usuario_username}</td>
-                    <td>{ThumbsUp} {r.votos_positivos} {ThumbsDown} {r.votos_negativos}</td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        <button className="btn btn-sm btn-ghost" onClick={() => handleVote(r.id, true)}>{ThumbsUp}</button>
-                        <button className="btn btn-sm btn-ghost" onClick={() => handleVote(r.id, false)}>{ThumbsDown}</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                  {reportes.map(r => (
+                      <tr key={r.id}>
+                        <td data-label="Tipo"><span className={`badge badge-${r.tipo === 'accidente' ? 'critico' : r.tipo === 'bloqueo' ? 'alto' : 'info'}`}>{r.tipo}</span></td>
+                        <td data-label="Descripción" style={{ maxWidth: '40vw', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.descripcion}</td>
+                        <td data-label="Usuario">{r.usuario_username}</td>
+                        <td data-label="Votos">{ThumbsUp} {r.votos_positivos} {ThumbsDown} {r.votos_negativos}</td>
+                        <td data-label="Acción">
+                          <div style={{ display: 'flex', gap: 4 }}>
+                            <button className="btn btn-sm btn-ghost" onClick={() => handleVote(r.id, true)}>{ThumbsUp}</button>
+                            <button className="btn btn-sm btn-ghost" onClick={() => handleVote(r.id, false)}>{ThumbsDown}</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
               </tbody>
             </table>
           )}
@@ -102,7 +103,7 @@ export default function Reportes() {
             </div>
             <div className="form-group">
               <label className="form-label">Ubicación</label>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className="reportes-location-row">
                 <input className="form-input" style={{ flex: 1 }} value={form.ubicacion_texto} onChange={e => setForm(p => ({ ...p, ubicacion_texto: e.target.value }))} placeholder="Dirección o referencia" />
                 <button type="button" className="btn btn-ghost" onClick={() => {
                   if (!navigator.geolocation) { showError('Geolocalización no disponible'); return }

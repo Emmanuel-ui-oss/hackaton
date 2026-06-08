@@ -68,6 +68,21 @@
     color: #9aa0a6;
 }
 
+.ctrl-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.ctrl-btn--speaking {
+    animation: ctrl-voice-pulse 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes ctrl-voice-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0); }
+    100% { box-shadow: 0 0 12px 4px rgba(0, 212, 255, 0.4); }
+}
+
 @media (max-width: 768px) {
     .ctrl-panel {
         top: 50px;
@@ -81,5 +96,11 @@
         gap: 6px;
     }
     .ctrl-btn-icon { font-size: 14px; width: 16px; height: 16px; }
-    .ctrl-btn-label { font-size: 9px; }
+    .ctrl-btn-label { display: none; }
+}
+
+@media (max-width: 480px) {
+    .ctrl-panel { padding: 3px; gap: 1px; }
+    .ctrl-btn { padding: 3px 6px; }
+    .ctrl-btn-icon { font-size: 13px; width: 14px; height: 14px; }
 }

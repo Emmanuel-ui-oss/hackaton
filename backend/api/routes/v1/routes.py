@@ -29,7 +29,7 @@ async def _here_routes(olat, olng, dlat, dlng, alternatives):
         "destination": f"{dlat},{dlng}",
         "apiKey": HERE_API_KEY,
         "transportMode": "car",
-        "return": "summary,polyline,travelSummary",
+        "return": "summary,polyline,travelSummary,instructions",
         "lang": "es",
     }
     if alternatives:
@@ -48,11 +48,19 @@ async def _here_routes(olat, olng, dlat, dlng, alternatives):
             poly = sec.get("polyline", "")
             summary = sec.get("summary", {})
             coords = _decode_here_polyline(poly) if poly else []
+            instructions = sec.get("instructions", [])
             routes.append({
                 "distance_m": summary.get("length", 0),
                 "duration_s": summary.get("duration", 0),
                 "coords": coords,
                 "source": "here",
+                "steps": [{
+                    "distance": inst.get("distance", 0),
+                    "nombre": inst.get("streetName", inst.get("text", "")),
+                    "tipo": "turn",
+                    "modificador": "left" if "left" in inst.get("direction", "").lower() else ("right" if "right" in inst.get("direction", "").lower() else "straight"),
+                    "punto": [inst.get("position", {}).get("lng"), inst.get("position", {}).get("lat")]
+                } for inst in instructions],
             })
         waze_url = _waze_url(dlat, dlng)
         return {"routes": routes, "source": "here", "waze_url": waze_url}
@@ -83,10 +91,16 @@ async def _osrm_routes(olat, olng, dlat, dlng, alternatives):
         routes = []
         for r in data.get("routes", []):
             coords = r.get("geometry", {}).get("coordinates", [])
+            legs = r.get("legs", [])
             routes.append({
                 "distance_m": r.get("distance", 0),
                 "duration_s": r.get("duration", 0),
                 "coords": [[c[1], c[0]] for c in coords],
+                "legs": [{"steps": [{
+                    "distance": s.get("distance", 0),
+                    "name": s.get("name", ""),
+                    "maneuver": s.get("maneuver", {}),
+                } for s in leg.get("steps", [])]} for leg in legs],
                 "source": "osrm",
             })
         waze_url = _waze_url(dlat, dlng)

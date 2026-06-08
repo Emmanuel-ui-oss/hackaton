@@ -197,10 +197,32 @@
 .bottom-nav-item:hover, .bottom-nav-item.active { color: var(--blue); text-decoration: none; }
 .bottom-nav-item-icon { font-size: 1.2rem; }
 
+.sidebar-weather {
+  display: none;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  width: 100%;
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: #9aa0a6;
+}
+.sidebar-weather > * {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 768px) {
   .sidebar { transform: translateX(-100%); }
   .sidebar.open { transform: translateX(0); }
   .main-area { margin-left: 0; }
   .menu-toggle { display: flex; }
   .bottom-nav { display: block; }
+  .topbar-weather { display: none; }
+  .sidebar-weather { display: block; }
 }

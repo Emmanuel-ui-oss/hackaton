@@ -11,7 +11,7 @@ export default function Perfil() {
 
   const handleLogout = () => {
     logout()
-    navigate('/login')
+    navigate('/')
     success('Sesión cerrada')
   }
 

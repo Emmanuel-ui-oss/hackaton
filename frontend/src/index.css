@@ -635,7 +635,7 @@ tr:last-child td { border-bottom: none; }
 
 @media (max-width: 768px) {
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-  .page { padding: 12px; }
+  .page { padding: 12px 12px 4.2rem 12px; }
   .page-title { font-size: 1.1rem; }
   .modal { padding: 20px; margin: 12px; }
 }

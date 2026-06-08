@@ -6,7 +6,7 @@ export default function MapDataLayers({
   showRadar,
   cone,
   destination, routeFast, routeSafe, routeType, routeTrimmed, routeCompleted,
-  zonas, reportes, alertas, favoritos, paradas,
+  zonas, reportes, favoritos, paradas,
 }) {
   return (
     <>
@@ -78,26 +78,6 @@ export default function MapDataLayers({
               "circle-radius": 12, "circle-color": ["get", "color"],
               "circle-opacity": 1, "circle-stroke-width": 3, "circle-stroke-color": "#fff",
             }} />
-        </Source>
-      )}
-
-      {alertas?.data && (
-        <Source id="alertas" type="geojson" data={alertas.data}>
-          <Layer id="alertas-glow" type="circle"
-            paint={{
-              "circle-radius": 30,
-              "circle-color": ["match", ["get", "nivel"], "CRITICO", "#ff1744", "ALTO", "#ffab00", "MEDIO", "#2979ff", "#00c853"],
-              "circle-opacity": 0.5, "circle-blur": 1,
-            }} />
-          <Layer id="alertas-bg" type="circle"
-            paint={{
-              "circle-radius": 20,
-              "circle-color": ["match", ["get", "nivel"], "CRITICO", "#ff1744", "ALTO", "#ffab00", "MEDIO", "#2979ff", "#00c853"],
-              "circle-opacity": 1, "circle-stroke-width": 3, "circle-stroke-color": "#fff",
-            }} />
-          <Layer id="alertas-icon" type="symbol"
-            layout={{ "text-field": "!", "text-size": 20 }}
-            paint={{ "text-color": "#fff" }} />
         </Source>
       )}
 

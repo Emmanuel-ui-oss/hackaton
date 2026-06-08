@@ -100,5 +100,12 @@
     }
     .stats-btn-icon { font-size: 12px; }
     .stats-btn-value { font-size: 13px; }
-    .stats-btn-label { font-size: 8px; }
+    .stats-btn-label { display: none; }
+}
+
+@media (max-width: 480px) {
+    .stats-panel { padding: 3px; gap: 1px; }
+    .stats-btn { grid-template-columns: 16px 20px; padding: 3px 5px; gap: 3px; }
+    .stats-btn-icon { font-size: 11px; }
+    .stats-btn-value { font-size: 11px; }
 }

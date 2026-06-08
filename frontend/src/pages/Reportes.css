@@ -1,0 +1,47 @@
+/* ── Table → cards on mobile ── */
+@media (max-width: 768px) {
+  .table-container table thead {
+    display: none;
+  }
+  .table-container table tbody tr {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .table-container table tbody tr:last-child {
+    border-bottom: none;
+  }
+  .table-container table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: none;
+    font-size: 0.75rem;
+    gap: 8px;
+  }
+  .table-container table tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: rgba(0, 240, 255, 0.4);
+    flex-shrink: 0;
+  }
+}
+
+/* ── Create form location row ── */
+.reportes-location-row {
+  display: flex;
+  gap: 8px;
+}
+@media (max-width: 480px) {
+  .reportes-location-row {
+    flex-direction: column;
+  }
+  .reportes-location-row .btn {
+    width: 100%;
+  }
+}

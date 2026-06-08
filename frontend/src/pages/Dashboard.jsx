@@ -59,9 +59,7 @@ export default function Dashboard() {
   const [ticker, setTicker] = useState([])
   const [reportHistory, setReportHistory] = useState([])
   const [zoneHistory, setZoneHistory] = useState([])
-  const [lastUpdate, setLastUpdate] = useState(null)
   const socketStats = useSocket().stats
-  const wsConnected = useSocket().connected
   const { user, logout } = useAuth()
   const { error: showError } = useToast()
   const navigate = useNavigate()
@@ -85,8 +83,6 @@ export default function Dashboard() {
         ...t,
       ].slice(0, 30))
     }
-    setLastUpdate(new Date())
-
     if (socketStats.reportes_por_tipo) {
       setReportHistory(prev => [...prev, { accidente: 0, bloqueo: 0, robo: 0, otro: 0, clima: 0, zona_peligrosa: 0, ...socketStats.reportes_por_tipo }].slice(-20))
     }
@@ -173,46 +169,9 @@ export default function Dashboard() {
     }],
   }
 
-  const lastUpdateStr = lastUpdate
-    ? `Hace ${Math.floor((Date.now() - lastUpdate.getTime()) / 1000)}s`
-    : '...'
-
   return (
     <div className="dash-vision">
       <div className="dash-bg-grid" />
-
-      {/* ── TOP BAR ── */}
-      <div className="dash-topbar">
-        <div className="dash-top-left">
-          {weather.isLoading ? (
-            <Skeleton width={200} height={14} />
-          ) : weather.data ? (
-            <div className="dash-weather">
-              <span>{Sun} {weather.data.temp}°C</span>
-              <span className="ws-sep">·</span>
-              <span>{weather.data.condition}</span>
-              <span className="ws-sep">·</span>
-              <span>{Droplet} {weather.data.humidity}%</span>
-              <span className="ws-sep">·</span>
-              <span>{CloudRain} {weather.data.precipitation ?? weather.data.rain_prob}%</span>
-            </div>
-          ) : null}
-          <div className="dash-live">
-            <span className={`live-dot ${wsConnected ? 'live-on' : 'live-off'}`} />
-            <span className="live-text">{lastUpdateStr}</span>
-          </div>
-        </div>
-        <div className="dash-top-right">
-          <button className="dash-btn dash-btn-mapa" onClick={() => navigate('/mapa')}>
-            {MapIcon} Mapa
-          </button>
-          <div className="dash-user" onClick={() => navigate('/perfil')}>
-            <span className="dash-avatar">{user?.username?.[0]?.toUpperCase()}</span>
-            <span className="dash-username">{user?.username}</span>
-          </div>
-          <button className="dash-btn dash-btn-logout" onClick={() => { logout(); navigate('/login') }}>Salir</button>
-        </div>
-      </div>
 
       {/* ── STATS ROW ── */}
       <div className="dash-stats">

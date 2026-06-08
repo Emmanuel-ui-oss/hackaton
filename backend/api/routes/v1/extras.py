@@ -1,8 +1,8 @@
+# -*- coding: utf-8 -*-
 import csv
 import io
 import json
 import math
-import os
 import re
 import socket
 from pathlib import Path
@@ -160,12 +160,6 @@ def eliminar_reporte(reporte_id: int, user=Depends(get_current_user)):
         reporte = ReporteIncidente.objects.filter(id=reporte_id).first()
         if not reporte:
             raise HTTPException(status_code=404, detail="Reporte no encontrado")
-        if reporte.foto:
-            try:
-                if os.path.isfile(reporte.foto.path):
-                    os.remove(reporte.foto.path)
-            except (OSError, IOError) as e:
-                log_audit(user, "eliminar_reporte_foto_error", "ReporteIncidente", reporte_id, {"error": str(e)})
         reporte.delete()
         log_audit(user, "eliminar_reporte", "ReporteIncidente", reporte_id, {})
         return {"detail": "Reporte eliminado"}

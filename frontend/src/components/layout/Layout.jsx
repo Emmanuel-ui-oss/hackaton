@@ -35,8 +35,7 @@ export default function Layout() {
       <ParticleBackground />
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="main-area">
-        {!isDashboard && (
-          <header className="topbar">
+        <header className="topbar">
             <div className="topbar-left">
               <button className="menu-toggle" onClick={() => setSidebarOpen(true)}>
                 {Menu}
@@ -56,7 +55,6 @@ export default function Layout() {
               </button>
             </div>
           </header>
-        )}
         <main className={`content ${isFullscreen ? 'fullscreen' : ''}`}>
           <AnimatedPage><Outlet /></AnimatedPage>
         </main>

@@ -104,6 +104,10 @@ export default function Mapa() {
             </div>,
             document.getElementById('topbar-weather')
           )}
+          {weather.data && createPortal(
+            <span>{getWeatherIcon(weather.data.weather_code)} {weather.data.temp}°C <span className="ws-sep">·</span> {weather.data.condition} <span className="ws-sep">·</span> {Droplet} {weather.data.humidity}% <span className="ws-sep">·</span> {CloudRain} {weather.data.rain_prob !== undefined ? `${weather.data.rain_prob}%` : `${weather.data.precipitation || 0}mm`}</span>,
+            document.getElementById('sidebar-weather')
+          )}
 
         <MapMapLibre onMapClick={handleMapClick} stats={displayStats} />
 
@@ -120,22 +124,6 @@ export default function Mapa() {
             })}
           </div>
         )}
-
-        <div className="dash-ticker">
-          <div className="ticker-title">LIVE TICKER</div>
-          {ticker.length === 0 ? (
-            <div className="ticker-empty">Esperando cambios...</div>
-          ) : (
-            ticker.map((t, i) => (
-              <div key={i} className="ticker-line">
-                <span className="ticker-time">{t.time}</span>
-                <span className={`ticker-${t.dir}`}>{t.dir === 'up' ? <span style={{display:'inline-flex'}}>{ArrowUp}</span> : <span style={{display:'inline-flex'}}>{ArrowDown}</span>}</span>
-                <span className="ticker-msg">{t.label}</span>
-                <span className="ticker-dir">{t.newV}</span>
-              </div>
-            ))
-          )}
-        </div>
 
         {showReportModal && reportCoords && (
           <div className="mapa-legend" style={{ bottom: 200, right: 12 }}>

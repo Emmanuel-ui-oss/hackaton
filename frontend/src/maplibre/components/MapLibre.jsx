@@ -24,14 +24,23 @@ import useMapLayers from "../hooks/useMapLayers";
 import useMapRoutes from "../hooks/useMapRoutes";
 import useZonasRiesgo from "../hooks/useZonasRiesgo";
 import useReportes from "../hooks/useReportes";
-import useAlertas from "../hooks/useAlertas";
 import useEventosSOS from "../hooks/useEventosSOS";
 import useFavoritos from "../hooks/useFavoritos";
 import useParadas from "../hooks/useParadas";
-import useVoiceNavigation from "../hooks/useVoiceNavigation";
+import useVoiceNavigation, { generarInstruccion } from "../hooks/useVoiceNavigation";
+import useVoice from "../hooks/useVoice";
 
 import useConfigGps from "../config/useConfigGps";
 import getVisionCone from "../utils/getVisionCone";
+
+function haversine(a, b) {
+    const R = 6371000;
+    const dLat = (b[0] - a[0]) * Math.PI / 180;
+    const dLng = (b[1] - a[1]) * Math.PI / 180;
+    const sinDLat = Math.sin(dLat / 2), sinDLng = Math.sin(dLng / 2);
+    const s = sinDLat * sinDLat + Math.cos(a[0] * Math.PI / 180) * Math.cos(b[0] * Math.PI / 180) * sinDLng * sinDLng;
+    return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+}
 
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY;
 const TOMTOM_KEY = import.meta.env.VITE_TOMTOM_KEY;
@@ -54,7 +63,6 @@ const NIVEL_COLORS = {
 
 const CUSTOM_LAYERS = [
     "reportes-circle", "reportes-glow",
-    "alertas-bg", "alertas-glow", "alertas-icon",
     "favoritos-icon",
     "paradas-glow", "paradas-bg", "paradas-circle", "paradas-dot",
     "lineas-bg", "lineas-fg",
@@ -70,7 +78,6 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
 
     const [showZonas, setShowZonas] = useState(false);
     const [showReportes, setShowReportes] = useState(false);
-    const [showAlertas, setShowAlertas] = useState(false);
     const [showSos, setShowSos] = useState(false);
     const [showFavoritos, setShowFavoritos] = useState(false);
     const [showParadas, setShowParadas] = useState(false);
@@ -78,6 +85,9 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
     const [viewState, setViewState] = useState({ longitude: -75.5636, latitude: 6.2518, zoom: 13 });
     const [selectedFeature, setSelectedFeature] = useState(null);
     const [voiceActive, setVoiceActive] = useState(false)
+    const [isSpeaking, setIsSpeaking] = useState(false)
+    const { setOnSpeaking } = useVoice();
+    useEffect(() => { setOnSpeaking(setIsSpeaking); }, []);
     const mapRef = useRef(null);
 
     const { ubicacion, accuracy, cargando } = useLocation();
@@ -89,6 +99,7 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
         routeType, setRouteType,
         routeLoading, destination,
         handleSelectDestino, fetchRoutes,
+        stepsFast, stepsSafe,
     } = useMapRoutes(ubicacion);
 
     const activeRoute = routeType === "fast" ? routeFast : routeSafe;
@@ -113,7 +124,6 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
 
     const zonas = useZonasRiesgo(showZonas);
     const reportes = useReportes(showReportes);
-    const alertas = useAlertas(showAlertas);
     const sos = useEventosSOS(showSos);
     const favoritos = useFavoritos(showFavoritos);
     const paradas = useParadas(showParadas);
@@ -121,6 +131,24 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
     const zonasData = useMemo(() => zonas.data, [zonas.data]);
     const { desviacion: nuevaDesviacion, indiceCercano } = useRouteProgress(posActual, routeCoords, accuracy);
     useEffect(() => { setDesviacion(nuevaDesviacion); }, [nuevaDesviacion]);
+
+    const [distanciaRestante, setDistanciaRestante] = useState(null);
+    const [tiempoRestante, setTiempoRestante] = useState(null);
+
+    useEffect(() => {
+        if (!routeCoords || !routeInfo?.distance || !posActual) {
+            setDistanciaRestante(null);
+            setTiempoRestante(null);
+            return;
+        }
+        const start = Math.max(0, indiceCercano);
+        let resto = 0;
+        for (let i = start; i < routeCoords.length - 1; i++) {
+            resto += haversine(routeCoords[i], routeCoords[i + 1]);
+        }
+        setDistanciaRestante(resto);
+        setTiempoRestante(routeInfo.duration * (resto / routeInfo.distance));
+    }, [routeCoords, routeInfo, posActual, indiceCercano]);
 
     const reRuteando = useRef(false);
     const ultimaReRuta = useRef(0);
@@ -175,21 +203,22 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
         setCone(getVisionCone(posActual, simBearingFinal));
     }, [posActual, simBearingFinal]);
 
+    const activeSteps = routeType === "fast" ? stepsFast : stepsSafe;
     useVoiceNavigation({
         ubicacion: posActual,
         routeCoords,
+        steps: activeSteps,
         zonasRiesgo: zonasData,
         activo: voiceActive && !!destination,
-        heading: simBearing || heading,
+        routeInfo,
     })
 
-    const toggles = { zonas: showZonas, reportes: showReportes, alertas: showAlertas, sos: showSos, favoritos: showFavoritos, paradas: showParadas };
+    const toggles = { zonas: showZonas, reportes: showReportes, sos: showSos, favoritos: showFavoritos, paradas: showParadas };
 
     const onToggle = useCallback((layer) => {
         switch (layer) {
             case "zonas": setShowZonas(v => !v); break;
             case "reportes": setShowReportes(v => !v); break;
-            case "alertas": setShowAlertas(v => !v); break;
             case "sos": setShowSos(v => !v); break;
             case "favoritos": setShowFavoritos(v => !v); break;
             case "paradas": setShowParadas(v => !v); break;
@@ -247,7 +276,6 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
                     })();
             let type = "desconocido";
             if (lid.startsWith("reportes")) type = "reporte";
-            else if (lid.startsWith("alertas")) type = "alerta";
             else if (lid.startsWith("favoritos")) type = "favorito";
             else if (lid.startsWith("paradas")) type = "parada";
             else if (lid.startsWith("lineas")) type = "linea";
@@ -260,6 +288,34 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
         if (onMapClick) onMapClick(e.lngLat);
     }, [onMapClick]);
 
+    const handleVoiceToggle = useCallback(() => {
+        const nuevo = !voiceActive;
+        setVoiceActive(nuevo);
+        if (nuevo && window.speechSynthesis) {
+            const synth = window.speechSynthesis;
+            synth.cancel();
+            let texto = 'Navegación por voz activada';
+            const primerPaso = activeSteps?.[0];
+            if (primerPaso) {
+                const instruccion = generarInstruccion(primerPaso);
+                if (!instruccion.startsWith('Inicie')) {
+                    texto += `. ${instruccion}`;
+                } else if (activeSteps?.[1]) {
+                    texto += `. ${generarInstruccion(activeSteps[1])}`;
+                }
+            }
+            const u = new SpeechSynthesisUtterance(texto);
+            const voces = synth.getVoices();
+            const voz = voces.find(v => v.lang.startsWith('es-CO'))
+                || voces.find(v => v.lang.startsWith('es'))
+                || null;
+            if (voz) { u.voice = voz; u.lang = voz.lang; }
+            else { u.lang = 'es-CO'; }
+            u.rate = 0.82;
+            synth.speak(u);
+        }
+    }, [voiceActive, activeSteps]);
+
     return (
         <div className={`Map ${darkMode ? "theme-dark" : "theme-light"}`}>
             <SearchAddress onSelect={handleSearchSelect} />
@@ -271,24 +327,9 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
                 showTraffic={layers.showTraffic} setShowTraffic={layers.setShowTraffic}
                 showRadar={layers.showRadar} setShowRadar={layers.setShowRadar}
                 following={following} handleRecenter={handleRecenter}
+                voiceActive={voiceActive} onVoiceToggle={handleVoiceToggle} isSpeaking={isSpeaking}
+                simActivo={simActivo} onSimToggle={simToggle} puedeSimular={puedeSimular}
             />
-
-                        <button
-                className={`voice-btn ${voiceActive ? 'voice-btn--on' : ''}`}
-                onClick={() => setVoiceActive(v => !v)}
-                title="Navegación por voz"
-            >
-                🔊
-            </button>
-
-            <button
-                className={`gps-sim-btn ${simActivo ? 'gps-sim-btn--on' : ''}`}
-                onClick={simToggle}
-                disabled={!puedeSimular}
-                title={!puedeSimular ? 'Busque un destino primero' : simActivo ? 'Detener simulación GPS' : 'Simular GPS'}
-            >
-                {simActivo ? '⏹' : '▶ Simular'}
-            </button>
 
             <Map
                 ref={mapRef}
@@ -314,7 +355,6 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
                     routeCompleted={routeCompleted}
                     zonas={zonas}
                     reportes={reportes}
-                    alertas={alertas}
                     favoritos={favoritos}
                     paradas={paradas}
                 />
@@ -339,7 +379,7 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
                 )}
             </Map>
 
-            {destination && <HUD desviacion={desviacion} routeInfo={routeInfo} />}
+            {destination && <HUD desviacion={desviacion} distanciaRestante={distanciaRestante} tiempoRestante={tiempoRestante} />}
 
             <RouteSelector
                 routeType={routeType}

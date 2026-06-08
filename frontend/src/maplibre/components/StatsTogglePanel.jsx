@@ -1,8 +1,8 @@
-import { Warning, Clipboard, Bell, Train, AlertCircle, Star, MapPin, Chart } from "../../icons";
+import { Warning, Clipboard, Train, AlertCircle, Star, MapPin, Chart } from "../../icons";
 import "../css/StatsTogglePanel.css";
 
 const CARD_COLORS = {
-    ZONAS: "#ffab00", REPORTES: "#2979ff", ALERTAS: "#ff1744",
+    ZONAS: "#ffab00", REPORTES: "#2979ff",
     LINEAS: "#00c853", SOS: "#d500f9", FAVORITOS: "#ffab00",
     PARADAS: "#00bcd4", TOTAL: "#2979ff",
 };
@@ -10,8 +10,6 @@ const CARD_COLORS = {
 const ITEMS = [
     { key: "zonas_riesgo",  icon: Warning,    label: "ZONAS RIESGO",    colorKey: "ZONAS",   layer: "zonas" },
     { key: "reportes_activos", icon: Clipboard, label: "REPORTES",      colorKey: "REPORTES", layer: "reportes" },
-    { key: "alertas_enviadas", icon: Bell,      label: "ALERTAS",        colorKey: "ALERTAS",  layer: "alertas",
-      altKey: "alertas_no_leidas" },
     { key: "lineas_transporte", icon: Train,     label: "LINEAS TRANS.", colorKey: "LINEAS",   layer: "paradas" },
     { key: "eventos_sos", icon: AlertCircle, label: "EVENTOS SOS",    colorKey: "SOS",       layer: "sos" },
     { key: "favoritos",   icon: Star,       label: "FAVORITOS",      colorKey: "FAVORITOS", layer: "favoritos" },

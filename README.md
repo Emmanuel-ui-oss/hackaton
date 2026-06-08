@@ -117,6 +117,11 @@ npm run setup      # instala dependencias, migra y puebla la BD
 npm run dev
 ```
 
+# Tunel
+```bash
+npm run online
+```
+
 ### Acceso
 - **Frontend:** http://localhost:5173/
 - **Backend API:** http://localhost:8001/

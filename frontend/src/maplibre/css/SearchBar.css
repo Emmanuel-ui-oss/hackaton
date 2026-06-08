@@ -26,10 +26,6 @@
     flex-shrink: 0;
 }
 
-.search-bar__dot--blue {
-    background: #3b82f6;
-}
-
 .search-bar__dot--red {
     background: #ef4444;
 }
@@ -48,12 +44,6 @@
 
 .search-bar__input::placeholder {
     color: var(--text-secondary);
-}
-
-.search-bar__divider {
-    height: 1px;
-    background: var(--glass-border);
-    margin: 8px 0;
 }
 
 .search-bar__results {
@@ -77,11 +67,6 @@
 
 .search-bar__result:hover {
     background: rgba(128, 128, 128, 0.1);
-}
-
-.search-bar__result-icon {
-    flex-shrink: 0;
-    font-size: 13px;
 }
 
 .search-bar__result-text {

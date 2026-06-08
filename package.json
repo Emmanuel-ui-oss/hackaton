@@ -10,7 +10,8 @@
     "dev:backend": "cd backend && venv\\Scripts\\uvicorn api.main:app --reload --port 8001",
     "dev:frontend": "cd frontend && npm run dev",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "build": "cd frontend && npm run build"
+    "build": "cd frontend && npm run build",
+    "online": "npx cloudflared tunnel --url http://localhost:5173"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

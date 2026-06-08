@@ -45,7 +45,7 @@ export default function Transporte() {
               <div
                 key={l.id}
                 className="card"
-                style={{ cursor: 'pointer', padding: 16, borderLeft: `4px solid ${l.color || '#2979ff'}`, ...(selected?.id === l.id ? { borderColor: 'var(--blue)' } : {}) }}
+                style={{ cursor: 'pointer', padding: 16, borderLeftWidth: 4, borderLeftStyle: 'solid', borderLeftColor: selected?.id === l.id ? 'var(--blue)' : (l.color || '#2979ff') }}
                 onClick={() => selectLinea(l)}
               >
                 <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{l.nombre}</div>
