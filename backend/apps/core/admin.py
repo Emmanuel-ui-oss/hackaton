@@ -8,14 +8,12 @@ from apps.core.models import (
     ContactoEmergencia,
     EventoRiesgo,
     LogAuditoria,
-    LineaTransporte,
-    Parada,
-    HorarioTransporte,
     Alerta,
     Favorito,
     EventoSOS,
     Testimonial,
     HistorialViaje,
+    RutaTransporte,
 )
 
 
@@ -103,20 +101,6 @@ class LogAuditoriaAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(LineaTransporte)
-class LineaTransporteAdmin(admin.ModelAdmin):
-    list_display = ("codigo", "nombre", "tipo", "color", "activo")
-    list_filter = ("tipo", "activo")
-    search_fields = ("nombre", "codigo")
-
-
-@admin.register(Parada)
-class ParadaAdmin(admin.ModelAdmin):
-    list_display = ("nombre", "linea", "orden", "activo")
-    list_filter = ("linea", "activo")
-    search_fields = ("nombre",)
-
-
 @admin.register(Alerta)
 class AlertaAdmin(admin.ModelAdmin):
     list_display = ("usuario", "nivel", "leida", "creado")
@@ -137,12 +121,6 @@ class EventoSOSAdmin(admin.ModelAdmin):
     readonly_fields = ("contactos_notificados",)
 
 
-@admin.register(HorarioTransporte)
-class HorarioTransporteAdmin(admin.ModelAdmin):
-    list_display = ("linea", "dia_semana", "hora_inicio", "hora_fin", "frecuencia_min")
-    list_filter = ("linea", "dia_semana")
-
-
 @admin.register(Testimonial)
 class TestimonialAdmin(admin.ModelAdmin):
     list_display = ("nombre", "rol", "calificacion", "activo", "creado")
@@ -155,3 +133,10 @@ class HistorialViajeAdmin(admin.ModelAdmin):
     list_display = ("usuario", "origen_nombre", "destino_nombre", "distancia_km", "creado")
     list_filter = ("creado",)
     search_fields = ("origen_nombre", "destino_nombre")
+
+
+@admin.register(RutaTransporte)
+class RutaTransporteAdmin(admin.ModelAdmin):
+    list_display = ("codigo", "nombre", "tipo", "activo")
+    list_filter = ("tipo", "activo")
+    search_fields = ("nombre", "codigo")

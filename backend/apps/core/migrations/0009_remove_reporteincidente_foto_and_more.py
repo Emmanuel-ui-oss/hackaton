@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0008_alter_lineatransporte_ruta_geojson'),
+        ('core', '0005_estacionpolicia_incidentehomicidio_incidentetransito'),
     ]
 
     operations = [

@@ -1,6 +1,16 @@
 import { Popup } from "react-map-gl/maplibre"
+import { Train, Bus_svg, CableCar_svg } from "../../icons"
 
-export default function FeaturePopup({ selectedFeature, onClose }) {
+const transportIcon = (tipo) => {
+  switch (tipo) {
+    case "metro": return Train
+    case "bus": return Bus_svg
+    case "metro_cable": return CableCar_svg
+    default: return null
+  }
+}
+
+export default function FeaturePopup({ selectedFeature, onClose, darkMode = true }) {
   if (!selectedFeature) return null
 
   return (
@@ -55,28 +65,61 @@ export default function FeaturePopup({ selectedFeature, onClose }) {
             {selectedFeature.properties.direccion && <div className="map-popup__body">{selectedFeature.properties.direccion}</div>}
           </>
         )}
-        {selectedFeature.type === "parada" && (
-          <>
-            <div className="map-popup__title">{selectedFeature.properties.nombre}</div>
-            <div className="map-popup__body">
-              <div style={{ fontSize: 11, opacity: 0.7 }}>{selectedFeature.properties.linea}{selectedFeature.properties.orden > 0 ? ` · Parada #${selectedFeature.properties.orden}` : ""}</div>
-            </div>
-          </>
-        )}
-        {selectedFeature.type === "linea" && (
-          <>
-            <div className="map-popup__title">{selectedFeature.properties.linea}</div>
-            <div className="map-popup__body">
-              <div style={{ fontSize: 11, opacity: 0.7 }}>Línea de transporte</div>
-            </div>
-          </>
-        )}
         {selectedFeature.type === "sos" && (
           <>
             <div className="map-popup__title">🆘 SOS</div>
             <div className="map-popup__body">
               <div style={{ fontSize: 11, opacity: 0.7 }}>{selectedFeature.properties.nombre_completo}</div>
               {selectedFeature.properties.creado && <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>{new Date(selectedFeature.properties.creado).toLocaleString()}</div>}
+            </div>
+          </>
+        )}
+        {selectedFeature.type === "ruta" && (
+          <>
+            <div className="map-popup__title">
+              <span style={Object.assign({
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                width: 28, height: 28, borderRadius: "50%",
+                marginRight: 8, verticalAlign: "middle",
+              }, darkMode ? {
+                backgroundColor: selectedFeature.properties.color,
+                color: "#fff",
+              } : {
+                backgroundColor: "#fff",
+                border: "2px solid " + selectedFeature.properties.color,
+                color: "#000",
+              })}>
+                {transportIcon(selectedFeature.properties.tipo)}
+              </span>
+              {selectedFeature.properties.nombre}
+            </div>
+            <div className="map-popup__body">
+              <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 4 }}>{selectedFeature.properties.tipo.replace("_", " ")} · {selectedFeature.properties.codigo}</div>
+            </div>
+          </>
+        )}
+        {selectedFeature.type === "parada" && (
+          <>
+            <div className="map-popup__title">
+              <span style={Object.assign({
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                width: 28, height: 28, borderRadius: "50%",
+                marginRight: 8, verticalAlign: "middle",
+              }, darkMode ? {
+                backgroundColor: selectedFeature.properties.color,
+                color: "#fff",
+              } : {
+                backgroundColor: "#fff",
+                border: "2px solid " + selectedFeature.properties.color,
+                color: "#000",
+              })}>
+                {transportIcon(selectedFeature.properties.tipo)}
+              </span>
+              {selectedFeature.properties.nombre}
+            </div>
+            <div className="map-popup__body">
+              <div style={{ fontSize: 12, marginBottom: 4 }}>Parada #{selectedFeature.properties.orden}</div>
+              <div style={{ fontSize: 11, opacity: 0.7 }}>{selectedFeature.properties.linea_nombre}</div>
             </div>
           </>
         )}

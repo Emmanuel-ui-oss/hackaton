@@ -28,21 +28,6 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='LineaTransporte',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nombre', models.CharField(max_length=200)),
-                ('tipo', models.CharField(choices=[('METRO', 'Metro'), ('METROPLUS', 'Metroplús'), ('TRANVIA', 'Tranvía'), ('CABLE', 'Metrocable'), ('BUS', 'Bus')], max_length=20)),
-                ('codigo', models.CharField(max_length=10, unique=True)),
-                ('color', models.CharField(default='#666666', max_length=7)),
-                ('descripcion', models.TextField(blank=True)),
-                ('activo', models.BooleanField(default=True)),
-            ],
-            options={
-                'verbose_name_plural': 'Líneas de Transporte',
-            },
-        ),
-        migrations.CreateModel(
             name='ContactoEmergencia',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
@@ -208,24 +193,6 @@ class Migration(migrations.Migration):
             options={
                 'verbose_name_plural': 'Alertas',
                 'ordering': ['-creado'],
-            },
-        ),
-        migrations.CreateModel(
-            name='Parada',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nombre', models.CharField(max_length=200)),
-                ('direccion', models.CharField(blank=True, max_length=255)),
-                ('latitud', models.FloatField()),
-                ('longitud', models.FloatField()),
-                ('orden', models.IntegerField()),
-                ('activo', models.BooleanField(default=True)),
-                ('linea', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='paradas', to='core.lineatransporte')),
-            ],
-            options={
-                'verbose_name_plural': 'Paradas',
-                'ordering': ['linea', 'orden'],
-                'unique_together': {('linea', 'orden')},
             },
         ),
         migrations.CreateModel(

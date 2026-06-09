@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { Source, Layer } from "react-map-gl/maplibre"
 import RainLayer from "./RainLayer"
 
@@ -6,8 +7,25 @@ export default function MapDataLayers({
   showRadar,
   cone,
   destination, routeFast, routeSafe, routeType, routeTrimmed, routeCompleted,
-  zonas, reportes, favoritos, paradas,
+  zonas, reportes, favoritos,
+  transport, showMetro, showBus, showCable,
 }) {
+  const lineVis = useMemo(() => ({
+    metro: showMetro ? "visible" : "none",
+    bus: showBus ? "visible" : "none",
+    cable: showCable ? "visible" : "none",
+  }), [showMetro, showBus, showCable])
+  const tiposActivos = useMemo(() => {
+    const t = []
+    if (showMetro) t.push("metro")
+    if (showBus) t.push("bus")
+    if (showCable) t.push("metro_cable")
+    return t
+  }, [showMetro, showBus, showCable])
+  const paradasFilter = useMemo(() => {
+    if (tiposActivos.length === 0) return ["==", "$type", "Point"]
+    return ["all", ["==", "$type", "Point"], ["in", "tipo", ...tiposActivos]]
+  }, [tiposActivos])
   return (
     <>
       {showTraffic && tomtomKey && (
@@ -89,22 +107,55 @@ export default function MapDataLayers({
         </Source>
       )}
 
-      {paradas?.data && (
-        <Source id="paradas" type="geojson" data={paradas.data}>
-          <Layer id="lineas-bg" type="line"
-            paint={{ "line-color": "#000", "line-width": 8, "line-opacity": 0.25, "line-blur": 3 }} />
-          <Layer id="lineas-fg" type="line"
-            paint={{ "line-color": ["get", "color"], "line-width": 4, "line-opacity": 0.8 }} />
-          <Layer id="paradas-glow" type="circle"
-            paint={{ "circle-radius": 18, "circle-color": ["get", "color"], "circle-opacity": 0.4, "circle-blur": 1 }} />
-          <Layer id="paradas-bg" type="circle"
-            paint={{ "circle-radius": 12, "circle-color": "#fff", "circle-opacity": 1 }} />
-          <Layer id="paradas-circle" type="circle"
-            paint={{ "circle-radius": 6, "circle-color": "transparent", "circle-stroke-width": 4, "circle-stroke-color": ["get", "color"], "circle-opacity": 1 }} />
-          <Layer id="paradas-dot" type="circle"
-            paint={{ "circle-radius": 4, "circle-color": ["get", "color"], "circle-opacity": 1 }} />
+      {transport?.data && (
+        <Source id="transport" type="geojson" data={transport.data}>
+          <Layer id="rutas-line-metro" type="line"
+            filter={["==", "tipo", "metro"]}
+            layout={{ "visibility": lineVis.metro, "line-join": "round", "line-cap": "round" }}
+            paint={{
+              "line-color": ["get", "color"],
+              "line-width": 8,
+              "line-opacity": 0.85,
+            }} />
+          <Layer id="rutas-line-bus" type="line"
+            filter={["==", "tipo", "bus"]}
+            layout={{ "visibility": lineVis.bus, "line-join": "round", "line-cap": "round" }}
+            paint={{
+              "line-color": ["get", "color"],
+              "line-width": 8,
+              "line-opacity": 0.85,
+            }} />
+          <Layer id="rutas-line-cable" type="line"
+            filter={["==", "tipo", "metro_cable"]}
+            layout={{ "visibility": lineVis.cable, "line-join": "round", "line-cap": "round" }}
+            paint={{
+              "line-color": ["get", "color"],
+              "line-width": 8,
+              "line-opacity": 0.85,
+            }} />
+          <Layer id="paradas-icon" type="symbol"
+            filter={paradasFilter}
+            layout={{
+              "icon-image": [
+                "match",
+                ["get", "tipo"],
+                "metro", "stop-metro",
+                "bus", "stop-bus",
+                "metro_cable", "stop-cable",
+                "stop-metro"
+              ],
+              "icon-size": 0.85,
+              "icon-allow-overlap": true,
+              "icon-ignore-placement": true,
+            }}
+            paint={{
+              "icon-color": ["get", "linea_color"],
+              "icon-halo-color": "#fff",
+              "icon-halo-width": 4,
+            }} />
         </Source>
       )}
+
     </>
   )
 }

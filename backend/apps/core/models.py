@@ -229,70 +229,6 @@ class LogAuditoria(models.Model):
         return f"{self.accion} - {self.modelo} - {self.timestamp}"
 
 
-class LineaTransporte(models.Model):
-    TIPOS = [
-        ("METRO", "Metro"),
-        ("METROPLUS", "Metroplús"),
-        ("TRANVIA", "Tranvía"),
-        ("CABLE", "Metrocable"),
-        ("BUS", "Bus"),
-    ]
-    nombre = models.CharField(max_length=200)
-    tipo = models.CharField(max_length=20, choices=TIPOS)
-    codigo = models.CharField(max_length=10, unique=True)
-    color = models.CharField(max_length=7, default="#666666")
-    descripcion = models.TextField(blank=True)
-    activo = models.BooleanField(default=True)
-    ruta_geojson = models.TextField(blank=True, null=True)
-
-    class Meta:
-        verbose_name_plural = "Líneas de Transporte"
-
-    def __str__(self):
-        return f"{self.codigo} - {self.nombre}"
-
-
-class Parada(models.Model):
-    linea = models.ForeignKey(
-        LineaTransporte, on_delete=models.CASCADE, related_name="paradas"
-    )
-    nombre = models.CharField(max_length=200)
-    direccion = models.CharField(max_length=255, blank=True)
-    latitud = models.FloatField()
-    longitud = models.FloatField()
-    orden = models.IntegerField()
-    activo = models.BooleanField(default=True)
-
-    class Meta:
-        verbose_name_plural = "Paradas"
-        ordering = ["linea", "orden"]
-        unique_together = ("linea", "orden")
-
-    def __str__(self):
-        return f"{self.linea.codigo} - {self.nombre} (orden {self.orden})"
-
-
-class HorarioTransporte(models.Model):
-    DIAS = [
-        (1, "Lunes"), (2, "Martes"), (3, "Miércoles"),
-        (4, "Jueves"), (5, "Viernes"), (6, "Sábado"), (7, "Domingo"),
-    ]
-    linea = models.ForeignKey(
-        LineaTransporte, on_delete=models.CASCADE, related_name="horarios"
-    )
-    dia_semana = models.IntegerField(choices=DIAS)
-    hora_inicio = models.TimeField()
-    hora_fin = models.TimeField()
-    frecuencia_min = models.IntegerField()
-
-    class Meta:
-        verbose_name_plural = "Horarios de Transporte"
-        ordering = ["linea", "dia_semana", "hora_inicio"]
-
-    def __str__(self):
-        return f"{self.linea.codigo} - Día {self.dia_semana}: {self.hora_inicio}-{self.hora_fin}"
-
-
 class Alerta(models.Model):
     NIVELES = [
         ("BAJO", "Bajo"),
@@ -352,6 +288,23 @@ class EventoSOS(models.Model):
 
     def __str__(self):
         return f"SOS - {self.usuario.username} ({self.creado})"
+
+
+class RutaTransporte(models.Model):
+    nombre = models.CharField(max_length=100)
+    tipo = models.CharField(max_length=50)
+    codigo = models.CharField(max_length=20, unique=True)
+    color = models.CharField(max_length=7, default="#00c853")
+    ruta_geojson = models.JSONField()
+    paradas = models.JSONField(default=list)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Ruta de Transporte"
+        verbose_name_plural = "Rutas de Transporte"
+
+    def __str__(self):
+        return f"{self.nombre} ({self.codigo})"
 
 
 class Testimonial(models.Model):

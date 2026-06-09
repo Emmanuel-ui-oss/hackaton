@@ -7,7 +7,7 @@ import re
 from datetime import date
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from apps.core.models import ZonaRiesgo, ReporteIncidente, LineaTransporte, Alerta, EventoSOS
+from apps.core.models import ZonaRiesgo, ReporteIncidente, Alerta, EventoSOS
 from api.dependencies import get_current_user
 
 router = APIRouter()
@@ -25,7 +25,6 @@ def detect_intent(msg):
     if re.search(r'\b(clima|temperatura|lluvia|weather|humedad|soleado)\b', m): return 'weather'
     if re.search(r'\b(estadísticas?|stats|total|reportes?|incidentes?|alertas?)\b', m): return 'stats'
     if re.search(r'\b(ruta|ruteo|llegar|destino|navegar|segura|viaje|ir a)\b', m): return 'routes'
-    if re.search(r'\b(metro|bus|transporte|línea|parada|metrocable|tranvía)\b', m): return 'transport'
     if re.search(r'\b(sos|emergencia|urgencia|peligro|ayuda rápi)\b', m): return 'sos'
     return 'unknown'
 
@@ -131,7 +130,6 @@ def handle_intent(intent, msg):
         hoy = ReporteIncidente.objects.filter(creado__date=date.today()).count()
         zonas_count = ZonaRiesgo.objects.filter(activo=True).count()
         alertas_hoy = Alerta.objects.filter(leida=False).count()
-        lineas = LineaTransporte.objects.count()
         sos_hoy = EventoSOS.objects.filter(creado__date=date.today()).count()
 
         return (
@@ -141,35 +139,8 @@ def handle_intent(intent, msg):
             f"📅 Hoy: {hoy}\n"
             f"⚠️ Zonas riesgo: {zonas_count}\n"
             f"🔔 Alertas no leídas: {alertas_hoy}\n"
-            f"🚇 Líneas transporte: {lineas}\n"
             f"🆘 SOS hoy: {sos_hoy}\n"
         )
-
-    if intent == 'transport':
-        lineas = list(LineaTransporte.objects.all().values('nombre', 'tipo', 'color'))
-        if not lineas:
-            return "🚇 No hay líneas de transporte registradas."
-
-        por_tipo = {}
-        for l in lineas:
-            t = l['tipo'] or 'OTRO'
-            if t not in por_tipo:
-                por_tipo[t] = []
-            por_tipo[t].append(l['nombre'])
-
-        reply = "🚇 **Transporte público en Medellín**\n\n"
-        for tipo, nombres in sorted(por_tipo.items()):
-            reply += f"**{tipo.upper()}** ({len(nombres)}):\n"
-            for n in nombres[:8]:
-                reply += f"• {n}\n"
-            reply += "\n"
-
-        if 'metro' in msg.lower():
-            reply += "🚈 **Metro de Medellín:**\n• Línea A: Niquía → La Estrella\n• Línea B: San Antonio → San Javier\n"
-        if 'cable' in msg.lower() or 'metrocable' in msg.lower():
-            reply += "🚡 **Metrocables:**\n• Línea H: Estación Acevedo\n• Línea K: Santo Domingo Savio\n• Línea J: San Javier\n• Línea M: Miraflores\n• Línea P: Doce de Octubre\n"
-
-        return reply
 
     if intent == 'routes':
         return (

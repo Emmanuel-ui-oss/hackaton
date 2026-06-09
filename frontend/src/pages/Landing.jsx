@@ -28,10 +28,6 @@ const features = [
     desc: 'Identifica áreas con alta probabilidad de accidentes mediante clustering DBSCAN y evalúa rutas más seguras.'
   },
   {
-    icon: 'train', title: 'Transporte Público',
-    desc: 'Consulta líneas de Metro, Metroplús, Tranvía y Metrocable con paradas, horarios y tiempos estimados.'
-  },
-  {
     icon: 'phone', title: 'Contactos de Emergencia',
     desc: 'Acceso rápido a números de emergencia y botón SOS con geolocalización para asistencia inmediata.'
   },
@@ -42,7 +38,6 @@ const featureIcons = {
   brain: 'M12 2a10 10 0 00-2 19.73V22h4v-.27A10 10 0 0012 2zm6 10a6 6 0 01-4 5.65V20h-4v-2.35A6 6 0 1118 12z',
   bell: 'M12 22c1.1 0 2-.9 2-2h-4a2 2 0 002 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z',
   shield: 'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z',
-  train: 'M12 2c-4 0-8 .5-8 4v9.5C4 17.43 5.57 19 7.5 19L6 20.5v.5h12v-.5L16.5 19c1.93 0 3.5-1.57 3.5-3.5V6c0-3.5-4-4-8-4zM7.5 17a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm3.5-7H6V7h5v3zm2 0V7h5v3h-5zm3.5 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3z',
   phone: 'M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.57.57a1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1.02l-2.2 2.2z',
 }
 
@@ -274,7 +269,6 @@ export default function Landing() {
       <section className="landing-stats">
         <div className="landing-stats-inner">
           <AnimatedCounter value={16} suffix="" label="Comunas monitoreadas" />
-          <AnimatedCounter value={8} suffix="" label="Líneas de transporte" />
           <AnimatedCounter value={25} suffix="+" label="Eventos en tiempo real" />
           <AnimatedCounter value={24} suffix="/7" label="Monitoreo continuo" />
         </div>

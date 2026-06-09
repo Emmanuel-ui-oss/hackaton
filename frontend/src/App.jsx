@@ -10,7 +10,6 @@ const Dashboard  = lazy(() => import('./pages/Dashboard'))
 const Mapa       = lazy(() => import('./pages/Mapa'))
 const Zonas      = lazy(() => import('./pages/Zonas'))
 const Reportes   = lazy(() => import('./pages/Reportes'))
-const Transporte = lazy(() => import('./pages/Transporte'))
 const Alertas    = lazy(() => import('./pages/Alertas'))
 const Favoritos  = lazy(() => import('./pages/Favoritos'))
 const Contactos  = lazy(() => import('./pages/Contactos'))
@@ -34,7 +33,6 @@ export default function App() {
         <Route path="/mapa" element={<ErrorBoundary name="Mapa"><Mapa /></ErrorBoundary>} />
         <Route path="/zonas" element={<ErrorBoundary name="Zonas"><Zonas /></ErrorBoundary>} />
         <Route path="/reportes" element={<ErrorBoundary name="Reportes"><Reportes /></ErrorBoundary>} />
-        <Route path="/transporte" element={<ErrorBoundary name="Transporte"><Transporte /></ErrorBoundary>} />
         <Route path="/alertas" element={<ErrorBoundary name="Alertas"><Alertas /></ErrorBoundary>} />
         <Route path="/favoritos" element={<ErrorBoundary name="Favoritos"><Favoritos /></ErrorBoundary>} />
         <Route path="/contactos" element={<ErrorBoundary name="Contactos"><Contactos /></ErrorBoundary>} />

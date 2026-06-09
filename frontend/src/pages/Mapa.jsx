@@ -31,10 +31,8 @@ const CARD_CONFIG = [
   { key: 'zonas_riesgo', label: 'ZONAS RIESGO' },
   { key: 'reportes_activos', label: 'REPORTES' },
   { key: 'alertas_no_leidas', label: 'ALERTAS', altKey: 'alertas_enviadas' },
-  { key: 'lineas_transporte', label: 'LINEAS TRANS.' },
   { key: 'eventos_sos', label: 'EVENTOS SOS' },
   { key: 'favoritos', label: 'FAVORITOS' },
-  { key: 'paradas', label: 'PARADAS' },
   { key: 'total_reportes', label: 'TOTAL REPORTES' },
 ]
 

@@ -8,7 +8,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.models import Count
 from asgiref.sync import sync_to_async
-from apps.core.models import ReporteIncidente, ZonaRiesgo, Alerta, EventoSOS, LineaTransporte, Parada
+from apps.core.models import ReporteIncidente, ZonaRiesgo, Alerta, EventoSOS
 
 router = APIRouter()
 User = get_user_model()
@@ -34,8 +34,6 @@ class ConnectionManager:
                 zonas_riesgo = await sync_to_async(ZonaRiesgo.objects.count)()
                 alertas_no_leidas = await sync_to_async(lambda: Alerta.objects.filter(leida=False).count())()
                 reportes_hoy = await sync_to_async(lambda: ReporteIncidente.objects.filter(creado__date=date.today()).count())()
-                lineas_transporte = await sync_to_async(LineaTransporte.objects.count)()
-                paradas = await sync_to_async(Parada.objects.count)()
 
                 zonas_nivel_data = await sync_to_async(
                     lambda: list(ZonaRiesgo.objects.values("nivel").annotate(total=Count("id")))
@@ -81,8 +79,6 @@ class ConnectionManager:
                     "zonas_riesgo": zonas_riesgo,
                     "alertas_no_leidas": alertas_no_leidas,
                     "reportes_hoy": reportes_hoy,
-                    "lineas_transporte": lineas_transporte,
-                    "paradas": paradas,
                     "zonas_por_nivel": zonas_por_nivel,
                     "reportes_por_tipo": reportes_por_tipo,
                     "sos_activos": sos_activos,

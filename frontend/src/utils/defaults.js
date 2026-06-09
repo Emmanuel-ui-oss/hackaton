@@ -13,14 +13,13 @@ export const API_DEFAULTS = {
   '/api/v1/favoritos': [],
   '/api/v1/alertas': [],
   '/api/v1/historial-viajes': [],
-  '/api/v1/lineas-transporte': [],
   '/api/v1/trafico/mapa': { comunas: [], overall: 'bajo', hora: '', dia: '' },
   '/api/v1/weather': { temp: 0, condition: '', humidity: 0, icon: '' },
   '/api/v1/weather/forecast': [],
   '/api/v1/predict/congestion/forecast': { predictions: [] },
+  '/api/v1/transport': [],
   '/api/v1/sos': [],
   '/api/v1/sos/activo': null,
-  '/api/v1/paradas': [],
   '/api/v1/public/landing': { comunas: [], weather: null, eventos: [] },
 }
 

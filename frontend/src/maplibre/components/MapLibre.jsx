@@ -26,9 +26,9 @@ import useZonasRiesgo from "../hooks/useZonasRiesgo";
 import useReportes from "../hooks/useReportes";
 import useEventosSOS from "../hooks/useEventosSOS";
 import useFavoritos from "../hooks/useFavoritos";
-import useParadas from "../hooks/useParadas";
 import useVoiceNavigation, { generarInstruccion } from "../hooks/useVoiceNavigation";
 import useVoice from "../hooks/useVoice";
+import useTransport from "../hooks/useTransport";
 
 import useConfigGps from "../config/useConfigGps";
 import getVisionCone from "../utils/getVisionCone";
@@ -51,7 +51,7 @@ const MAP_STYLES = {
         ? `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${MAPTILER_KEY}`
         : "https://demotiles.maplibre.org/style.json",
     light: hasValidKey
-        ? `https://api.maptiler.com/maps/dataviz/style.json?key=${MAPTILER_KEY}`
+        ? `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`
         : "https://demotiles.maplibre.org/style.json",
 };
 
@@ -64,10 +64,25 @@ const NIVEL_COLORS = {
 const CUSTOM_LAYERS = [
     "reportes-circle", "reportes-glow",
     "favoritos-icon",
-    "paradas-glow", "paradas-bg", "paradas-circle", "paradas-dot",
-    "lineas-bg", "lineas-fg",
     "zonas-fill",
+    "rutas-line-metro", "rutas-line-bus", "rutas-line-cable",
+    "paradas-icon",
 ];
+
+const SVG_ICONS = {
+  "stop-metro": `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12" rx="2"/><line x1="12" y1="5" x2="12" y2="3"/><circle cx="8" cy="17" r="2"/><circle cx="16" cy="17" r="2"/></svg>`,
+  "stop-bus": `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="4"/><rect x="5" y="7" width="14" height="5" rx="1"/><circle cx="8" cy="18" r="2"/><circle cx="16" cy="18" r="2"/></svg>`,
+  "stop-cable": `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="4" x2="22" y2="4"/><rect x="8" y="6" width="8" height="10" rx="2"/><line x1="12" y1="6" x2="12" y2="16"/></svg>`,
+};
+
+function loadMapIcons(map) {
+  Object.entries(SVG_ICONS).forEach(([name, svg]) => {
+    if (map.hasImage(name)) return;
+    const img = new Image();
+    img.onload = () => { try { map.addImage(name, img, { sdf: true }); } catch (e) { /* already added */ } };
+    img.src = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  });
+}
 
 export default function MapMapLibre({ onMapClick, stats } = {}) {
     const [darkMode, setDarkMode] = useState(true);
@@ -80,9 +95,11 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
     const [showReportes, setShowReportes] = useState(false);
     const [showSos, setShowSos] = useState(false);
     const [showFavoritos, setShowFavoritos] = useState(false);
-    const [showParadas, setShowParadas] = useState(false);
+    const [showMetro, setShowMetro] = useState(false);
+    const [showBus, setShowBus] = useState(false);
+    const [showCable, setShowCable] = useState(false);
 
-    const [viewState, setViewState] = useState({ longitude: -75.5636, latitude: 6.2518, zoom: 13 });
+    const [viewState, setViewState] = useState({ longitude: -75.5636, latitude: 6.2518, zoom: 15 });
     const [selectedFeature, setSelectedFeature] = useState(null);
     const [voiceActive, setVoiceActive] = useState(false)
     const [isSpeaking, setIsSpeaking] = useState(false)
@@ -126,14 +143,17 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
     const reportes = useReportes(showReportes);
     const sos = useEventosSOS(showSos);
     const favoritos = useFavoritos(showFavoritos);
-    const paradas = useParadas(showParadas);
-
+    const transport = useTransport(showMetro || showBus || showCable);
     const zonasData = useMemo(() => zonas.data, [zonas.data]);
     const { desviacion: nuevaDesviacion, indiceCercano } = useRouteProgress(posActual, routeCoords, accuracy);
     useEffect(() => { setDesviacion(nuevaDesviacion); }, [nuevaDesviacion]);
 
     const [distanciaRestante, setDistanciaRestante] = useState(null);
     const [tiempoRestante, setTiempoRestante] = useState(null);
+
+    useEffect(() => {
+        console.log("Zoom actual:", viewState.zoom);
+    }, [viewState.zoom]);
 
     useEffect(() => {
         if (!routeCoords || !routeInfo?.distance || !posActual) {
@@ -213,7 +233,7 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
         routeInfo,
     })
 
-    const toggles = { zonas: showZonas, reportes: showReportes, sos: showSos, favoritos: showFavoritos, paradas: showParadas };
+    const toggles = { zonas: showZonas, reportes: showReportes, sos: showSos, favoritos: showFavoritos, transport_metro: showMetro, transport_bus: showBus, transport_cable: showCable };
 
     const onToggle = useCallback((layer) => {
         switch (layer) {
@@ -221,7 +241,9 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
             case "reportes": setShowReportes(v => !v); break;
             case "sos": setShowSos(v => !v); break;
             case "favoritos": setShowFavoritos(v => !v); break;
-            case "paradas": setShowParadas(v => !v); break;
+            case "transport_metro": setShowMetro(v => !v); break;
+            case "transport_bus": setShowBus(v => !v); break;
+            case "transport_cable": setShowCable(v => !v); break;
         }
     }, []);
 
@@ -244,7 +266,7 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
             ...prev,
             longitude: pos[1],
             latitude: pos[0],
-            zoom: 16,
+            zoom: 15,
         }));
     }, [handleSelectDestino]);
 
@@ -277,10 +299,10 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
             let type = "desconocido";
             if (lid.startsWith("reportes")) type = "reporte";
             else if (lid.startsWith("favoritos")) type = "favorito";
-            else if (lid.startsWith("paradas")) type = "parada";
-            else if (lid.startsWith("lineas")) type = "linea";
             else if (lid.startsWith("sos")) type = "sos";
             else if (lid.startsWith("zonas")) type = "zona";
+            else if (lid.startsWith("rutas-")) type = "ruta";
+            else if (lid.startsWith("paradas-")) type = "parada";
             setSelectedFeature({ type, properties: f.properties, coordinates: coords });
             return;
         }
@@ -340,6 +362,7 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
                 onMove={evt => setViewState(evt.viewState)}
                 onMoveStart={handleMoveStart}
                 onClick={handleMapClick}
+                onLoad={(e) => loadMapIcons(e.target)}
                 mapStyle={darkMode ? MAP_STYLES.dark : MAP_STYLES.light}
             >
                 <MapDataLayers
@@ -356,7 +379,8 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
                     zonas={zonas}
                     reportes={reportes}
                     favoritos={favoritos}
-                    paradas={paradas}
+                    transport={transport}
+                    showMetro={showMetro} showBus={showBus} showCable={showCable}
                 />
 
                 <MapSOSMarkers sos={sos} onSOSClick={(f) => setSelectedFeature(f)} />
@@ -364,6 +388,7 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
                 <FeaturePopup
                     selectedFeature={selectedFeature}
                     onClose={() => setSelectedFeature(null)}
+                    darkMode={darkMode}
                 />
 
                 {posActual && (

@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 from apps.core.models import (
     ZonaRiesgo, CategoriaRiesgo, EventoRiesgo, ReporteIncidente, VotoReporte,
     Favorito, ContactoEmergencia, EventoSOS, Alerta, HistorialViaje,
-    LineaTransporte, Parada, Testimonial,
+    Testimonial, RutaTransporte,
 )
 
 
@@ -174,193 +174,6 @@ def run():
             )
         )
 
-    # ── LÍNEAS DE TRANSPORTE PÚBLICO (RF-06, RF-16) ──
-    lineas_data = [
-        ("Línea A", "METRO", "L1", "#E30613", "Línea A del Metro de Medellín: Niquía → La Estrella"),
-        ("Línea B", "METRO", "L2", "#00A650", "Línea B: San Antonio → San Javier"),
-        ("Línea 1", "METROPLUS", "M1", "#F58220", "Metroplús Línea 1: Universidad → Parque de Aranjuez"),
-        ("Línea 2", "METROPLUS", "M2", "#F58220", "Metroplús Línea 2: Universidad → Santa Mónica"),
-        ("Tranvía de Ayacucho", "TRANVIA", "T1", "#C4D600", "Tranvía: San Antonio → Oriente"),
-        ("Metrocable Línea K", "CABLE", "K1", "#E30613", "Metrocable: Acevedo → Santo Domingo"),
-        ("Metrocable Línea J", "CABLE", "J1", "#00A650", "Metrocable: San Javier → La Aurora"),
-        ("Metrocable Línea L", "CABLE", "L1", "#0054A6", "Metrocable: Santo Domingo → Parque Arví"),
-        ("Metrocable Línea M", "CABLE", "M1", "#F58220", "Metrocable: Miraflores → Trece de Noviembre"),
-        ("Metrocable Línea H", "CABLE", "H1", "#C4D600", "Metrocable: Oriente → Villa Sierra"),
-    ]
-    lineas = []
-    for nombre, tipo, cod, color, desc in lineas_data:
-        ln, _ = LineaTransporte.objects.get_or_create(
-            codigo=cod,
-            defaults=dict(nombre=nombre, tipo=tipo, color=color, descripcion=desc)
-        )
-        lineas.append(ln)
-
-    # ── PARADAS ──
-    paradas_data = {
-        "L1": [
-            ("Niquía", 6.3100, -75.5500, 1),
-            ("Bello", 6.2900, -75.5450, 2),
-            ("Madera", 6.2750, -75.5450, 3),
-            ("Acevedo", 6.2650, -75.5450, 4),
-            ("Tricentenario", 6.2550, -75.5450, 5),
-            ("Caribe", 6.2450, -75.5500, 6),
-            ("Universidad", 6.2380, -75.5550, 7),
-            ("Estadio", 6.2350, -75.5800, 8),
-            ("Suramericana", 6.2300, -75.5750, 9),
-            ("Exposiciones", 6.2250, -75.5650, 10),
-            ("San Antonio", 6.2150, -75.5600, 11),
-            ("Alpujarra", 6.2100, -75.5600, 12),
-            ("Poblado", 6.2000, -75.5650, 13),
-            ("Industriales", 6.1900, -75.5700, 14),
-            ("Itagüí", 6.1700, -75.5750, 15),
-            ("La Estrella", 6.1550, -75.5800, 16),
-        ],
-        "K1": [
-            ("Acevedo", 6.2650, -75.5450, 1),
-            ("Santo Domingo Savio", 6.2800, -75.5480, 2),
-            ("Santo Domingo", 6.2900, -75.5480, 3),
-        ],
-        "L2": [
-            ("San Antonio", 6.2150, -75.5600, 1),
-            ("Cisneros", 6.2250, -75.5800, 2),
-            ("Suramericana", 6.2300, -75.5750, 3),
-            ("Estadio", 6.2350, -75.5800, 4),
-            ("Floresta", 6.2400, -75.5900, 5),
-            ("Santa Lucía", 6.2450, -75.5950, 6),
-            ("San Javier", 6.2500, -75.6100, 7),
-        ],
-        "M1": [
-            ("Universidad", 6.2380, -75.5550, 1),
-            ("Minorista", 6.2400, -75.5600, 2),
-            ("Chagualo", 6.2450, -75.5650, 3),
-            ("Pichincha", 6.2500, -75.5700, 4),
-            ("Hospital", 6.2550, -75.5750, 5),
-            ("Barrio Triste", 6.2500, -75.5800, 6),
-            ("Parque de Aranjuez", 6.2600, -75.5650, 7),
-        ],
-        "M2": [
-            ("Universidad", 6.2380, -75.5550, 1),
-            ("Pichincha", 6.2500, -75.5700, 2),
-            ("Parque Berrío", 6.2180, -75.5650, 3),
-            ("San Antonio", 6.2150, -75.5600, 4),
-            ("Plaza Mayor", 6.2200, -75.5700, 5),
-            ("Nutibara", 6.2250, -75.5800, 6),
-            ("Santa Mónica", 6.2300, -75.5950, 7),
-        ],
-        "J1": [
-            ("San Javier", 6.2500, -75.6100, 1),
-            ("Juan XXIII", 6.2550, -75.6150, 2),
-            ("Vallejuelos", 6.2600, -75.6200, 3),
-            ("La Aurora", 6.2650, -75.6250, 4),
-        ],
-        "H1": [
-            ("Oriente", 6.2400, -75.5350, 1),
-            ("Las Torres", 6.2450, -75.5300, 2),
-            ("Villa Sierra", 6.2500, -75.5250, 3),
-        ],
-        "T1": [
-            ("San Antonio", 6.2150, -75.5600, 1),
-            ("San José", 6.2200, -75.5550, 2),
-            ("La Playa", 6.2250, -75.5520, 3),
-            ("Buenos Aires", 6.2300, -75.5450, 4),
-            ("Miraflores", 6.2350, -75.5380, 5),
-            ("Oriente", 6.2400, -75.5350, 6),
-        ],
-    }
-    for linea in lineas:
-        if linea.codigo in paradas_data:
-            for nombre, lat, lng, orden in paradas_data[linea.codigo]:
-                Parada.objects.get_or_create(
-                    linea=linea, orden=orden,
-                    defaults=dict(nombre=nombre, direccion=f"Estación {nombre}, Medellín",
-                                  latitud=lat, longitud=lng, activo=True)
-                )
-
-    # ── RUTAS GEOJSON ──
-    rutas_data = {
-        "L1": {
-            "type": "LineString",
-            "coordinates": [
-                [-75.5500, 6.3100], [-75.5490, 6.3050],
-                [-75.5480, 6.3000], [-75.5460, 6.2950],
-                [-75.5450, 6.2900], [-75.5450, 6.2850],
-                [-75.5450, 6.2750], [-75.5450, 6.2700],
-                [-75.5450, 6.2650], [-75.5450, 6.2600],
-                [-75.5450, 6.2550], [-75.5470, 6.2500],
-                [-75.5500, 6.2450], [-75.5530, 6.2400],
-                [-75.5550, 6.2380], [-75.5600, 6.2370],
-                [-75.5700, 6.2360], [-75.5800, 6.2350],
-                [-75.5770, 6.2330], [-75.5750, 6.2300],
-                [-75.5700, 6.2280], [-75.5650, 6.2250],
-                [-75.5620, 6.2200], [-75.5600, 6.2150],
-                [-75.5600, 6.2100], [-75.5620, 6.2050],
-                [-75.5650, 6.2000], [-75.5670, 6.1950],
-                [-75.5700, 6.1900], [-75.5720, 6.1800],
-                [-75.5750, 6.1700], [-75.5770, 6.1620],
-                [-75.5800, 6.1550],
-            ],
-        },
-        "L2": {
-            "type": "LineString",
-            "coordinates": [
-                [-75.5600, 6.2150], [-75.5650, 6.2180],
-                [-75.5700, 6.2200], [-75.5750, 6.2230],
-                [-75.5800, 6.2250], [-75.5770, 6.2280],
-                [-75.5750, 6.2300], [-75.5770, 6.2320],
-                [-75.5800, 6.2350], [-75.5850, 6.2380],
-                [-75.5900, 6.2400], [-75.5930, 6.2430],
-                [-75.5950, 6.2450], [-75.6000, 6.2470],
-                [-75.6100, 6.2500],
-            ],
-        },
-        "M1": {
-            "type": "LineString",
-            "coordinates": [
-                [-75.5550, 6.2380], [-75.5570, 6.2390],
-                [-75.5600, 6.2400], [-75.5620, 6.2420],
-                [-75.5650, 6.2450], [-75.5670, 6.2470],
-                [-75.5700, 6.2500], [-75.5720, 6.2520],
-                [-75.5750, 6.2550], [-75.5770, 6.2530],
-                [-75.5800, 6.2500], [-75.5750, 6.2530],
-                [-75.5700, 6.2560], [-75.5650, 6.2600],
-            ],
-        },
-        "M2": {
-            "type": "LineString",
-            "coordinates": [
-                [-75.5550, 6.2380], [-75.5600, 6.2400],
-                [-75.5650, 6.2430], [-75.5700, 6.2500],
-                [-75.5680, 6.2400], [-75.5670, 6.2280],
-                [-75.5650, 6.2180], [-75.5600, 6.2150],
-                [-75.5650, 6.2170], [-75.5700, 6.2200],
-                [-75.5750, 6.2220], [-75.5800, 6.2250],
-                [-75.5850, 6.2270], [-75.5900, 6.2290],
-                [-75.5950, 6.2300],
-            ],
-        },
-        "T1": {
-            "type": "LineString",
-            "coordinates": [
-                [-75.5600, 6.2150], [-75.5585, 6.2165],
-                [-75.5570, 6.2180], [-75.5560, 6.2190],
-                [-75.5550, 6.2200], [-75.5540, 6.2215],
-                [-75.5530, 6.2230], [-75.5525, 6.2240],
-                [-75.5520, 6.2250], [-75.5510, 6.2265],
-                [-75.5500, 6.2280], [-75.5485, 6.2290],
-                [-75.5470, 6.2300], [-75.5455, 6.2310],
-                [-75.5440, 6.2325], [-75.5425, 6.2340],
-                [-75.5400, 6.2350], [-75.5390, 6.2365],
-                [-75.5370, 6.2375], [-75.5360, 6.2385],
-                [-75.5350, 6.2400],
-            ],
-        },
-    }
-    for linea in lineas:
-        ruta = rutas_data.get(linea.codigo)
-        if ruta:
-            linea.ruta_geojson = json.dumps(ruta)
-            linea.save(update_fields=["ruta_geojson"])
-
     # ── REPORTES COMUNITARIOS (RF-05, CU-02) ──
     reportes_data = [
         ("ACCIDENTE", "Choque múltiple en la Avenida Regional frente al CC Santa Fe",
@@ -442,9 +255,8 @@ def run():
     # ── HISTORIAL DE VIAJES (RF-07) ──
     for i in range(5):
         fecha = date.today() - timedelta(days=i + 1)
-        ln = choice(lineas)
         HistorialViaje.objects.get_or_create(
-            usuario=user, origen_nombre=ln.nombre, destino_nombre=choice(lineas).nombre, creado__date=fecha,
+            usuario=user, origen_nombre="Origen", destino_nombre="Destino", creado__date=fecha,
             defaults=dict(origen_lat=6.2300, origen_lng=-75.5800,
                           destino_lat=6.2000, destino_lng=-75.5600,
                           distancia_km=randint(5, 50), tiempo_min=randint(15, 90))
@@ -477,14 +289,18 @@ def run():
     print(f"  Zonas de riesgo: {ZonaRiesgo.objects.count()}")
     print(f"  Eventos de riesgo: {EventoRiesgo.objects.count()}")
     print(f"  Reportes: {ReporteIncidente.objects.count()}")
-    print(f"  Líneas de transporte: {LineaTransporte.objects.count()}")
-    print(f"  Paradas: {Parada.objects.count()}")
     print(f"  Contactos de emergencia: {ContactoEmergencia.objects.count()}")
     print(f"  Eventos SOS: {EventoSOS.objects.count()}")
     print(f"  Alertas: {Alerta.objects.count()}")
     print(f"  Favoritos: {Favorito.objects.count()}")
     print(f"  Historial de viajes: {HistorialViaje.objects.count()}")
     print(f"  Testimonios: {Testimonial.objects.count()}")
+
+    # ── RUTAS DE TRANSPORTE ──
+    from django.core import management
+    management.call_command("import_rutas")
+
+    print(f"  Rutas de transporte: {RutaTransporte.objects.count()}")
 
 
 if __name__ == "__main__":

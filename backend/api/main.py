@@ -20,7 +20,7 @@ from api.middleware import SecurityHeadersMiddleware
 from api.exception_handlers import global_exception_handler
 
 from api.routes import auth
-from api.routes.v1 import items, extras, predict, chat, geocode, traffic, routes, incidents, proxies, paradas
+from api.routes.v1 import items, extras, predict, chat, geocode, traffic, routes, incidents, proxies, transport
 from api.routes import public as public_router
 from api.routes import ws as ws_router
 from api.routes import weather as weather_router
@@ -97,12 +97,12 @@ app.include_router(geocode.router, prefix="/api/v1", tags=["Geocode"])
 app.include_router(traffic.router, prefix="/api/v1", tags=["Tráfico"])
 app.include_router(routes.router, prefix="/api/v1", tags=["Rutas"])
 app.include_router(incidents.router, prefix="/api/v1", tags=["Incidencias y POI"])
-app.include_router(paradas.router, prefix="/api/v1", tags=["Paradas"])
 app.include_router(proxies.router, prefix="/api/v1", tags=["Proxies"])
 app.include_router(weather_router.router, prefix="/api/v1", tags=["Clima"])
 app.include_router(public_router.router, prefix="/api/v1", tags=["Público"])
 app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
 app.include_router(ws_router.router, prefix="/ws", tags=["WebSocket"])
+app.include_router(transport.router)
 
 if FRONTEND_DIR.exists():
     app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIR / "assets")), name="assets")

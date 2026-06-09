@@ -20,7 +20,7 @@ from pydantic import BaseModel
 
 from apps.core.models import (
     ReporteIncidente, ZonaRiesgo, EventoRiesgo, CategoriaRiesgo,
-    Alerta, LineaTransporte, Parada, HorarioTransporte,
+    Alerta,
     Favorito, ContactoEmergencia, EventoSOS, HistorialViaje, VotoReporte,
 )
 from apps.core.audit import log_audit
@@ -345,51 +345,6 @@ def list_sos_activos(user=Depends(get_current_user)):
     ]
 
 
-# ── LÍNEAS DE TRANSPORTE ──
-
-@router.get("/lineas-transporte")
-def list_lineas(tipo: str = None):
-    qs = LineaTransporte.objects.filter(activo=True)
-    if tipo:
-        qs = qs.filter(tipo=tipo)
-    return [
-        {"id": l.id, "nombre": l.nombre, "tipo": l.tipo,
-         "codigo": l.codigo, "color": l.color, "descripcion": l.descripcion,
-         "ruta_geojson": l.ruta_geojson}
-        for l in qs
-    ]
-
-
-@router.get("/lineas-transporte/{linea_id}/paradas")
-def list_paradas(linea_id: int):
-    linea = LineaTransporte.objects.filter(id=linea_id, activo=True).first()
-    if not linea:
-        raise HTTPException(status_code=404, detail="Línea no encontrada")
-    qs = Parada.objects.filter(linea=linea, activo=True).order_by("orden")
-    return [
-        {"id": p.id, "nombre": p.nombre, "direccion": p.direccion,
-         "latitud": p.latitud, "longitud": p.longitud, "orden": p.orden}
-        for p in qs
-    ]
-
-
-@router.get("/lineas-transporte/{linea_id}/horarios")
-def list_horarios(linea_id: int, dia: int = None):
-    linea = LineaTransporte.objects.filter(id=linea_id, activo=True).first()
-    if not linea:
-        raise HTTPException(status_code=404, detail="Línea no encontrada")
-    qs = HorarioTransporte.objects.filter(linea=linea)
-    if dia:
-        qs = qs.filter(dia_semana=dia)
-    return [
-        {"id": h.id, "dia_semana": h.dia_semana,
-         "hora_inicio": h.hora_inicio.strftime("%H:%M"),
-         "hora_fin": h.hora_fin.strftime("%H:%M"),
-         "frecuencia_min": h.frecuencia_min}
-        for h in qs
-    ]
-
-
 # ── ALERTAS ──
 
 @router.get("/alertas")
@@ -497,8 +452,6 @@ def get_stats(user=Depends(get_current_user)):
     alertas_no_leidas = Alerta.objects.filter(leida=False).count()
     total_alertas = Alerta.objects.count()
 
-    lineas_transporte = LineaTransporte.objects.count()
-    paradas = Parada.objects.count()
     favoritos = Favorito.objects.filter(usuario=user).count()
     eventos_sos = EventoSOS.objects.filter(usuario=user).count()
 
@@ -510,8 +463,6 @@ def get_stats(user=Depends(get_current_user)):
         "ultimos": ultimos,
         "zonas_riesgo": total_zonas,
         "reportes_activos": ReporteIncidente.objects.filter(activo=True).count(),
-        "lineas_transporte": lineas_transporte,
-        "paradas": paradas,
         "alertas_enviadas": total_alertas,
         "eventos_sos": eventos_sos,
         "favoritos": favoritos,
