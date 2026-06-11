@@ -14,7 +14,7 @@ function toGeoJSON(data) {
     (r.paradas || []).forEach(p => {
       features.push({
         type: "Feature",
-        properties: { id: p.id, nombre: p.nombre, orden: p.orden, tipo: r.tipo, linea_nombre: r.nombre, linea_color: r.color, linea_codigo: r.codigo },
+        properties: { id: p.id, nombre: p.nombre, orden: p.orden, tipo: r.tipo, tipo_parada: p.tipo_parada || "autorizado", linea_nombre: r.nombre, linea_color: r.color, linea_codigo: r.codigo },
         geometry: { type: "Point", coordinates: [p.lng, p.lat] },
       });
     });

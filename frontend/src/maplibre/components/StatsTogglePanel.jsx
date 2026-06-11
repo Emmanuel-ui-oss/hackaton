@@ -1,10 +1,10 @@
-import { Warning, Clipboard, AlertCircle, Star, Chart, Train, Bus_svg, CableCar_svg } from "../../icons";
+import { Warning, Clipboard, AlertCircle, Star, Chart, Train, Bus_svg, CableCar_svg, Tranvia_svg } from "../../icons";
 import "../css/StatsTogglePanel.css";
 
 const CARD_COLORS = {
     ZONAS: "#ffab00", REPORTES: "#2979ff",
     SOS: "#d500f9", FAVORITOS: "#ffab00",
-    METRO: "#E30613", BUS: "#FF6D00", CABLE: "#7B1FA2", TOTAL: "#2979ff",
+    METRO: "#E30613", BUS: "#FF6D00", CABLE: "#7B1FA2", TRANVIA: "#E91E63", TOTAL: "#2979ff",
 };
 
 const ITEMS = [
@@ -15,6 +15,7 @@ const ITEMS = [
     { key: "rutas_metro", icon: Train,     label: "METRO",         colorKey: "METRO",    layer: "transport_metro" },
     { key: "rutas_bus",   icon: Bus_svg,   label: "BUSES",         colorKey: "BUS",      layer: "transport_bus" },
     { key: "rutas_cable", icon: CableCar_svg, label: "METRO CABLE",   colorKey: "CABLE",    layer: "transport_cable" },
+    { key: "rutas_tranvia", icon: Tranvia_svg, label: "TRANVÍA",       colorKey: "TRANVIA",  layer: "transport_tranvia" },
     { key: "total_reportes", icon: Chart,      label: "TOTAL REPORTES", colorKey: "TOTAL",    layer: null },
 ];
 

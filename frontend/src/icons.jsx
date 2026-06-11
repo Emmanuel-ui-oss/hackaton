@@ -66,6 +66,14 @@ export const CableCar_svg = s2([
   <rect x="8" y="6" width="8" height="10" rx="2" key="c2" />,
   <line x1="12" y1="6" x2="12" y2="16" key="c3" />,
 ], 1.8)
+export const Tranvia_svg = s2([
+  <rect x="4" y="6" width="16" height="12" rx="3" key="t1" />,
+  <line x1="4" y1="10" x2="20" y2="10" key="t2" />,
+  <circle cx="8" cy="18" r="2" key="t3" />,
+  <circle cx="16" cy="18" r="2" key="t4" />,
+  <line x1="12" y1="6" x2="12" y2="3" key="t5" />,
+  <line x1="9" y1="3" x2="15" y2="3" key="t6" />,
+], 1.8)
 
 export const EmptyBox = s2([<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" key="e1" />, <polyline points="3.27 6.96 12 12.01 20.73 6.96" key="e2" />, <line x1="12" y1="22.08" x2="12" y2="12" key="e3" />], 1.5)
 export const Play = s2([<polygon points="5 3 19 12 5 21 5 3" key="p1" />], 1.8)

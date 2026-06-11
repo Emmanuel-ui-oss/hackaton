@@ -1,0 +1,102 @@
+[
+  {
+    "nombre": "Línea H",
+    "tipo": "metro_cable",
+    "codigo": "LINEA_H",
+    "color": "#E82D80",
+    "ruta_geojson": [
+      [-75.528736, 6.2348904],
+      [-75.5364049, 6.2366713],
+      [-75.539970, 6.233344]
+    ],
+    "paradas": [
+      { "nombre": "Oriente", "lat": 6.233344, "lng": -75.53997, "orden": 1 },
+      { "nombre": "Las Torres", "lat": 6.2366713, "lng": -75.5364049, "orden": 2 },
+      { "nombre": "Villa Sierra", "lat": 6.2348904, "lng": -75.528736, "orden": 3 }
+    ]
+  },
+  {
+    "nombre": "Línea M",
+    "tipo": "metro_cable",
+    "codigo": "LINEA_M",
+    "color": "#F6BC46",
+    "ruta_geojson": [
+      [-75.5414446, 6.247601],
+      [-75.54452, 6.245274],
+      [-75.549262, 6.2415494]
+    ],
+    "paradas": [
+      { "nombre": "Miraflores", "lat": 6.2415494, "lng": -75.549262, "orden": 1 },
+      { "nombre": "El Pinal", "lat": 6.245274, "lng": -75.54452, "orden": 2 },
+      { "nombre": "Trece de Noviembre", "lat": 6.247601, "lng": -75.5414446, "orden": 3 }
+    ]
+  },
+  {
+    "nombre": "Línea J",
+    "tipo": "metro_cable",
+    "codigo": "LINEA_J",
+    "color": "#F6BC46",
+    "ruta_geojson": [
+      [-75.614184, 6.28113],
+      [-75.613973, 6.27545],
+      [-75.613644, 6.26575],
+      [-75.6134248, 6.256749]
+    ],
+    "paradas": [
+      { "nombre": "San Javier", "lat": 6.256749, "lng": -75.6134248, "orden": 1 },
+      { "nombre": "Juan XXIII", "lat": 6.26575, "lng": -75.613644, "orden": 2 },
+      { "nombre": "Vallejuelos", "lat": 6.27545, "lng": -75.613973, "orden": 3 },
+      { "nombre": "La Aurora", "lat": 6.28113, "lng": -75.614184, "orden": 4 }
+    ]
+  },
+  {
+    "nombre": "Línea P",
+    "tipo": "metro_cable",
+    "codigo": "LINEA_P",
+    "color": "#F13538",
+    "ruta_geojson": [
+      [-75.582108, 6.305934],
+      [-75.57606, 6.304253],
+      [-75.5651, 6.301204],
+      [-75.558774, 6.299443]
+    ],
+    "paradas": [
+      { "nombre": "Acevedo", "lat": 6.299443, "lng": -75.558774, "orden": 1 },
+      { "nombre": "SENA", "lat": 6.301204, "lng": -75.5651, "orden": 2 },
+      { "nombre": "Doce de octubre", "lat": 6.304253, "lng": -75.57606, "orden": 3 },
+      { "nombre": "Doce de octubre", "lat": 6.305934, "lng": -75.582108, "orden": 4 }
+    ]
+  },
+  {
+    "nombre": "Línea L",
+    "tipo": "metro_cable",
+    "codigo": "LINEA_L",
+    "color": "#845A34",
+    "ruta_geojson": [
+      [-75.50296, 6.281504],
+      [-75.541874, 6.292742]
+    ],
+    "paradas": [
+      { "nombre": "Santo Domingo Savio", "lat": 6.292742, "lng": -75.541874, "orden": 1 },
+      { "nombre": "Arvi", "lat": 6.281504,"lng": -75.50296, "orden": 2 }
+    ]
+  },
+  {
+    "nombre": "Línea K",
+    "tipo": "metro_cable",
+    "codigo": "LINEA_K",
+    "color": "#ABCA46",
+    "ruta_geojson": [
+      [-75.541617, 6.293131],
+      [-75.548117, 6.295163],
+      [-75.55188, 6.296338],
+      [-75.55841, 6.30032]
+    ],
+    "paradas": [
+      { "nombre": "Acevedo", "lat": 6.30032, "lng": -75.55841, "orden": 1 },
+      { "nombre": "Andalucía", "lat": 6.296338, "lng": -75.55188, "orden": 2 },
+      { "nombre": "Popular", "lat": 6.295163, "lng": -75.548117, "orden": 3 },
+      { "nombre": "Santo Domingo Savio", "lat": 6.293131, "lng": -75.541617, "orden": 4 }
+    ]
+  }
+]

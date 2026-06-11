@@ -1,0 +1,6 @@
+[
+  { "tipo": "bus", "file": "bus.json", "count": 2 },
+  { "tipo": "metro", "file": "metro.json", "count": 2 },
+  { "tipo": "metro_cable", "file": "cable.json", "count": 6 },
+  { "tipo": "tranvia", "file": "tranvia.json", "count": 1 }
+]

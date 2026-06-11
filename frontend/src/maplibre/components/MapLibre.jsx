@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import Map, { Marker } from "react-map-gl/maplibre";
+import Map, { Marker, Source, Layer } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import "../css/Map.css";
@@ -65,7 +65,7 @@ const CUSTOM_LAYERS = [
     "reportes-circle", "reportes-glow",
     "favoritos-icon",
     "zonas-fill",
-    "rutas-line-metro", "rutas-line-bus", "rutas-line-cable",
+    "rutas-line-metro", "rutas-line-bus", "rutas-line-cable", "rutas-line-tranvia",
     "paradas-icon",
 ];
 
@@ -73,6 +73,9 @@ const SVG_ICONS = {
   "stop-metro": `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12" rx="2"/><line x1="12" y1="5" x2="12" y2="3"/><circle cx="8" cy="17" r="2"/><circle cx="16" cy="17" r="2"/></svg>`,
   "stop-bus": `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="4"/><rect x="5" y="7" width="14" height="5" rx="1"/><circle cx="8" cy="18" r="2"/><circle cx="16" cy="18" r="2"/></svg>`,
   "stop-cable": `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="4" x2="22" y2="4"/><rect x="8" y="6" width="8" height="10" rx="2"/><line x1="12" y1="6" x2="12" y2="16"/></svg>`,
+  "stop-tranvia": `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="16" height="12" rx="3"/><line x1="4" y1="10" x2="20" y2="10"/><circle cx="8" cy="18" r="2"/><circle cx="16" cy="18" r="2"/><line x1="12" y1="6" x2="12" y2="3"/></svg>`,
+  "arrow-bus": `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#000"><path d="M0 10h14V4l10 8-10 8v-6H0z"/></svg>`,
+  "stop-bus-integracion": `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><rect x="6" y="7" width="12" height="9" rx="2"/><rect x="8" y="9" width="8" height="3" rx="1"/><circle cx="9" cy="17" r="1.5"/><circle cx="15" cy="17" r="1.5"/></svg>`,
 };
 
 function loadMapIcons(map) {
@@ -98,14 +101,22 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
     const [showMetro, setShowMetro] = useState(false);
     const [showBus, setShowBus] = useState(false);
     const [showCable, setShowCable] = useState(false);
+    const [showTranvia, setShowTranvia] = useState(false);
 
     const [viewState, setViewState] = useState({ longitude: -75.5636, latitude: 6.2518, zoom: 15 });
     const [selectedFeature, setSelectedFeature] = useState(null);
+    const [routeBuilder, setRouteBuilder] = useState(false)
+    const [routePoints, setRoutePoints] = useState([])
+    const [insertAfter, setInsertAfter] = useState(null)
     const [voiceActive, setVoiceActive] = useState(false)
     const [isSpeaking, setIsSpeaking] = useState(false)
     const { setOnSpeaking } = useVoice();
     useEffect(() => { setOnSpeaking(setIsSpeaking); }, []);
     const mapRef = useRef(null);
+    useEffect(() => {
+      const map = mapRef.current?.getMap();
+      if (map) loadMapIcons(map);
+    });
 
     const { ubicacion, accuracy, cargando } = useLocation();
     const heading = useHeading();
@@ -143,7 +154,22 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
     const reportes = useReportes(showReportes);
     const sos = useEventosSOS(showSos);
     const favoritos = useFavoritos(showFavoritos);
-    const transport = useTransport(showMetro || showBus || showCable);
+    const transport = useTransport(true);
+    const transportStats = useMemo(() => {
+        const stns = { rutas_metro: 0, rutas_bus: 0, rutas_cable: 0, rutas_tranvia: 0 };
+        if (!transport.data?.features) return stns;
+        transport.data.features.forEach(f => {
+            if (f.geometry.type === 'Point' && f.properties?.tipo) {
+                const t = f.properties.tipo;
+                if (t === 'metro') stns.rutas_metro++;
+                else if (t === 'bus') stns.rutas_bus++;
+                else if (t === 'metro_cable') stns.rutas_cable++;
+                else if (t === 'tranvia') stns.rutas_tranvia++;
+            }
+        });
+        return stns;
+    }, [transport.data]);
+    const mergedStats = useMemo(() => ({ ...stats, ...transportStats }), [stats, transportStats]);
     const zonasData = useMemo(() => zonas.data, [zonas.data]);
     const { desviacion: nuevaDesviacion, indiceCercano } = useRouteProgress(posActual, routeCoords, accuracy);
     useEffect(() => { setDesviacion(nuevaDesviacion); }, [nuevaDesviacion]);
@@ -233,7 +259,7 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
         routeInfo,
     })
 
-    const toggles = { zonas: showZonas, reportes: showReportes, sos: showSos, favoritos: showFavoritos, transport_metro: showMetro, transport_bus: showBus, transport_cable: showCable };
+    const toggles = { zonas: showZonas, reportes: showReportes, sos: showSos, favoritos: showFavoritos, transport_metro: showMetro, transport_bus: showBus, transport_cable: showCable, transport_tranvia: showTranvia };
 
     const onToggle = useCallback((layer) => {
         switch (layer) {
@@ -244,6 +270,7 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
             case "transport_metro": setShowMetro(v => !v); break;
             case "transport_bus": setShowBus(v => !v); break;
             case "transport_cable": setShowCable(v => !v); break;
+            case "transport_tranvia": setShowTranvia(v => !v); break;
         }
     }, []);
 
@@ -272,6 +299,16 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
 
     const handleMapClick = useCallback((e) => {
         if (!mapRef.current) return;
+        if (routeBuilder) {
+            const pt = { lng: e.lngLat.lng, lat: e.lngLat.lat, id: Date.now() };
+            if (insertAfter !== null) {
+                setRoutePoints(prev => { const copy = [...prev]; copy.splice(insertAfter + 1, 0, pt); return copy; });
+                setInsertAfter(null);
+            } else {
+                setRoutePoints(prev => [...prev, pt]);
+            }
+            return;
+        }
         const map = mapRef.current.getMap();
         const existingLayers = CUSTOM_LAYERS.filter(id => map.getLayer(id));
         if (existingLayers.length === 0) {
@@ -308,7 +345,7 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
         }
         setSelectedFeature(null);
         if (onMapClick) onMapClick(e.lngLat);
-    }, [onMapClick]);
+    }, [onMapClick, routeBuilder, insertAfter]);
 
     const handleVoiceToggle = useCallback(() => {
         const nuevo = !voiceActive;
@@ -342,7 +379,7 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
         <div className={`Map ${darkMode ? "theme-dark" : "theme-light"}`}>
             <SearchAddress onSelect={handleSearchSelect} />
 
-            <StatsTogglePanel stats={stats} toggles={toggles} onToggle={onToggle} />
+            <StatsTogglePanel stats={mergedStats} toggles={toggles} onToggle={onToggle} />
 
             <MapControlsPanel
                 darkMode={darkMode} setDarkMode={setDarkMode}
@@ -380,7 +417,7 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
                     reportes={reportes}
                     favoritos={favoritos}
                     transport={transport}
-                    showMetro={showMetro} showBus={showBus} showCable={showCable}
+                    showMetro={showMetro} showBus={showBus} showCable={showCable} showTranvia={showTranvia}
                 />
 
                 <MapSOSMarkers sos={sos} onSOSClick={(f) => setSelectedFeature(f)} />
@@ -402,7 +439,63 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
                         <div className="NodeBasic Destiny" />
                     </Marker>
                 )}
+
+                {routePoints.map(p => (
+                    <Marker key={p.id} longitude={p.lng} latitude={p.lat} anchor="center" draggable onDragEnd={e => {
+                        setRoutePoints(prev => prev.map(pt => pt.id === p.id ? { ...pt, lng: e.lngLat.lng, lat: e.lngLat.lat } : pt));
+                    }}>
+                        <div className="RoutePoint" />
+                    </Marker>
+                ))}
+
+                {routePoints.length >= 2 && (
+                    <Source id="route-builder-line" type="geojson" data={{
+                        type: "Feature",
+                        geometry: { type: "LineString", coordinates: routePoints.map(p => [p.lng, p.lat]) },
+                    }}>
+                        <Layer id="route-builder-line-layer" type="line"
+                            layout={{ "line-join": "round", "line-cap": "round" }}
+                            paint={{ "line-color": "#4aa3ff", "line-width": 3, "line-opacity": 0.6, "line-dasharray": [1, 3] }} />
+                    </Source>
+                )}
             </Map>
+
+            <button
+                className={`route-toggle ${routeBuilder ? "route-toggle--active" : ""}`}
+                onClick={() => setRouteBuilder(v => !v)}
+                title="Route Builder"
+            >📍</button>
+
+            {routeBuilder && (
+                <div className="route-panel">
+                    <div className="route-panel-header">
+                        <span>📍 Route Builder {insertAfter !== null ? <span style={{color:'#4aa3ff',fontSize:'0.6rem'}}> (insert #{(insertAfter + 1)})</span> : ''}</span>
+                        <button className="route-panel-close" onClick={() => { setRouteBuilder(false); setRoutePoints([]); }}>✕</button>
+                    </div>
+                    {routePoints.length === 0 ? (
+                        <div className="route-panel-empty">Click en el mapa para agregar puntos</div>
+                    ) : (
+                        <>
+                            <div className="route-panel-list">
+                                {routePoints.map((p, i) => (
+                                    <div key={p.id} className={`route-panel-item ${insertAfter === i ? "route-panel-item--target" : ""}`}>
+                                        <span className={`route-panel-idx ${insertAfter === i ? "route-panel-idx--active" : ""}`} onClick={() => setInsertAfter(insertAfter === i ? null : i)}>{i + 1}</span>
+                                        <span className="route-panel-coord">[{p.lng.toFixed(5)}, {p.lat.toFixed(5)}]</span>
+                                        <button className="route-panel-del" onClick={() => setRoutePoints(prev => prev.filter(pt => pt.id !== p.id))}>✕</button>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="route-panel-actions">
+                                <button className="route-panel-btn" onClick={() => {
+                                    const geo = routePoints.map(p => [p.lng, p.lat]);
+                                    navigator.clipboard.writeText(JSON.stringify(geo, null, 2)).catch(() => {});
+                                }}>📋 Copiar</button>
+                                <button className="route-panel-btn route-panel-btn--danger" onClick={() => setRoutePoints([])}>🗑 Limpiar</button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
 
             {destination && <HUD desviacion={desviacion} distanciaRestante={distanciaRestante} tiempoRestante={tiempoRestante} />}
 

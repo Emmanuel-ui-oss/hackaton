@@ -8,22 +8,24 @@ export default function MapDataLayers({
   cone,
   destination, routeFast, routeSafe, routeType, routeTrimmed, routeCompleted,
   zonas, reportes, favoritos,
-  transport, showMetro, showBus, showCable,
+  transport, showMetro, showBus, showCable, showTranvia,
 }) {
   const lineVis = useMemo(() => ({
     metro: showMetro ? "visible" : "none",
     bus: showBus ? "visible" : "none",
     cable: showCable ? "visible" : "none",
-  }), [showMetro, showBus, showCable])
+    tranvia: showTranvia ? "visible" : "none",
+  }), [showMetro, showBus, showCable, showTranvia])
   const tiposActivos = useMemo(() => {
     const t = []
     if (showMetro) t.push("metro")
     if (showBus) t.push("bus")
     if (showCable) t.push("metro_cable")
+    if (showTranvia) t.push("tranvia")
     return t
-  }, [showMetro, showBus, showCable])
+  }, [showMetro, showBus, showCable, showTranvia])
   const paradasFilter = useMemo(() => {
-    if (tiposActivos.length === 0) return ["==", "$type", "Point"]
+    if (tiposActivos.length === 0) return ["==", "tipo", ""]
     return ["all", ["==", "$type", "Point"], ["in", "tipo", ...tiposActivos]]
   }, [tiposActivos])
   return (
@@ -122,8 +124,22 @@ export default function MapDataLayers({
             layout={{ "visibility": lineVis.bus, "line-join": "round", "line-cap": "round" }}
             paint={{
               "line-color": ["get", "color"],
-              "line-width": 8,
-              "line-opacity": 0.85,
+              "line-width": 4,
+              "line-opacity": 0.9,
+            }} />
+          <Layer id="rutas-line-bus-arrows" type="symbol"
+            filter={["==", "tipo", "bus"]}
+            layout={{
+              "visibility": lineVis.bus,
+              "symbol-placement": "line",
+              "symbol-spacing": 100,
+              "icon-image": "arrow-bus",
+              "icon-size": 0.95,
+              "icon-allow-overlap": true,
+            }}
+            paint={{
+              "icon-color": ["get", "color"],
+              "icon-opacity": 1,
             }} />
           <Layer id="rutas-line-cable" type="line"
             filter={["==", "tipo", "metro_cable"]}
@@ -133,23 +149,42 @@ export default function MapDataLayers({
               "line-width": 8,
               "line-opacity": 0.85,
             }} />
+          <Layer id="rutas-line-tranvia" type="line"
+            filter={["==", "tipo", "tranvia"]}
+            layout={{ "visibility": lineVis.tranvia, "line-join": "round", "line-cap": "round" }}
+            paint={{
+              "line-color": ["get", "color"],
+              "line-width": 8,
+              "line-opacity": 0.85,
+            }} />
           <Layer id="paradas-icon" type="symbol"
             filter={paradasFilter}
             layout={{
               "icon-image": [
-                "match",
-                ["get", "tipo"],
-                "metro", "stop-metro",
-                "bus", "stop-bus",
-                "metro_cable", "stop-cable",
-                "stop-metro"
+                "case",
+                ["all", ["==", ["get", "tipo"], "bus"], ["==", ["get", "tipo_parada"], "integracion"]],
+                "stop-bus-integracion",
+                [
+                  "match",
+                  ["get", "tipo"],
+                  "metro", "stop-metro",
+                  "bus", "stop-bus",
+                  "metro_cable", "stop-cable",
+                  "tranvia", "stop-tranvia",
+                  "stop-metro"
+                ]
               ],
               "icon-size": 0.85,
               "icon-allow-overlap": true,
               "icon-ignore-placement": true,
             }}
             paint={{
-              "icon-color": ["get", "linea_color"],
+              "icon-color": [
+                "case",
+                ["==", ["get", "tipo"], "bus"],
+                ["get", "linea_color"],
+                ["get", "linea_color"]
+              ],
               "icon-halo-color": "#fff",
               "icon-halo-width": 4,
             }} />
