@@ -1,5 +1,7 @@
 import { Source, Layer } from "react-map-gl/maplibre"
 import RainLayer from "./RainLayer"
+import RouteRiskLayer from "../risk-routes/components/RouteRiskLayer"
+import RouteRiskLegend from "../risk-routes/components/RouteRiskLegend"
 
 const MODE_COLORS = {
   car: "#00d4ff",
@@ -13,7 +15,7 @@ export default function MapDataLayers({
   showRadar,
   cone,
   destination, routeFast, routeSafe, routeType, routeTrimmed, routeCompleted,
-  transportMode, routeSegments,
+  transportMode, routeSegments, routeRiskGeoJson,
   zonas, reportes, favoritos, paradas,
 }) {
   return (
@@ -61,6 +63,13 @@ export default function MapDataLayers({
           <Layer id="route-safe-trail-line" type="line" layout={{ "line-join": "round", "line-cap": "round" }}
             paint={{ "line-color": "#00ff88", "line-width": 4, "line-opacity": 0.15 }} />
         </Source>
+      )}
+
+      {routeRiskGeoJson && (
+        <RouteRiskLayer geoJson={routeRiskGeoJson} routeType={routeType} />
+      )}
+      {routeRiskGeoJson && (
+        <RouteRiskLegend visible={true} />
       )}
 
       {zonas?.data && (

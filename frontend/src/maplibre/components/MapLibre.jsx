@@ -32,6 +32,7 @@ import useVoice from "../hooks/useVoice";
 
 import useConfigGps from "../config/useConfigGps";
 import getVisionCone from "../utils/getVisionCone";
+import useRouteRisk from "../risk-routes/hooks/useRouteRisk";
 
 function haversine(a, b) {
     const R = 6371000;
@@ -131,6 +132,7 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
     const paradas = useParadas(showParadas);
 
     const zonasData = useMemo(() => zonas.data, [zonas.data]);
+    const routeRisk = useRouteRisk(routeCoords, zonas.data, true, []);
     const { desviacion: nuevaDesviacion, indiceCercano } = useRouteProgress(posActual, routeCoords, accuracy);
     useEffect(() => { setDesviacion(nuevaDesviacion); }, [nuevaDesviacion]);
 
@@ -357,6 +359,7 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
                     routeCompleted={routeCompleted}
                     transportMode={transportMode}
                     routeSegments={routeSegments}
+                    routeRiskGeoJson={routeRisk.geoJson}
                     zonas={zonas}
                     reportes={reportes}
                     favoritos={favoritos}

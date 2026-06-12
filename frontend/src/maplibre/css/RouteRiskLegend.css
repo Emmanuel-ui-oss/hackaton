@@ -1,0 +1,73 @@
+.risk-legend {
+  position: absolute;
+  z-index: 1000;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--glass-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-family: system-ui, sans-serif;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.risk-legend__title {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  margin-right: 2px;
+}
+
+.risk-legend__items {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.risk-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.risk-legend__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.risk-legend__label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .risk-legend {
+    bottom: 50px;
+    padding: 4px 8px;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .risk-legend__title {
+    font-size: 8px;
+  }
+
+  .risk-legend__items {
+    gap: 5px;
+  }
+
+  .risk-legend__label {
+    font-size: 9px;
+  }
+}

@@ -23,7 +23,7 @@ function toGeoJSON(data) {
         const polygon = circlePolygon(z.latitud, z.longitud, r);
         return {
             type: "Feature",
-            properties: { id: z.id, nombre: z.nombre, nivel, color: NIVEL_COLORS[nivel] || "#888", opacidad: nivel === "CRITICO" ? 0.2 : nivel === "ALTO" ? 0.18 : nivel === "MEDIO" ? 0.15 : 0.12, comuna: z.comuna || "", tipo_riesgo: z.tipo_riesgo || "", descripcion: z.descripcion || "", radio_metros: z.radio_metros || 0 },
+            properties: { id: z.id, nombre: z.nombre, nivel, color: NIVEL_COLORS[nivel] || "#888", opacidad: nivel === "CRITICO" ? 0.2 : nivel === "ALTO" ? 0.18 : nivel === "MEDIO" ? 0.15 : 0.12, comuna: z.comuna || "", tipo_riesgo: z.tipo_riesgo || "", descripcion: z.descripcion || "", radio_metros: z.radio_metros || 0, latitud: z.latitud, longitud: z.longitud },
             geometry: { type: "Polygon", coordinates: [polygon] },
         };
     });
