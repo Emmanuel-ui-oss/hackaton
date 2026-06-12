@@ -75,6 +75,18 @@ export const Tranvia_svg = s2([
   <line x1="9" y1="3" x2="15" y2="3" key="t6" />,
 ], 1.8)
 
+export const Moto = s2([
+  <circle cx="6" cy="16" r="2" key="m1" />,
+  <circle cx="18" cy="16" r="2" key="m2" />,
+  <path d="M6 14l2-6 9-2 2 5" key="m3" />,
+  <path d="M17 7l-1 3h-4" key="m4" />,
+], 1.8)
+export const Walking = s2([
+  <circle cx="12" cy="4" r="2" key="w1" />,
+  <path d="M10 22l1-6-3-4 1-3a2 2 0 0 1 2-1h2a2 2 0 0 1 2 1l1 3-3 4 1 6" key="w2" />,
+], 1.8)
+export const Zap = s('M13 2L3 14h9l-1 8 10-12h-9l1-8z', 1.8)
+
 export const EmptyBox = s2([<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" key="e1" />, <polyline points="3.27 6.96 12 12.01 20.73 6.96" key="e2" />, <line x1="12" y1="22.08" x2="12" y2="12" key="e3" />], 1.5)
 export const Play = s2([<polygon points="5 3 19 12 5 21 5 3" key="p1" />], 1.8)
 export const Lock = s2([<rect x="3" y="11" width="18" height="11" rx="2" ry="2" key="l1" />, <path d="M7 11V7a5 5 0 0 1 10 0v4" key="l2" />], 1.8)

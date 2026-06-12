@@ -1,32 +1,26 @@
-export default async function getRoute(start, end, mode = "car") {
-    if (!start || !end) return null;
+export default async function getAlternatives(start, end) {
+    if (!start || !end) return []
     const params = new URLSearchParams({
         olat: start[0], olng: start[1],
         dlat: end[0],   dlng: end[1],
-        mode,
+        alternatives: true,
         steps: true,
-    });
-    const res = await fetch(`/api/v1/routes?${params}`);
-    if (!res.ok) throw new Error("Route request failed");
-    const data = await res.json();
-    const route = data.routes?.[0];
-    if (!route) throw new Error("No route found");
+    })
+    const res = await fetch(`/api/v1/routes?${params}`)
+    if (!res.ok) throw new Error("Route alternatives request failed")
+    const data = await res.json()
+    const routes = data.routes ?? []
 
-    const steps = extraerSteps(route);
-
-    return {
+    return routes.map(route => ({
+        coords: route.coords.map(c => [c[0], c[1]]),
         geometry: { type: "LineString", coordinates: route.coords.map(c => [c[1], c[0]]) },
         distance: route.distance_m,
         duration: route.duration_s,
-        steps,
-        segments: route.segments ?? null,
-    };
+        steps: extraerSteps(route),
+    }))
 }
 
-// Extrae steps normalizados sin importar el formato exacto del backend.
-// Soporta OSRM nativo (legs[].steps[]) y formato simplificado propio.
 function extraerSteps(route) {
-    // Formato OSRM nativo: route.legs[0].steps[]
     const legs = route.legs ?? route.route_legs ?? []
     for (const leg of legs) {
         const rawSteps = leg.steps ?? []
@@ -34,10 +28,10 @@ function extraerSteps(route) {
             return rawSteps
                 .filter(s => s.maneuver?.type !== 'depart' && s.maneuver?.type !== 'arrive' || rawSteps.length <= 2)
                 .map(s => ({
-                    distancia: s.distance ?? 0,         // metros hasta este giro
-                    nombre: s.name ?? '',               // nombre de la calle a tomar
-                    tipo: s.maneuver?.type ?? 'turn',   // 'turn', 'merge', 'roundabout'…
-                    modificador: s.maneuver?.modifier ?? '',  // 'left','right','slight left'…
+                    distancia: s.distance ?? 0,
+                    nombre: s.name ?? '',
+                    tipo: s.maneuver?.type ?? 'turn',
+                    modificador: s.maneuver?.modifier ?? '',
                     bearing: s.maneuver?.bearing_after ?? null,
                     punto: s.maneuver?.location ?? null,
                     exit: s.maneuver?.exit ?? null,
@@ -45,8 +39,6 @@ function extraerSteps(route) {
                 .filter(s => s.distancia > 0 || s.nombre)
         }
     }
-
-    // Formato propio/desconocido: intentar leer route.steps[] directamente
     const propios = route.steps ?? route.instrucciones ?? []
     if (propios.length > 0) {
         return propios.map(s => ({
@@ -58,8 +50,5 @@ function extraerSteps(route) {
             punto: s.location ?? s.punto ?? null,
         }))
     }
-
-    // El backend no devuelve steps: retornar vacío.
-    // useVoiceNavigation caerá en modo geométrico de respaldo.
     return []
 }

@@ -1,6 +1,9 @@
 import { useMemo } from "react"
 import { Source, Layer } from "react-map-gl/maplibre"
 import SiataRadarLayer from "./SiataRadarLayer"
+import RouteRiskLayer from "../risk-routes/components/RouteRiskLayer"
+
+const MODE_COLORS = { car: "#00d4ff", moto: "#ff6d00", transit: "#e30613", walking: "#76ff03" }
 
 export default function MapDataLayers({
   showTraffic, tomtomKey,
@@ -9,6 +12,10 @@ export default function MapDataLayers({
   destination, routeFast, routeSafe, routeType, routeTrimmed, routeCompleted,
   zonas, reportes, favoritos,
   transport, showMetro, showBus, showCable, showTranvia,
+  transportMode = "car",
+  routeRiskGeoJson = null,
+  showZonas = false,
+  walkingLegs = null,
 }) {
   const lineVis = useMemo(() => ({
     metro: showMetro ? "visible" : "none",
@@ -75,7 +82,7 @@ export default function MapDataLayers({
         </Source>
       )}
 
-      {zonas?.data && (
+      {showZonas && zonas?.data && (
         <Source id="zonas" type="geojson" data={zonas.data}>
           <Layer id="zonas-fill" type="fill"
             paint={{
@@ -136,6 +143,23 @@ export default function MapDataLayers({
               "text-halo-width": 2,
             }} />
         </Source>
+      )}
+
+      {walkingLegs?.map((leg, i) => (
+        <Source key={`walk-${i}`} id={`walk-${i}`} type="geojson" data={{ type: "Feature", geometry: { type: "LineString", coordinates: leg.coords } }}>
+          <Layer id={`walk-${i}-line`} type="line"
+            layout={{ "line-join": "round", "line-cap": "round" }}
+            paint={{
+              "line-color": "#888",
+              "line-width": 4,
+              "line-opacity": 0.6,
+              "line-dasharray": [4, 6],
+            }} />
+        </Source>
+      ))}
+
+      {routeRiskGeoJson && (
+        <RouteRiskLayer key={routeType} geoJson={routeRiskGeoJson} routeType={routeType} />
       )}
 
       {transport?.data && (

@@ -28,6 +28,7 @@ import useFavoritos from "../hooks/useFavoritos";
 import useVoiceNavigation, { generarInstruccion } from "../hooks/useVoiceNavigation";
 import useVoice from "../hooks/useVoice";
 import useTransport from "../hooks/useTransport";
+import useRouteRisk from "../risk-routes/hooks/useRouteRisk";
 
 import useConfigGps from "../config/useConfigGps";
 import getVisionCone from "../utils/getVisionCone";
@@ -120,13 +121,17 @@ export default function MapMapLibre({ onMapClick, stats, favRefresh } = {}) {
     const heading = useHeading();
 
     const layers = useMapLayers();
+    const transport = useTransport(true);
     const {
         routeFast, routeSafe, routeInfo,
         routeType, setRouteType,
+        transportMode, setTransportMode,
         routeLoading, destination,
         handleSelectDestino, fetchRoutes,
         stepsFast, stepsSafe,
-    } = useMapRoutes(ubicacion);
+        routeSegments,
+        walkingLegs,
+    } = useMapRoutes(ubicacion, transport?.data);
 
     const activeRoute = routeType === "fast" ? routeFast : routeSafe;
     const routeCoords = useMemo(
@@ -148,11 +153,11 @@ export default function MapMapLibre({ onMapClick, stats, favRefresh } = {}) {
         if (simActivo) setUserMoved(false)
     }, [simActivo, simPos])
 
-    const zonas = useZonasRiesgo(showZonas);
+    const zonas = useZonasRiesgo(true);
     const reportes = useReportes(showReportes);
     const favoritos = useFavoritos(showFavoritos);
     const invalidateFavs = favoritos.invalidate;
-    const transport = useTransport(true);
+    const { geoJson: routeRiskGeoJson } = useRouteRisk(routeCoords, zonas?.data) ?? {}
     const transportStats = useMemo(() => {
         const stns = { rutas_metro: 0, rutas_bus: 0, rutas_cable: 0, rutas_tranvia: 0 };
         if (!transport.data?.features) return stns;
@@ -210,7 +215,7 @@ export default function MapMapLibre({ onMapClick, stats, favRefresh } = {}) {
 
     useEffect(() => {
         if (destination) fetchRoutes(destination);
-    }, [destination]);
+    }, [destination, fetchRoutes]);
 
     const ARRIVAL_ZONE_M = 50;
     const routeTrimmed = useMemo(() => {
@@ -437,6 +442,10 @@ export default function MapMapLibre({ onMapClick, stats, favRefresh } = {}) {
                     favoritos={favoritos}
                     transport={transport}
                     showMetro={showMetro} showBus={showBus} showCable={showCable} showTranvia={showTranvia}
+                    transportMode={transportMode}
+                    routeRiskGeoJson={routeRiskGeoJson}
+                    showZonas={showZonas}
+                    walkingLegs={walkingLegs}
                 />
 
                 <FeaturePopup
@@ -474,6 +483,12 @@ export default function MapMapLibre({ onMapClick, stats, favRefresh } = {}) {
                 routeFast={routeFast}
                 routeSafe={routeSafe}
                 destination={destination}
+                transportMode={transportMode}
+                setTransportMode={setTransportMode}
+                routeInfo={routeInfo}
+                routeLoading={routeLoading}
+                fetchRoutes={fetchRoutes}
+                routeSegments={routeSegments}
             />
 
             {routeLoading && <div className="FondoBackground">Calculando rutas...</div>}
