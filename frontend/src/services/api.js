@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { GoogleGenerativeAI } from "@google/generative-ai"
 
 const api = axios.create({
   baseURL: '',
@@ -75,5 +76,47 @@ api.interceptors.response.use(
   }
 )
 
+const genai = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
+const model = genai.getGenerativeModel({
+  model: "gemini-2.5-flash",
+  systemInstruction: `Eres un asistente de movilidad urbana.
+    Responde solo sobre: zonas de riesgo, clima, estadísticas de tráfico,
+    transporte público y rutas seguras.
+    Sé conciso y usa viñetas cuando listes información.`,
+})
+
+const chat = model.startChat({ history: [] })
+
+// Reemplaza la función askGemini en api.js
+const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-pro-002"]
+
+async function askOllama(userMessage, history = []) {
+  const messages = [
+    {
+      role: "system",
+      content: `Eres un asistente de movilidad urbana.
+        Responde solo sobre: zonas de riesgo, clima, estadísticas de tráfico,
+        transporte público y rutas seguras.
+        Sé conciso y usa viñetas cuando listes información.`,
+    },
+    ...history,
+    { role: "user", content: userMessage },
+  ]
+
+  const res = await fetch("http://localhost:11434/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "qwen2.5-coder:7b",  // ← aquí el cambio
+      messages,
+      stream: false,
+    }),
+  })
+
+  if (!res.ok) throw new Error(`Ollama error: ${res.status}`)
+  const data = await res.json()
+  return data.message.content
+}
+
 export default api
-export { getAccessToken, getRefreshToken, setTokens, clearTokens }
+export { askOllama, getAccessToken, getRefreshToken, setTokens, clearTokens }

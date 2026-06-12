@@ -5,20 +5,11 @@ import useProgressiveData from '../hooks/useProgressiveData'
 import { useSocket } from '../contexts/SocketContext'
 
 import './Mapa.css'
-import { MapPin, CloudRain, Droplet, ArrowUp, ArrowDown } from '../icons'
+import { MapPin, CloudRain, Droplet, ArrowUp, ArrowDown, Clipboard, Star } from '../icons'
 import ReportModal from '../components/ReportModal'
+import FavoriteModal from '../components/FavoriteModal'
 import MapMapLibre from '../maplibre/components/MapLibre'
-
-function getWeatherIcon(code) {
-    if (code === 0) return "☀️";
-    if (code <= 3) return "🌤️";
-    if (code <= 48) return "🌫️";
-    if (code <= 67) return "🌧️";
-    if (code <= 77) return "❄️";
-    if (code <= 82) return "🌦️";
-    if (code <= 99) return "⛈️";
-    return "🌍";
-}
+import { getWeatherIcon } from '../utils/defaults'
 
 const NIVEL_STYLES = {
   CRITICO: { color: '#ff1744', fill: 'rgba(255,23,68,0.2)', border: 'rgba(255,23,68,0.3)' },
@@ -30,10 +21,7 @@ const NIVEL_STYLES = {
 const CARD_CONFIG = [
   { key: 'zonas_riesgo', label: 'ZONAS RIESGO' },
   { key: 'reportes_activos', label: 'REPORTES' },
-  { key: 'alertas_no_leidas', label: 'ALERTAS', altKey: 'alertas_enviadas' },
-  { key: 'eventos_sos', label: 'EVENTOS SOS' },
   { key: 'favoritos', label: 'FAVORITOS' },
-  { key: 'total_reportes', label: 'TOTAL REPORTES' },
 ]
 
 export default function Mapa() {
@@ -42,9 +30,12 @@ export default function Mapa() {
   const [ticker, setTicker] = useState([])
   const [userPos, setUserPos] = useState(null)
   const [showReportModal, setShowReportModal] = useState(false)
+  const [showFavModal, setShowFavModal] = useState(false)
+  const [showAddChoice, setShowAddChoice] = useState(false)
   const [reportCoords, setReportCoords] = useState(null)
+  const [favRefresh, setFavRefresh] = useState(0)
   const socketStats = useSocket().stats
-  const displayStats = socketStats || stats.data || {}
+  const displayStats = { ...stats.data, ...socketStats }
 
   useEffect(() => {
     if (!socketStats || !stats.data) return
@@ -74,13 +65,32 @@ export default function Mapa() {
   }, [])
 
   const handleMapClick = useCallback((lngLat) => {
-    if (!showReportModal) return
     setReportCoords({ lat: lngLat.lat, lng: lngLat.lng })
-  }, [showReportModal])
+    setShowAddChoice(true)
+  }, [])
 
   const openReportModal = () => {
     setShowReportModal(true)
     setReportCoords(userPos ? { lat: userPos.lat, lng: userPos.lng } : null)
+  }
+
+  const handleChooseReport = () => {
+    setShowAddChoice(false)
+    setShowReportModal(true)
+  }
+
+  const handleChooseFavorite = () => {
+    setShowAddChoice(false)
+    setShowFavModal(true)
+  }
+
+  const handleCancelAdd = () => {
+    setShowAddChoice(false)
+    setReportCoords(null)
+  }
+
+  const handleFavCreated = () => {
+    setFavRefresh(v => v + 1)
   }
 
   return (
@@ -107,7 +117,7 @@ export default function Mapa() {
             document.getElementById('sidebar-weather')
           )}
 
-        <MapMapLibre onMapClick={handleMapClick} stats={displayStats} />
+        <MapMapLibre onMapClick={handleMapClick} stats={displayStats} favRefresh={favRefresh} />
 
         {!stats.isLoading && (
           <div className="dash-riskbar">
@@ -123,23 +133,38 @@ export default function Mapa() {
           </div>
         )}
 
+        {showAddChoice && reportCoords && (
+          <div className="add-choice-panel">
+            <div className="add-choice-coords">
+              {MapPin} {reportCoords.lat.toFixed(5)}, {reportCoords.lng.toFixed(5)}
+            </div>
+            <div className="add-choice-buttons">
+              <button className="add-choice-btn" onClick={handleChooseReport}>
+                <span className="add-choice-icon">{Clipboard}</span>
+                <span className="add-choice-label">Reporte</span>
+              </button>
+              <button className="add-choice-btn" onClick={handleChooseFavorite}>
+                <span className="add-choice-icon">{Star}</span>
+                <span className="add-choice-label">Favorito</span>
+              </button>
+            </div>
+            <button className="add-choice-cancel" onClick={handleCancelAdd}>Cancelar</button>
+          </div>
+        )}
+
         {showReportModal && reportCoords && (
           <div className="mapa-legend" style={{ bottom: 200, right: 12 }}>
             <div className="mapa-legend-item">
-              <MapPin />{reportCoords.lat.toFixed(5)}, {reportCoords.lng.toFixed(5)}
+              {MapPin}{reportCoords.lat.toFixed(5)}, {reportCoords.lng.toFixed(5)}
             </div>
           </div>
         )}
 
-        <button className="mapa-report-fab" onClick={openReportModal} title="Reportar incidente">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
         </div>
       </div>
 
       <ReportModal isOpen={showReportModal} onClose={() => { setShowReportModal(false); setReportCoords(null) }} userPos={userPos} coords={reportCoords} onCoordsPick={setReportCoords} />
+      <FavoriteModal isOpen={showFavModal} onClose={() => setShowFavModal(false)} userPos={userPos} coords={reportCoords} onSuccess={handleFavCreated} />
     </div>
   )
 }

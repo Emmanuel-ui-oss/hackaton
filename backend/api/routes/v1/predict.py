@@ -1,6 +1,7 @@
 from datetime import datetime
 from fastapi import APIRouter, Query
 from api.core_client import call as core_call
+from api.cache import make_key, get_cached, set_cached
 from api.ml.congestion import predict_congestion, get_hourly_forecast
 from api.services.tomtom import traffic_available
 
@@ -32,16 +33,22 @@ def get_congestion_forecast(
     lat: float = Query(None, ge=6.0, le=6.5),
     lng: float = Query(None, ge=-75.7, le=-75.4),
 ):
+    cache_key = make_key("forecast", comuna or "all", lat or 0, lng or 0)
+    cached = get_cached(cache_key)
+    if cached:
+        return cached
     result = core_call("congestion_forecast", {
         "comuna": comuna,
         "lat": lat,
         "lng": lng,
     })
-    return {
+    response = {
         "comuna": comuna,
         "timestamp": datetime.now().isoformat(),
         "forecast": result if isinstance(result, list) else result.get("forecast", result),
     }
+    set_cached(cache_key, response, ttl=120)
+    return response
 
 
 @router.get("/predict/zonas-criticas")

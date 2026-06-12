@@ -27,7 +27,7 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/api': { target: 'http://localhost:8001', changeOrigin: true },
-      '/ws': { target: 'ws://localhost:8001', ws: true },
+      '/ws': { target: 'http://localhost:8001', ws: true },
     },
   },
 })

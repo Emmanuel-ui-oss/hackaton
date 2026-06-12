@@ -265,6 +265,7 @@ button { cursor: pointer; border: none; background: none; }
   border: 1px solid var(--glass-border);
   transition: all var(--transition);
   position: relative;
+  padding: 0.5rem 1rem;
 }
 .card:hover {
   border-color: var(--glass-border-hover);

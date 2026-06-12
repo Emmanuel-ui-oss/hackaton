@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import api, { setTokens, getAccessToken, clearTokens } from '../services/api'
+import { get } from '../services/requestManager'
+
+const STATS_URL = '/api/v1/stats'
 
 const AuthContext = createContext()
 
@@ -17,6 +20,10 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  const prefetchDashboard = () => {
+    get(STATS_URL, {}, { ttl: 30000, priority: 'high' }).catch(() => {})
+  }
+
   const fetchUser = async () => {
     const me = await api.get('/api/auth/me')
     sessionStorage.setItem('user', JSON.stringify(me.data))
@@ -28,6 +35,7 @@ export function AuthProvider({ children }) {
     const { access_token, refresh_token } = res.data
     setTokens(access_token, refresh_token)
     await fetchUser()
+    prefetchDashboard()
     return res.data
   }
 
@@ -36,6 +44,7 @@ export function AuthProvider({ children }) {
     const { access_token, refresh_token } = res.data
     setTokens(access_token, refresh_token)
     await fetchUser()
+    prefetchDashboard()
     return res.data
   }
 

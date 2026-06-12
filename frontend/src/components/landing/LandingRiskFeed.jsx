@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-import api from '../../services/api'
+import { useState, useEffect } from 'react'
+import useProgressiveData from '../../hooks/useProgressiveData'
 import './LandingRiskFeed.css'
 
 const NIVEL_COLORS = {
@@ -34,29 +34,14 @@ const TIPO_LABEL = {
 }
 
 export default function LandingRiskFeed() {
-  const [eventos, setEventos] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
   const [showAll, setShowAll] = useState(false)
-
-  const load = useCallback(async () => {
-    try {
-      const res = await api.get('/api/v1/public/landing')
-      const data = res.data
-      setEventos(data.eventos || [])
-      setError(false)
-    } catch {
-      setError(true)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const { data, isLoading, error, refetch } = useProgressiveData('/api/v1/public/landing', { ttl: 30000 })
+  const eventos = data?.eventos || []
 
   useEffect(() => {
-    load()
-    const interval = setInterval(load, 30000)
-    return () => clearInterval(interval)
-  }, [load])
+    const id = setInterval(refetch, 30000)
+    return () => clearInterval(id)
+  }, [refetch])
 
   return (
     <section className="risk-feed-section">
@@ -66,7 +51,7 @@ export default function LandingRiskFeed() {
           <p>Últimos eventos de riesgo registrados en Medellín</p>
         </div>
 
-        {loading && (
+        {isLoading && !error && (
           <div className="risk-feed-skeleton">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="skeleton-event" />
@@ -80,13 +65,13 @@ export default function LandingRiskFeed() {
           </div>
         )}
 
-        {!loading && !error && eventos.length === 0 && (
+        {!isLoading && !error && eventos.length === 0 && (
           <div className="risk-feed-empty">
             No hay eventos de riesgo registrados en los últimos meses
           </div>
         )}
 
-        {!loading && !error && eventos.length > 0 && (
+        {!isLoading && !error && eventos.length > 0 && (
           <div className="risk-feed-list">
             {(showAll ? eventos : eventos.slice(0, 5)).map((e) => {
               const colors = NIVEL_COLORS[e.nivel] || NIVEL_COLORS.bajo
@@ -112,7 +97,7 @@ export default function LandingRiskFeed() {
           </div>
         )}
 
-        {!loading && !error && eventos.length > 5 && !showAll && (
+        {!isLoading && !error && eventos.length > 5 && !showAll && (
           <button className="risk-feed-more" onClick={() => setShowAll(true)}>
             Ver más ({eventos.length - 5} restantes)
           </button>

@@ -75,6 +75,20 @@
     line-height: 1.4;
 }
 
+.search-bar__fav-icon {
+    font-size: 14px;
+    line-height: 1.4;
+    flex-shrink: 0;
+}
+
+.search-bar__divider {
+    height: 1px;
+    background: var(--glass-border, rgba(255,255,255,0.08));
+    margin: 4px 0;
+    list-style: none;
+    pointer-events: none;
+}
+
 .search-bar__loading {
     font-size: 11px;
     color: var(--text-muted);

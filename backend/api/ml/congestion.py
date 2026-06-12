@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from datetime import timedelta
+from django.db import close_old_connections
 from django.utils import timezone
 from django.db.models import Q, Count
 from apps.core.models import ReporteIncidente, EventoRiesgo, ZonaRiesgo
@@ -129,7 +130,7 @@ async def _weather_factor():
                 "latitude=6.2442&longitude=-75.5812"
                 "&current=precipitation,rain,weather_code"
                 "&timezone=auto",
-                timeout=8,
+                timeout=3,
             )
             resp.raise_for_status()
             data = resp.json()
@@ -193,6 +194,7 @@ def _db_report_factor(lat, lng, radio_km=1.0):
 
 
 def predict_congestion(lat=None, lng=None, comuna=None, hora=None, dia_semana=None):
+    close_old_connections()
     now = timezone.now()
     if hora is None: hora = now.hour
     if dia_semana is None: dia_semana = now.weekday()
@@ -240,10 +242,12 @@ def predict_congestion(lat=None, lng=None, comuna=None, hora=None, dia_semana=No
             adjustments += 0.04
 
     # DB events nearby
-    adjustments += _db_event_factor(comuna_lat, comuna_lng)
+    eventos_factor = _db_event_factor(comuna_lat, comuna_lng)
+    adjustments += eventos_factor
 
     # DB reports nearby
-    adjustments += _db_report_factor(comuna_lat, comuna_lng)
+    reportes_factor = _db_report_factor(comuna_lat, comuna_lng)
+    adjustments += reportes_factor
 
     # Weather
     try:
@@ -274,8 +278,8 @@ def predict_congestion(lat=None, lng=None, comuna=None, hora=None, dia_semana=No
         "features": {
             "perfil_hora": round(base * 100, 1),
             "nivel_zona": round(adjustments * 0 if nivel_zona else 0, 1),
-            "eventos_db": round(_db_event_factor(comuna_lat, comuna_lng) * 100, 1),
-            "reportes_db": round(_db_report_factor(comuna_lat, comuna_lng) * 100, 1),
+            "eventos_db": round(eventos_factor * 100, 1),
+            "reportes_db": round(reportes_factor * 100, 1),
             "clima": round(weather_w * 100, 1),
         },
     }
@@ -285,6 +289,13 @@ def get_hourly_forecast(lat=None, lng=None, comuna=None):
     now = timezone.now()
     dia_semana = now.weekday()
     current_hour = now.hour
+
+    # Pre-cache weather once before the loop so it's not called 24 times
+    try:
+        asyncio.run(_weather_factor())
+    except Exception:
+        pass
+
     predictions = []
     for h in range(24):
         pred = predict_congestion(

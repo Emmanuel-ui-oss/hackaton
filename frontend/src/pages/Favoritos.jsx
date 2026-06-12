@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import api from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import usePageData from '../hooks/usePageData'
@@ -6,21 +5,7 @@ import { Star, Trash } from '../icons'
 
 export default function Favoritos() {
   const { data: favs, loading, load } = usePageData(() => api.get('/api/v1/favoritos'))
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ nombre: '', direccion: '', latitud: 6.2442, longitud: -75.5812 })
   const { success, error: showError } = useToast()
-
-  const handleCreate = async (e) => {
-    e.preventDefault()
-    if (!form.nombre) { showError('El nombre es obligatorio'); return }
-    try {
-      await api.post('/api/v1/favoritos', form)
-      success('Favorito guardado')
-      setShowForm(false)
-      setForm({ nombre: '', direccion: '', latitud: 6.2442, longitud: -75.5812 })
-      load()
-    } catch { showError('Error al guardar') }
-  }
 
   const handleDelete = async (id) => {
     try {
@@ -34,12 +19,11 @@ export default function Favoritos() {
 
   return (
     <div className="page">
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="page-header">
         <div>
           <h1 className="page-title">{Star} Favoritos</h1>
           <p className="page-subtitle">Tus lugares guardados</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ Nuevo</button>
       </div>
 
       {(favs ?? []).length === 0 ? (
@@ -61,38 +45,6 @@ export default function Favoritos() {
               </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {showForm && (
-        <div className="modal-overlay" onClick={() => setShowForm(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-title">Nuevo Favorito</div>
-            <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div className="form-group">
-                <label className="form-label">Nombre *</label>
-                <input className="form-input" value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} placeholder="Casa, Trabajo, etc." autoFocus />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Dirección</label>
-                <input className="form-input" value={form.direccion} onChange={e => setForm(p => ({ ...p, direccion: e.target.value }))} placeholder="Dirección" />
-              </div>
-              <div className="grid grid-2">
-                <div className="form-group">
-                  <label className="form-label">Latitud</label>
-                  <input className="form-input" type="number" step="any" value={form.latitud} onChange={e => setForm(p => ({ ...p, latitud: +e.target.value }))} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Longitud</label>
-                  <input className="form-input" type="number" step="any" value={form.longitud} onChange={e => setForm(p => ({ ...p, longitud: +e.target.value }))} />
-                </div>
-              </div>
-              <div className="modal-actions">
-                <button type="button" className="btn btn-ghost" onClick={() => setShowForm(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary">Guardar</button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
     </div>

@@ -17,6 +17,7 @@
     "concurrently": "^8.2.2"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@mapbox/polyline": "^1.2.1"
   }
 }

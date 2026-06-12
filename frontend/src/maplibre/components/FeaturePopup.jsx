@@ -1,6 +1,27 @@
 import { Popup } from "react-map-gl/maplibre"
 import { Train, Bus_svg, CableCar_svg } from "../../icons"
 
+const TIPO_LABEL = {
+  accidente: 'Accidente',
+  bloqueo: 'Vía bloqueada',
+  zona_peligrosa: 'Zona peligrosa',
+  robo: 'Robo / Hurtos',
+  clima: 'Inundación / Clima',
+  deslizamiento: 'Deslizamiento',
+  manifestacion: 'Manifestación',
+  otro: 'Otro',
+}
+const TIPO_EMOJI = {
+  accidente: '🚗',
+  bloqueo: '🚧',
+  zona_peligrosa: '⚠️',
+  robo: '💰',
+  clima: '🌊',
+  deslizamiento: '🏔️',
+  manifestacion: '✊',
+  otro: '📍',
+}
+
 const transportIcon = (tipo) => {
   switch (tipo) {
     case "metro": return Train
@@ -25,10 +46,13 @@ export default function FeaturePopup({ selectedFeature, onClose, darkMode = true
       <div className="map-popup">
         {selectedFeature.type === "reporte" && (
           <>
-            <div className="map-popup__title">{(selectedFeature.properties.tipo || "").replace(/_/g, " ")}</div>
+            <div className="map-popup__title">
+              {TIPO_EMOJI[selectedFeature.properties.tipo] || '📍'} {TIPO_LABEL[selectedFeature.properties.tipo] || selectedFeature.properties.tipo?.replace(/_/g, ' ')}
+            </div>
             <div className="map-popup__body">
               {selectedFeature.properties.descripcion && <div style={{ marginBottom: 4 }}>{selectedFeature.properties.descripcion}</div>}
               {selectedFeature.properties.ubicacion_texto && <div style={{ fontSize: 11, opacity: 0.7 }}>{selectedFeature.properties.ubicacion_texto}</div>}
+              {selectedFeature.properties.usuario && <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>👤 {selectedFeature.properties.usuario}</div>}
               <div style={{ fontSize: 11, marginTop: 4 }}>👍{selectedFeature.properties.votos_positivos} 👎{selectedFeature.properties.votos_negativos}</div>
               {selectedFeature.properties.creado && <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>{new Date(selectedFeature.properties.creado).toLocaleString()}</div>}
             </div>
@@ -63,15 +87,6 @@ export default function FeaturePopup({ selectedFeature, onClose, darkMode = true
           <>
             <div className="map-popup__title">{selectedFeature.properties.nombre}</div>
             {selectedFeature.properties.direccion && <div className="map-popup__body">{selectedFeature.properties.direccion}</div>}
-          </>
-        )}
-        {selectedFeature.type === "sos" && (
-          <>
-            <div className="map-popup__title">🆘 SOS</div>
-            <div className="map-popup__body">
-              <div style={{ fontSize: 11, opacity: 0.7 }}>{selectedFeature.properties.nombre_completo}</div>
-              {selectedFeature.properties.creado && <div style={{ fontSize: 10, opacity: 0.5, marginTop: 2 }}>{new Date(selectedFeature.properties.creado).toLocaleString()}</div>}
-            </div>
           </>
         )}
         {selectedFeature.type === "ruta" && (

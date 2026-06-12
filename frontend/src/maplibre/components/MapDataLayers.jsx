@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 import { Source, Layer } from "react-map-gl/maplibre"
-import RainLayer from "./RainLayer"
+import SiataRadarLayer from "./SiataRadarLayer"
 
 export default function MapDataLayers({
   showTraffic, tomtomKey,
@@ -39,7 +39,7 @@ export default function MapDataLayers({
         </Source>
       )}
 
-      <RainLayer visible={showRadar} />
+      <SiataRadarLayer visible={showRadar} />
 
       {cone && (
         <Source id="vision" type="geojson" data={{ type: "Feature", geometry: { type: "Polygon", coordinates: [cone] } }}>
@@ -98,14 +98,43 @@ export default function MapDataLayers({
               "circle-radius": 12, "circle-color": ["get", "color"],
               "circle-opacity": 1, "circle-stroke-width": 3, "circle-stroke-color": "#fff",
             }} />
+          <Layer id="reportes-symbol" type="symbol"
+            layout={{
+              "text-field": ["get", "emoji"],
+              "text-size": 13,
+              "text-offset": [0, 0],
+            }}
+            paint={{
+              "text-halo-color": "#fff",
+              "text-halo-width": 1.5,
+            }} />
         </Source>
       )}
 
       {favoritos?.data && (
         <Source id="favoritos" type="geojson" data={favoritos.data}>
-          <Layer id="favoritos-icon" type="symbol"
-            layout={{ "text-field": "⭐", "text-size": 28 }}
-            paint={{ "text-color": "#f58220", "text-halo-color": "#fff", "text-halo-width": 3 }} />
+          <Layer id="favoritos-glow" type="circle"
+            paint={{
+              "circle-radius": 18, "circle-color": "#f58220",
+              "circle-opacity": 0.3, "circle-blur": 1,
+            }} />
+          <Layer id="favoritos-circle" type="circle"
+            paint={{
+              "circle-radius": 8, "circle-color": "#f58220",
+              "circle-stroke-width": 3, "circle-stroke-color": "#fff",
+            }} />
+          <Layer id="favoritos-label" type="symbol"
+            layout={{
+              "text-field": ["get", "nombre"],
+              "text-offset": [0, 1.8],
+              "text-size": 11,
+              "text-anchor": "top",
+            }}
+            paint={{
+              "text-color": "#f58220",
+              "text-halo-color": "#fff",
+              "text-halo-width": 2,
+            }} />
         </Source>
       )}
 

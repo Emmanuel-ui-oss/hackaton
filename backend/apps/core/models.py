@@ -28,6 +28,9 @@ class ZonaRiesgo(models.Model):
         ("ROBO", "Robo"),
         ("INUNDACION", "Inundación"),
         ("DESLIZAMIENTO", "Deslizamiento"),
+        ("MONITOREO", "Monitoreo"),
+        ("INSPECCION", "Inspección"),
+        ("CIERRE", "Cierre Vial"),
         ("OTRO", "Otro"),
     ]
     NIVELES = [
@@ -170,6 +173,9 @@ class EventoRiesgo(models.Model):
         ("fuga_gas", "Fuga de Gas"),
         ("colapso", "Colapso Estructural"),
         ("vendaval", "Vendaval"),
+        ("cierre_vial", "Cierre Vial"),
+        ("monitoreo", "Punto de Monitoreo"),
+        ("inspeccion", "Inspección"),
         ("otro", "Otro"),
     ]
     NIVELES = [
@@ -183,6 +189,8 @@ class EventoRiesgo(models.Model):
         ("dagrd", "DAGRD"),
         ("usuario", "Reporte Usuario"),
         ("api_externa", "API Externa"),
+        ("arcgis_dagrd", "ArcGIS DAGRD"),
+        ("arcgis_cierres", "ArcGIS Cierres"),
     ]
 
     tipo = models.CharField(max_length=30, choices=TIPOS)

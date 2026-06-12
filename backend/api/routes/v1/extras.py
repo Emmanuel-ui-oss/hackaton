@@ -9,6 +9,7 @@ from pathlib import Path
 
 from datetime import datetime, date, timedelta
 from typing import Optional
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, Request
 from django.db import IntegrityError
@@ -18,6 +19,9 @@ from django.utils import timezone
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from django.conf import settings
+from django.core.mail import send_mail
+
 from apps.core.models import (
     ReporteIncidente, ZonaRiesgo, EventoRiesgo, CategoriaRiesgo,
     Alerta,
@@ -26,6 +30,7 @@ from apps.core.models import (
 from apps.core.audit import log_audit
 from api.dependencies import get_current_user
 from api.limiter import limiter
+from api.cache import make_key, get_cached, set_cached
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 security = HTTPBearer(auto_error=False)
@@ -248,17 +253,21 @@ def eliminar_contacto(contacto_id: int, user=Depends(get_current_user)):
 # ── SOS ──
 
 def _datos_usuario(user):
-    perfil = getattr(user, 'perfil', None)
+    try:
+        perfil = user.perfil
+        telefono = perfil.telefono if perfil else ""
+    except Exception:
+        telefono = ""
     return {
         "username": user.username,
         "nombre_completo": f"{user.first_name} {user.last_name}".strip() or user.username,
         "email": user.email,
-        "telefono": perfil.telefono if perfil else "",
+        "telefono": telefono,
     }
 
 
 @router.post("/sos/activar", status_code=201)
-@limiter.limit("3/minute")
+@limiter.limit("10/minute")
 def activar_sos(request: Request, lat: float = Query(0.0), lng: float = Query(0.0), user=Depends(get_current_user)):
     active_count = EventoSOS.objects.filter(usuario=user, activo=True).count()
     if active_count >= 1:
@@ -273,9 +282,34 @@ def activar_sos(request: Request, lat: float = Query(0.0), lng: float = Query(0.
         ],
     )
     log_audit(user, "activar_sos", "EventoSOS", sos.id, {"lat": lat, "lng": lng})
+
+    for c in contactos:
+        if c.email:
+            try:
+                send_mail(
+                    f"🚨 SOS - {user.username} necesita ayuda",
+                    (
+                        f"Se activó una emergencia.\n\n"
+                        f"Usuario: {user.username}\n"
+                        f"Nombre: {user.first_name} {user.last_name}\n\n"
+                        f"Ubicación:\n"
+                        f"https://www.google.com/maps?q={lat},{lng}\n\n"
+                        f"Latitud: {lat}\n"
+                        f"Longitud: {lng}\n\n"
+                        f"Este es un mensaje automático del sistema de emergencias."
+                    ),
+                    settings.DEFAULT_FROM_EMAIL,
+                    [c.email],
+                    fail_silently=True,
+                )
+            except Exception:
+                pass
+
     return {
         "id": sos.id,
         "activo": True,
+        "latitud": lat,
+        "longitud": lng,
         "contactos_notificados": sos.contactos_notificados,
         "usuario": _datos_usuario(user),
     }
@@ -295,6 +329,13 @@ def cerrar_sos(sos_id: int, user=Depends(get_current_user)):
 def sos_activo(user=Depends(get_current_user)):
     sos = EventoSOS.objects.filter(usuario=user, activo=True).first()
     if not sos:
+        return {"activo": False, "sos": None}
+    creado = sos.creado
+    if timezone.is_naive(creado):
+        creado = timezone.make_aware(creado)
+    if (timezone.now() - creado) > timedelta(minutes=30):
+        sos.activo = False
+        sos.save()
         return {"activo": False, "sos": None}
     return {
         "activo": True,
@@ -323,6 +364,35 @@ def actualizar_ubicacion_sos(sos_id: int, data: SOSUbicacion, user=Depends(get_c
     sos.longitud = data.longitud
     sos.save()
     return {"id": sos.id, "latitud": sos.latitud, "longitud": sos.longitud}
+
+
+@router.get("/sos/{sos_id}/enlaces")
+def enlaces_sos(sos_id: int, user=Depends(get_current_user)):
+    sos = EventoSOS.objects.filter(id=sos_id, usuario=user).first()
+    if not sos:
+        raise HTTPException(status_code=404, detail="SOS no encontrado")
+    lat, lng = sos.latitud, sos.longitud
+    msg = f"🚨 SOS - {user.username} necesita ayuda!\nUbicación: https://maps.google.com/?q={lat},{lng}"
+    msg_encoded = quote(msg)
+    contactos = ContactoEmergencia.objects.filter(usuario=user, activo=True)
+    whatsapp = []
+    for c in contactos:
+        telefono = c.telefono.strip().replace(" ", "").replace("+", "")
+        if telefono:
+            whatsapp.append({
+                "nombre": c.nombre,
+                "url": f"https://wa.me/{telefono}?text={msg_encoded}",
+            })
+    return {
+        "whatsapp": whatsapp,
+        "sms": msg,
+        "emergencia": [
+            {"nombre": "Policía", "telefono": "123"},
+            {"nombre": "Ambulancia", "telefono": "125"},
+            {"nombre": "Bomberos", "telefono": "119"},
+        ],
+        "ubicacion": {"latitud": lat, "longitud": lng},
+    }
 
 
 @router.get("/sos")
@@ -384,6 +454,22 @@ def leer_alerta(alerta_id: int, user=Depends(get_current_user)):
 
 # ── HISTORIAL DE VIAJES ──
 
+class HistorialCreate(BaseModel):
+    origen_nombre: str = ""
+    destino_nombre: str = ""
+    origen_lat: float = 0
+    origen_lng: float = 0
+    destino_lat: float = 0
+    destino_lng: float = 0
+    distancia_km: float = 0
+    tiempo_min: int = 0
+    costo_estimado: int = 0
+
+@router.post("/historial-viajes", status_code=201)
+def crear_historial(data: HistorialCreate, user=Depends(get_current_user)):
+    h = HistorialViaje.objects.create(usuario=user, **data.dict())
+    return {"id": h.id, "creado": h.creado.isoformat()}
+
 @router.get("/historial-viajes")
 def list_historial(user=Depends(get_current_user)):
     qs = HistorialViaje.objects.filter(usuario=user).order_by("-creado")
@@ -410,6 +496,10 @@ def list_historial(user=Depends(get_current_user)):
 @router.get("/items/stats")
 @router.get("/stats")
 def get_stats(user=Depends(get_current_user)):
+    cache_key = make_key("stats", user.id)
+    cached = get_cached(cache_key)
+    if cached:
+        return cached
     now = timezone.now()
     total_reportes = ReporteIncidente.objects.count()
     reportes_hoy = ReporteIncidente.objects.filter(creado__date=now.date()).count()
@@ -455,7 +545,7 @@ def get_stats(user=Depends(get_current_user)):
     favoritos = Favorito.objects.filter(usuario=user).count()
     eventos_sos = EventoSOS.objects.filter(usuario=user).count()
 
-    return {
+    result = {
         "total_reportes": total_reportes,
         "reportes_hoy": reportes_hoy,
         "por_tipo": por_tipo,
@@ -469,6 +559,8 @@ def get_stats(user=Depends(get_current_user)):
         "zonas_por_nivel": zonas_por_nivel,
         "reportes_por_tipo": {r["tipo"]: r["count"] for r in por_tipo},
     }
+    set_cached(cache_key, result, ttl=30)
+    return result
 
 
 # ── SEARCH ──

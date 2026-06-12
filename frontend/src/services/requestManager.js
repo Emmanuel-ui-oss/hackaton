@@ -64,7 +64,7 @@ async function fetchWithRetry(config, retries, signal, priority) {
       }
     } catch (err) {
       if (err.name === 'AbortError') throw err
-      if (err.response) throw err
+      if (err.response && err.response.status < 500) throw err
       lastErr = err
       if (attempt >= retries) throw err
       await sleep(Math.min(1000 * Math.pow(2, attempt) + Math.random() * 500, 10000))

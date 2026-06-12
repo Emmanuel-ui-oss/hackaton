@@ -4,7 +4,7 @@ log = logging.getLogger("core_client")
 
 CORE_HOST = os.getenv("CORE_HOST", "127.0.0.1")
 CORE_PORT = int(os.getenv("CORE_PORT", "9100"))
-CORE_TIMEOUT = int(os.getenv("CORE_TIMEOUT", "5"))
+CORE_TIMEOUT = int(os.getenv("CORE_TIMEOUT", "1"))
 
 
 def call(method: str, params: dict = None) -> dict:

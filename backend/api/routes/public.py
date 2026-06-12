@@ -211,5 +211,5 @@ def get_public_landing():
         "weather": _get_weather(),
         "timestamp": ahora.isoformat(),
     }
-    set_cached(cache_key, response, 120)
+    set_cached(cache_key, response, 30)
     return response

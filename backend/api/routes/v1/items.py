@@ -75,7 +75,6 @@ def list_zonas(
     categoria_id: Optional[int] = None,
     comuna: Optional[str] = None,
     search: Optional[str] = Query(None, min_length=2),
-    user=Depends(get_current_user),
 ):
     from api.ml.zonas import compute_all_zonas
     results = compute_all_zonas()

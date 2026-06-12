@@ -1,7 +1,6 @@
-import asyncio
 import logging
 import time
-from datetime import timedelta
+from django.db import close_old_connections
 from django.utils import timezone
 from django.db.models import Q, Count
 from apps.core.models import ZonaRiesgo, EventoRiesgo, ReporteIncidente
@@ -19,6 +18,9 @@ TIPO_PESOS = {
     "fuga_gas": 0.20,
     "colapso": 0.30,
     "vendaval": 0.20,
+    "monitoreo": 0.25,
+    "inspeccion": 0.20,
+    "cierre_vial": 0.30,
     "otro": 0.10,
 }
 
@@ -30,24 +32,27 @@ _zonas_cache_ts = 0.0
 _weather_cache_val = 0.0
 _weather_cache_ts = 0.0
 
+_tomtom_cache = []
+_tomtom_cache_ts = 0.0
 
-async def _weather_factor():
+
+def _fetch_weather_sync():
+    """Síncrona, cachea 60s. Retorna factor 0.0–0.15."""
     global _weather_cache_val, _weather_cache_ts
-    now = timezone.now().timestamp()
-    if _weather_cache_val != 0.0 and (now - _weather_cache_ts) < 300:
+    now = time.time()
+    if _weather_cache_ts != 0 and (now - _weather_cache_ts) < 60:
         return _weather_cache_val
     try:
         import httpx
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(
-                "https://api.open-meteo.com/v1/forecast?"
-                "latitude=6.2442&longitude=-75.5812"
-                "&current=precipitation,rain,weather_code"
-                "&timezone=auto",
-                timeout=8,
-            )
-            resp.raise_for_status()
-            data = resp.json()
+        resp = httpx.get(
+            "https://api.open-meteo.com/v1/forecast?"
+            "latitude=6.2442&longitude=-75.5812"
+            "&current=precipitation,rain,weather_code"
+            "&timezone=auto",
+            timeout=5,
+        )
+        resp.raise_for_status()
+        data = resp.json()
     except Exception as e:
         log.debug(f"Zonas weather fetch error: {e}")
         return _weather_cache_val
@@ -109,20 +114,47 @@ def _reportes_score(lat, lng, radio_km):
     return min(score, 0.5)
 
 
+def _tomtom_score(lat, lng, radio_km):
+    global _tomtom_cache, _tomtom_cache_ts
+    now = time.time()
+    if not _tomtom_cache or (now - _tomtom_cache_ts) > 30:
+        try:
+            from api.services.tomtom import fetch_traffic_incidents_sync
+            incidents = fetch_traffic_incidents_sync(-75.65, 6.15, -75.50, 6.30)
+            _tomtom_cache = incidents.get("incidents", [])
+            _tomtom_cache_ts = now
+        except Exception as e:
+            log.debug(f"TomTom fetch error: {e}")
+            if not _tomtom_cache:
+                return 0.0
+    if not _tomtom_cache:
+        return 0.0
+    score = 0.0
+    for inc in _tomtom_cache:
+        d = haversine(lat, lng, inc.get("lat", 0), inc.get("lng", 0))
+        if d <= radio_km:
+            score += 0.08
+    return min(score, 0.3)
+
+
 def compute_risk(zona):
+    close_old_connections()
     lat = zona.latitud
     lng = zona.longitud
     radio_km = (zona.radio_metros or 500) / 1000
 
     eventos = _eventos_score(lat, lng, radio_km)
     reportes = _reportes_score(lat, lng, radio_km)
+    tomtom = 0.0
 
     try:
-        weather = asyncio.run(_weather_factor())
+        tomtom = _tomtom_score(lat, lng, radio_km)
     except Exception:
-        weather = 0.0
+        tomtom = 0.0
 
-    score = eventos + reportes + weather
+    weather = _fetch_weather_sync()
+
+    score = eventos + reportes + weather + tomtom
 
     if score >= 0.60:
         nivel = "CRITICO"
@@ -139,9 +171,12 @@ def compute_risk(zona):
 def compute_all_zonas(force=False):
     global _zonas_cache, _zonas_cache_ts
     now = time.time()
-    if not force and _zonas_cache is not None and (now - _zonas_cache_ts) < 60:
+    if not force and _zonas_cache is not None and (now - _zonas_cache_ts) < 15:
         return _zonas_cache
     zonas = ZonaRiesgo.objects.filter(activo=True).select_related("categoria")
+    # Pre-cache weather + tomtom once before the loop
+    _fetch_weather_sync()
+    _tomtom_score(6.2442, -75.5812, 10)
     results = []
     for z in zonas:
         nivel, score = compute_risk(z)

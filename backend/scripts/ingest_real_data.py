@@ -182,6 +182,24 @@ def run(hours_back=168):
     else:
         log.info("MEData no disponible por ahora, usando datos generados")
 
+    # 4. Datos reales desde APIs ArcGIS de Medellín (DAGRD, Cierres de Movilidad)
+    log.info("Consultando APIs ArcGIS de Medellín...")
+    try:
+        from apps.core.arcgis_util import ingest_all_sources
+        arcgis_count = ingest_all_sources()
+        log.info(f"ArcGIS: {arcgis_count} eventos creados/actualizados")
+    except Exception as e:
+        log.warning(f"ArcGIS falló: {e}")
+
+    # 5. Auto-crear ZonaRiesgo desde los eventos (para que se vean en el mapa)
+    try:
+        from api.ml.clustering import auto_create_zonas
+        zonas_nuevas = auto_create_zonas()
+        if zonas_nuevas:
+            log.info(f"Auto-creadas {zonas_nuevas} zonas de riesgo desde eventos")
+    except Exception as e:
+        log.warning(f"Auto-creación de zonas falló: {e}")
+
     total_eventos = EventoRiesgo.objects.count()
     total_reportes = ReporteIncidente.objects.count()
     log.info(f"Total en BD: {total_eventos} eventos, {total_reportes} reportes")

@@ -3,7 +3,6 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSocket } from '../../contexts/SocketContext'
 import Sidebar from './Sidebar'
-import BottomNav from './BottomNav'
 import SOSButton from '../common/SOSButton'
 import Toast from '../common/Toast'
 import { useToast } from '../../contexts/ToastContext'
@@ -61,7 +60,6 @@ export default function Layout() {
       </div>
       <SOSButton />
       <Chatbot />
-      <BottomNav />
       <Toast toasts={toasts} />
     </div>
   )

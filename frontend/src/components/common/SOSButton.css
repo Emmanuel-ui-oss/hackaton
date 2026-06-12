@@ -235,4 +235,105 @@
     width: 80px;
     height: 80px;
   }
+  .sos-actions {
+    right: 16px;
+    bottom: 150px;
+    min-width: 200px;
+  }
+}
+
+/* ── SOS Action Panel ── */
+.sos-actions {
+  position: fixed;
+  right: 24px;
+  bottom: 140px;
+  z-index: 998;
+  background: rgba(10, 10, 15, 0.94);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 220px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  animation: sosActionsIn 0.25s ease-out;
+}
+@keyframes sosActionsIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.sos-actions-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sos-actions-label {
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: rgba(255, 255, 255, 0.35);
+}
+.sos-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: left;
+  width: 100%;
+}
+.sos-action-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.sos-whatsapp {
+  color: #25d366;
+}
+.sos-whatsapp:hover {
+  background: rgba(37, 211, 102, 0.08);
+  border-color: rgba(37, 211, 102, 0.2);
+}
+.sos-call {
+  color: #ff5252;
+}
+.sos-call:hover {
+  background: rgba(255, 82, 82, 0.08);
+  border-color: rgba(255, 82, 82, 0.2);
+}
+.sos-actions-call-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.sos-actions-call-group .sos-action-btn {
+  flex: 1;
+  min-width: 80px;
+  justify-content: center;
+  font-size: 0.7rem;
+}
+.sos-actions-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  font-size: 0.6rem;
+  padding: 6px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+  width: 100%;
+  text-align: center;
+}
+.sos-actions-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.04);
 }

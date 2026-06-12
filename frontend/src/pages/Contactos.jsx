@@ -2,20 +2,15 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import usePageData from '../hooks/usePageData'
-import { Phone, Mail, User, Trash, AlertCircle } from '../icons'
+import { Phone, Mail, User, Trash } from '../icons'
 
 export default function Contactos() {
   const { data: contactos, loading, error, load } = usePageData(() => api.get('/api/v1/contactos-emergencia'))
-  const [sosActivo, setSosActivo] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ nombre: '', telefono: '', email: '' })
   const { success, error: showError } = useToast()
 
   useEffect(() => { if (error) showError('Error al cargar contactos') }, [error])
-
-  useEffect(() => {
-    api.get('/api/v1/sos').then(r => r.data?.activo && setSosActivo(r.data)).catch(() => { })
-  }, [])
 
   const handleCreate = async (e) => {
     e.preventDefault()
@@ -39,26 +34,6 @@ export default function Contactos() {
     }
   }
 
-  const activarSOS = async () => {
-    if (!navigator.geolocation) { showError('Geolocalización no disponible'); return }
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      try {
-        const r = await api.post(`/api/v1/sos/activar?lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`)
-        setSosActivo(r.data)
-        success('🚨 SOS activado! Contactos notificados.')
-      } catch { showError('Error al activar SOS') }
-    }, () => showError('No se pudo obtener ubicación'))
-  }
-
-  const cerrarSOS = async () => {
-    if (!sosActivo) return
-    try {
-      await api.post(`/api/v1/sos/${sosActivo.id}/cerrar`)
-      setSosActivo(null)
-      success('SOS desactivado')
-    } catch { showError('Error al cerrar SOS') }
-  }
-
   return (
     <div className="page">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -67,18 +42,6 @@ export default function Contactos() {
           <p className="page-subtitle">Tus contactos de confianza</p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ Añadir</button>
-      </div>
-
-      <div style={{ marginBottom: 24 }}>
-        {sosActivo ? (
-          <button className="btn btn-danger btn-lg" onClick={cerrarSOS} style={{ width: '100%', justifyContent: 'center', animation: 'pulse 1.5s infinite' }}>
-            {AlertCircle} DESACTIVAR SOS
-          </button>
-        ) : (
-          <button className="btn btn-danger btn-lg" onClick={activarSOS} style={{ width: '100%', justifyContent: 'center' }}>
-            {AlertCircle} ACTIVAR SOS
-          </button>
-        )}
       </div>
 
       {(contactos ?? []).length === 0 ? (
@@ -130,9 +93,6 @@ export default function Contactos() {
         </div>
       )}
 
-      <style>{`
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
-      `}</style>
     </div>
   )
 }

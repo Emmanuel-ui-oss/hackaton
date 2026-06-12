@@ -18,9 +18,18 @@ export const API_DEFAULTS = {
   '/api/v1/weather/forecast': [],
   '/api/v1/predict/congestion/forecast': { predictions: [] },
   '/api/v1/transport': [],
-  '/api/v1/sos': [],
-  '/api/v1/sos/activo': null,
   '/api/v1/public/landing': { comunas: [], weather: null, eventos: [] },
+}
+
+export function getWeatherIcon(code) {
+  if (code === 0) return "☀️";
+  if (code <= 3) return "🌤️";
+  if (code <= 48) return "🌫️";
+  if (code <= 67) return "🌧️";
+  if (code <= 77) return "❄️";
+  if (code <= 82) return "🌦️";
+  if (code <= 99) return "⛈️";
+  return "🌍";
 }
 
 export function safe(data, key) {

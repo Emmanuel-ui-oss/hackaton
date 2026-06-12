@@ -1,4 +1,4 @@
-import api from "../../services/api";
+import { useEffect } from "react";
 import usePageData from "../../hooks/usePageData";
 
 const NIVEL_COLORS = { CRITICO: "#ff1744", ALTO: "#ffab00", MEDIO: "#2979ff", BAJO: "#00c853" };
@@ -23,7 +23,7 @@ function toGeoJSON(data) {
         const polygon = circlePolygon(z.latitud, z.longitud, r);
         return {
             type: "Feature",
-            properties: { id: z.id, nombre: z.nombre, nivel, color: NIVEL_COLORS[nivel] || "#888", opacidad: nivel === "CRITICO" ? 0.2 : nivel === "ALTO" ? 0.18 : nivel === "MEDIO" ? 0.15 : 0.12, comuna: z.comuna || "", tipo_riesgo: z.tipo_riesgo || "", descripcion: z.descripcion || "", radio_metros: z.radio_metros || 0 },
+            properties: { id: z.id, nombre: z.nombre, nivel, color: NIVEL_COLORS[nivel] || "#888", opacidad: nivel === "CRITICO" ? 0.35 : nivel === "ALTO" ? 0.28 : nivel === "MEDIO" ? 0.22 : 0.16, comuna: z.comuna || "", tipo_riesgo: z.tipo_riesgo || "", descripcion: z.descripcion || "", radio_metros: z.radio_metros || 0 },
             geometry: { type: "Polygon", coordinates: [polygon] },
         };
     });
@@ -31,6 +31,13 @@ function toGeoJSON(data) {
 }
 
 export default function useZonasRiesgo(active) {
-    const { data, loading } = usePageData(() => api.get("/api/v1/zonas-riesgo"), active, toGeoJSON);
+    const { data, loading, invalidate } = usePageData("/api/v1/zonas-riesgo", active, toGeoJSON);
+
+    useEffect(() => {
+        if (!active) return;
+        const id = setInterval(() => invalidate(), 15000);
+        return () => clearInterval(id);
+    }, [active, invalidate]);
+
     return { data, loading };
 }

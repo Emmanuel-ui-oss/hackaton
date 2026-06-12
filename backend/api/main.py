@@ -31,7 +31,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 log = logging.getLogger("ingestor")
 
-INGEST_INTERVAL = int(os.getenv("INGEST_INTERVAL", "300"))
+INGEST_INTERVAL = int(os.getenv("INGEST_INTERVAL", "30"))
 
 
 def ingestor_loop():

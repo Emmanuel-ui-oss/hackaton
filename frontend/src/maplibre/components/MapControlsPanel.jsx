@@ -1,4 +1,4 @@
-import { Sun, Moon, TrafficLight, CloudRain, Navigation } from "../../icons";
+import { Sun, Moon, TrafficLight, CloudRain, Navigation, Mic } from "../../icons";
 import "../css/MapControlsPanel.css";
 
 const ITEMS = [
@@ -40,7 +40,7 @@ const ITEMS = [
     },
     {
         key: "voice",
-        iconOff: "🔊", iconOn: "🔊",
+        iconOff: Mic, iconOn: Mic,
         labelOff: "VOZ", labelOn: "VOZ",
         accent: "#00d4ff",
         getActive: (p) => p.voiceActive,

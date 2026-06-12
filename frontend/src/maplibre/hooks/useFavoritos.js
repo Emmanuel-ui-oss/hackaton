@@ -1,4 +1,3 @@
-import api from "../../services/api";
 import usePageData from "../../hooks/usePageData";
 
 function toGeoJSON(data) {
@@ -11,6 +10,7 @@ function toGeoJSON(data) {
 }
 
 export default function useFavoritos(active) {
-    const { data, loading } = usePageData(() => api.get("/api/v1/favoritos"), active, toGeoJSON);
-    return { data, loading };
+    const { data: raw, loading, invalidate } = usePageData("/api/v1/favoritos", active);
+    const geoJSON = raw ? toGeoJSON(raw) : null;
+    return { data: geoJSON, raw, loading, invalidate };
 }

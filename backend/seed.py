@@ -28,6 +28,7 @@ def run():
     admin.save()
     user, _ = User.objects.get_or_create(username="demo", defaults={"email": "demo@test.com"})
     user.set_password(demo_pass)
+    user.is_staff = True
     user.save()
     user2, _ = User.objects.get_or_create(username="maria", defaults={"email": "maria@test.com"})
     user2.set_password(maria_pass)

@@ -23,6 +23,40 @@ def get_tile_url():
         return None
     return TRAFFIC_TILE_URL.format(key=TOMTOM_KEY)
 
+def fetch_traffic_incidents_sync(bbox_west, bbox_south, bbox_east, bbox_north):
+    """Versión síncrona (sin asyncio)."""
+    if not TOMTOM_KEY:
+        return {"incidents": [], "source": "none", "available": False}
+    url = INCIDENTS_URL.format(
+        bboxWest=bbox_west, bboxSouth=bbox_south,
+        bboxEast=bbox_east, bboxNorth=bbox_north, key=TOMTOM_KEY,
+    )
+    try:
+        import httpx
+        resp = httpx.get(url, timeout=15)
+        resp.raise_for_status()
+        data = resp.json()
+        incidents = []
+        for inc in data.get("incidents", []):
+            props = inc.get("properties", {})
+            p = props.get("geometry", {}).get("point", {}) if isinstance(props.get("geometry"), dict) else {}
+            incidents.append({
+                "id": inc.get("id"),
+                "type": props.get("iconCategory"),
+                "description": props.get("description", ""),
+                "lat": p.get("lat"),
+                "lng": p.get("lng"),
+                "severity": props.get("severity", 0),
+                "start": props.get("startTime", ""),
+                "end": props.get("endTime", ""),
+                "from": props.get("from", ""),
+                "to": props.get("to", ""),
+            })
+        return {"incidents": incidents, "source": "tomtom", "available": True}
+    except Exception as e:
+        log.warning(f"TomTom incidents sync error: {e}")
+        return {"incidents": [], "source": "tomtom", "available": True, "error": str(e)}
+
 async def fetch_traffic_incidents(bbox_west, bbox_south, bbox_east, bbox_north):
     if not TOMTOM_KEY:
         return {"incidents": [], "source": "none", "available": False}

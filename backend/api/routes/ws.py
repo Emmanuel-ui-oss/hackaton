@@ -1,6 +1,7 @@
 import json
 import asyncio
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+from django.utils import timezone
 from collections import defaultdict
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from jose import jwt, JWTError
@@ -45,7 +46,7 @@ class ConnectionManager:
                 )()
                 reportes_por_tipo = {r["tipo"].lower(): r["total"] for r in reportes_tipo_data}
 
-                get_sos_activos = sync_to_async(lambda: list(
+                get_sos_raw = sync_to_async(lambda: list(
                     EventoSOS.objects.filter(activo=True).select_related(
                         "usuario", "usuario__perfil"
                     ).values(
@@ -57,9 +58,16 @@ class ConnectionManager:
                         "usuario__perfil__telefono",
                     )
                 ))
-                sos_raw = await get_sos_activos()
-                sos_activos = [
-                    {
+                sos_raw = await get_sos_raw()
+                ahora = timezone.now()
+                sos_activos = []
+                for s in sos_raw:
+                    c = s["creado"]
+                    if timezone.is_naive(c):
+                        c = timezone.make_aware(c)
+                    if ahora - c > timedelta(minutes=30):
+                        continue
+                    sos_activos.append({
                         "id": s["id"],
                         "latitud": float(s["latitud"]),
                         "longitud": float(s["longitud"]),
@@ -68,10 +76,8 @@ class ConnectionManager:
                                             or s["usuario__username"]),
                         "email": s["usuario__email"] or "",
                         "telefono": s["usuario__perfil__telefono"] or "",
-                        "creado": s["creado"].isoformat() if hasattr(s["creado"], "isoformat") else str(s["creado"]),
-                    }
-                    for s in sos_raw
-                ]
+                        "creado": c.isoformat(),
+                    })
 
                 payload = {
                     "total_reportes": total_reportes,

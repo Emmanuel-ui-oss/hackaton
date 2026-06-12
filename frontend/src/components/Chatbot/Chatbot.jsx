@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import api from '../../services/api'
+import api, { askOllama } from '../../services/api'
 import { MessageCircle, Close, ArrowRight } from '../../icons'
 import './Chatbot.css'
 
@@ -26,8 +26,8 @@ export default function Chatbot() {
     setMessages(m => [...m, { role: 'user', text }])
     setLoading(true)
     try {
-      const res = await api.post('/api/v1/chat', { message: text })
-      setMessages(m => [...m, { role: 'bot', text: res.data.reply }])
+      const reply = await askOllama(text)
+      setMessages(m => [...m, { role: 'bot', text: reply }])
     } catch {
       setMessages(m => [...m, { role: 'bot', text: 'Error de conexión. Intenta de nuevo.' }])
     }

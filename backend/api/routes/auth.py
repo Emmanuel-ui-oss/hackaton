@@ -146,3 +146,52 @@ def me(user=Depends(get_current_user)):
         is_staff=user.is_staff,
         telefono=perfil.telefono if perfil else "",
     )
+
+
+@router.get("/users")
+def list_users(user=Depends(get_current_user)):
+    if not user.is_staff:
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    qs = User.objects.all().values("id", "username", "email", "first_name", "last_name", "is_staff", "date_joined")
+    return list(qs)
+
+
+class UserUpdate(BaseModel):
+    username: str = ""
+    email: str = ""
+    first_name: str = ""
+    last_name: str = ""
+    is_staff: bool = False
+    password: str = ""
+
+
+@router.put("/users/{user_id}")
+def update_user(user_id: int, data: UserUpdate, user=Depends(get_current_user)):
+    if not user.is_staff:
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    target = User.objects.filter(id=user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    if data.username:
+        target.username = data.username
+    if data.email:
+        target.email = data.email
+    target.first_name = data.first_name
+    target.last_name = data.last_name
+    target.is_staff = data.is_staff
+    if data.password:
+        target.set_password(data.password)
+    target.save()
+    return {"ok": True}
+
+
+@router.delete("/users/{user_id}", status_code=204)
+def delete_user(user_id: int, user=Depends(get_current_user)):
+    if not user.is_staff:
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    if user.id == user_id:
+        raise HTTPException(status_code=400, detail="No puedes eliminarte a ti mismo")
+    target = User.objects.filter(id=user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    target.delete()

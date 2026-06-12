@@ -5,7 +5,6 @@ import LoginDropdown from '../components/common/LoginDropdown'
 import MapBackground from '../components/common/MapBackground'
 import SplashMap from '../components/common/SplashMap'
 import VisionVialLogo from '../components/common/VisionVialLogo'
-import Testimonials from '../components/landing/Testimonials'
 import AnimatedPage from '../components/common/AnimatedPage'
 import { User, Car, Shield, ArrowDown, SocialX, SocialLinkedIn, Play } from '../icons'
 import './Landing.css'
@@ -164,225 +163,223 @@ export default function Landing() {
 
   return (
     <AnimatedPage>
-    <div className="landing">
-      <MapBackground />
-      <div className="landing-content">
-      <header className="landing-header">
-        <div className="landing-header-inner">
-          <div className="landing-brand">
-            <VisionVialLogo className="landing-brand-logo" />
-          </div>
-          <nav className="landing-nav">
-            <a onClick={() => scrollTo('hero')}>Inicio</a>
-            <a onClick={() => scrollTo('como-funciona')}>Cómo funciona</a>
-            <a onClick={() => scrollTo('funcionalidades')}>Funcionalidades</a>
-          </nav>
-          <LoginDropdown trigger={dropdownTrigger} onTriggerDone={() => setDropdownTrigger(null)} />
-        </div>
-      </header>
+      <div className="landing">
+        <MapBackground />
+        <div className="landing-content">
+          <header className="landing-header">
+            <div className="landing-header-inner">
+              <div className="landing-brand">
+                <VisionVialLogo className="landing-brand-logo" />
+              </div>
+              <nav className="landing-nav">
+                <a onClick={() => scrollTo('hero')}>Inicio</a>
+                <a onClick={() => scrollTo('como-funciona')}>Cómo funciona</a>
+                <a onClick={() => scrollTo('funcionalidades')}>Funcionalidades</a>
+              </nav>
+              <LoginDropdown trigger={dropdownTrigger} onTriggerDone={() => setDropdownTrigger(null)} />
+            </div>
+          </header>
 
-      <section id="hero" className="landing-hero">
-        <div className="landing-hero-bg" />
-        <div className="landing-hero-glow" />
-        <div className="landing-hero-inner">
-          <div className="landing-hero-text">
-            <div className="landing-hero-badges">
-              <span className="landing-badge"><span className="badge-dot" />PWA</span>
-              <span className="landing-badge"><span className="badge-dot" />ML</span>
-              <span className="landing-badge"><span className="badge-dot" />Tiempo Real</span>
-            </div>
-            <h1 className="landing-hero-title">
-              Movilidad inteligente<br />para <span className="text-gradient">Medellín</span>
-            </h1>
-            <p className="landing-hero-subtitle">
-              Plataforma predictiva que integra datos en tiempo real, inteligencia artificial y visualización geoespacial para transformar la movilidad urbana.
-            </p>
-            <div className="landing-hero-actions">
-              <button className="btn btn-primary btn-hero" onClick={() => { setDropdownTrigger({ open: true, mode: 'login' }) }}>
-                Comenzar gratis
-                <svg className="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
-              </button>
-              <button className="btn btn-ghost btn-hero" onClick={() => scrollTo('como-funciona')}>
-                Ver demo
-              </button>
-            </div>
-            <div className="landing-hero-trust">
-              <span className="trust-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--green)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
-                Sin instalación
-              </span>
-              <span className="trust-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--green)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
-                Datos en tiempo real
-              </span>
-              <span className="trust-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--green)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
-                100% gratuito
-              </span>
-            </div>
-          </div>
-          <div className="landing-hero-visual">
-            <div className="device-mockup">
-              <div className="device-bezel">
-                <div className="device-notch" />
-                <div className="device-screen">
-                  <div className="mockup-map">
-                    <div className="mockup-grid" />
-                    <div className="mockup-marker m1" />
-                    <div className="mockup-marker m2" />
-                    <div className="mockup-marker m3" />
-                    <div className="mockup-marker m4" />
-                    <div className="mockup-route-line" />
-                    <div className="mockup-sidebar">
-                      <div className="mockup-sidebar-item" />
-                      <div className="mockup-sidebar-item" />
-                      <div className="mockup-sidebar-item" />
-                    </div>
-                    <div className="mockup-stats-bar">
-                      <div className="mockup-stat">
-                        <span className="mockup-stat-value">16</span>
-                        <span className="mockup-stat-label">Comunas</span>
-                      </div>
-                      <div className="mockup-stat">
-                        <span className="mockup-stat-value">8</span>
-                        <span className="mockup-stat-label">Líneas</span>
-                      </div>
-                      <div className="mockup-stat">
-                        <span className="mockup-stat-value">25</span>
-                        <span className="mockup-stat-label">Eventos</span>
+          <section id="hero" className="landing-hero">
+            <div className="landing-hero-bg" />
+            <div className="landing-hero-glow" />
+            <div className="landing-hero-inner">
+              <div className="landing-hero-text">
+                <div className="landing-hero-badges">
+                  <span className="landing-badge"><span className="badge-dot" />PWA</span>
+                  <span className="landing-badge"><span className="badge-dot" />ML</span>
+                  <span className="landing-badge"><span className="badge-dot" />Tiempo Real</span>
+                </div>
+                <h1 className="landing-hero-title">
+                  Movilidad inteligente<br />para <span className="text-gradient">Medellín</span>
+                </h1>
+                <p className="landing-hero-subtitle">
+                  Plataforma predictiva que integra datos en tiempo real, inteligencia artificial y visualización geoespacial para transformar la movilidad urbana.
+                </p>
+                <div className="landing-hero-actions">
+                  <button className="btn btn-primary btn-hero" onClick={() => { setDropdownTrigger({ open: true, mode: 'login' }) }}>
+                    Comenzar gratis
+                    <svg className="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                  <button className="btn btn-ghost btn-hero" onClick={() => scrollTo('como-funciona')}>
+                    Ver demo
+                  </button>
+                </div>
+                <div className="landing-hero-trust">
+                  <span className="trust-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--green)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" /></svg>
+                    Sin instalación
+                  </span>
+                  <span className="trust-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--green)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" /></svg>
+                    Datos en tiempo real
+                  </span>
+                  <span className="trust-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--green)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" /></svg>
+                    100% gratuito
+                  </span>
+                </div>
+              </div>
+              <div className="landing-hero-visual">
+                <div className="device-mockup">
+                  <div className="device-bezel">
+                    <div className="device-notch" />
+                    <div className="device-screen">
+                      <div className="mockup-map">
+                        <div className="mockup-grid" />
+                        <div className="mockup-marker m1" />
+                        <div className="mockup-marker m2" />
+                        <div className="mockup-marker m3" />
+                        <div className="mockup-marker m4" />
+                        <div className="mockup-route-line" />
+                        <div className="mockup-sidebar">
+                          <div className="mockup-sidebar-item" />
+                          <div className="mockup-sidebar-item" />
+                          <div className="mockup-sidebar-item" />
+                        </div>
+                        <div className="mockup-stats-bar">
+                          <div className="mockup-stat">
+                            <span className="mockup-stat-value">16</span>
+                            <span className="mockup-stat-label">Comunas</span>
+                          </div>
+                          <div className="mockup-stat">
+                            <span className="mockup-stat-value">8</span>
+                            <span className="mockup-stat-label">Líneas</span>
+                          </div>
+                          <div className="mockup-stat">
+                            <span className="mockup-stat-value">25</span>
+                            <span className="mockup-stat-label">Eventos</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-        <div className="landing-scroll-indicator" onClick={() => scrollTo('como-funciona')}>
-          <span>Descubre más</span>
-          <div className="scroll-arrow">{ArrowDown}</div>
-        </div>
-      </section>
-
-      <section className="landing-stats">
-        <div className="landing-stats-inner">
-          <AnimatedCounter value={16} suffix="" label="Comunas monitoreadas" />
-          <AnimatedCounter value={25} suffix="+" label="Eventos en tiempo real" />
-          <AnimatedCounter value={24} suffix="/7" label="Monitoreo continuo" />
-        </div>
-      </section>
-
-      <section id="como-funciona" className="landing-how">
-        <div className="landing-section-header reveal">
-          <h2>¿Cómo funciona?</h2>
-          <p>Cuatro pasos para transformar tu movilidad</p>
-        </div>
-        <div className="landing-how-grid">
-          {steps.map((s, i) => (
-            <div key={i} className="landing-how-step reveal">
-              <div className="landing-how-num">{s.num}</div>
-              <h3 className="landing-how-title">{s.title}</h3>
-              <p className="landing-how-desc">{s.desc}</p>
+            <div className="landing-scroll-indicator" onClick={() => scrollTo('como-funciona')}>
+              <span>Descubre más</span>
+              <div className="scroll-arrow">{ArrowDown}</div>
             </div>
-          ))}
-        </div>
-      </section>
+          </section>
 
-      <section id="funcionalidades" className="landing-features">
-        <div className="landing-section-header reveal">
-          <h2>Todo lo que necesitas</h2>
-          <p>Seis funcionalidades clave para una movilidad más segura y eficiente</p>
-        </div>
-        <div className="landing-features-grid">
-          {features.map((f, i) => (
-            <div key={i} className="landing-feature-card reveal">
-              <div className="landing-feature-icon-wrap">
-                <FeatureIcon name={f.icon} />
+          <section className="landing-stats">
+            <div className="landing-stats-inner">
+              <AnimatedCounter value={16} suffix="" label="Comunas monitoreadas" />
+              <AnimatedCounter value={25} suffix="+" label="Eventos en tiempo real" />
+              <AnimatedCounter value={24} suffix="/7" label="Monitoreo continuo" />
+            </div>
+          </section>
+
+          <section id="como-funciona" className="landing-how">
+            <div className="landing-section-header reveal">
+              <h2>¿Cómo funciona?</h2>
+              <p>Cuatro pasos para transformar tu movilidad</p>
+            </div>
+            <div className="landing-how-grid">
+              {steps.map((s, i) => (
+                <div key={i} className="landing-how-step reveal">
+                  <div className="landing-how-num">{s.num}</div>
+                  <h3 className="landing-how-title">{s.title}</h3>
+                  <p className="landing-how-desc">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section id="funcionalidades" className="landing-features">
+            <div className="landing-section-header reveal">
+              <h2>Todo lo que necesitas</h2>
+              <p>Seis funcionalidades clave para una movilidad más segura y eficiente</p>
+            </div>
+            <div className="landing-features-grid">
+              {features.map((f, i) => (
+                <div key={i} className="landing-feature-card reveal">
+                  <div className="landing-feature-icon-wrap">
+                    <FeatureIcon name={f.icon} />
+                  </div>
+                  <h3 className="landing-feature-title">{f.title}</h3>
+                  <p className="landing-feature-desc">{f.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="landing-audience">
+            <div className="landing-section-header reveal">
+              <h2>Para todos los actores viales</h2>
+              <p>VisionVial está diseñada para ciudadanos, conductores y autoridades</p>
+            </div>
+            <div className="landing-audience-grid">
+              {audiences.map((a, i) => (
+                <div key={i} className="landing-audience-card reveal">
+                  <div className="landing-audience-icon-wrap">
+                    <span className="landing-audience-icon">{a.icon === 'Ciudadanos' ? <span style={{ display: 'inline-flex' }}>{User}</span> : a.icon === 'Conductores' ? <span style={{ display: 'inline-flex' }}>{Car}</span> : <span style={{ display: 'inline-flex' }}>{Shield}</span>}</span>
+                  </div>
+                  <h3 className="landing-audience-title">{a.icon}</h3>
+                  <ul className="landing-audience-list">
+                    {a.items.map((item, j) => <li key={j}>{item}</li>)}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="landing-cta reveal">
+            <div className="landing-cta-card">
+              <div className="landing-cta-badge">GRATIS</div>
+              <h2 className="landing-cta-title">¿Listo para transformar tu movilidad?</h2>
+              <p className="landing-cta-text">Únete a VisionVial y comienza a moverte de forma más inteligente y segura.</p>
+              <div className="landing-cta-actions">
+                <button className="btn btn-primary btn-hero btn-cta" onClick={() => { setDropdownTrigger({ open: true, mode: 'register' }) }}>
+                  Crear cuenta gratis
+                  <svg className="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                </button>
               </div>
-              <h3 className="landing-feature-title">{f.title}</h3>
-              <p className="landing-feature-desc">{f.desc}</p>
             </div>
-          ))}
-        </div>
-      </section>
+          </section>
 
-      <section className="landing-audience">
-        <div className="landing-section-header reveal">
-          <h2>Para todos los actores viales</h2>
-          <p>VisionVial está diseñada para ciudadanos, conductores y autoridades</p>
-        </div>
-        <div className="landing-audience-grid">
-          {audiences.map((a, i) => (
-            <div key={i} className="landing-audience-card reveal">
-              <div className="landing-audience-icon-wrap">
-                <span className="landing-audience-icon">{a.icon === 'Ciudadanos' ? <span style={{display:'inline-flex'}}>{User}</span> : a.icon === 'Conductores' ? <span style={{display:'inline-flex'}}>{Car}</span> : <span style={{display:'inline-flex'}}>{Shield}</span>}</span>
+          <footer className="landing-footer">
+            <div className="landing-footer-inner">
+              <div className="landing-footer-grid">
+                <div className="landing-footer-col landing-footer-brand-col">
+                  <VisionVialLogo className="landing-footer-logo" />
+                  <p className="landing-footer-desc">Plataforma de Movilidad Inteligente para Medellín. Datos en tiempo real, predicción ML y alertas personalizadas.</p>
+                  <div className="landing-footer-social">
+                    <span className="social-icon">{SocialX}</span>
+                    <span className="social-icon">{SocialLinkedIn}</span>
+                    <span className="social-icon">{Play}</span>
+                  </div>
+                </div>
+                <div className="landing-footer-col">
+                  <h4 className="landing-footer-col-title">Plataforma</h4>
+                  <a onClick={() => scrollTo('hero')}>Inicio</a>
+                  <a onClick={() => scrollTo('como-funciona')}>Cómo funciona</a>
+                  <a onClick={() => scrollTo('funcionalidades')}>Funcionalidades</a>
+                </div>
+                <div className="landing-footer-col">
+                  <h4 className="landing-footer-col-title">Recursos</h4>
+                  <a onClick={() => scrollTo('hero')}>API Docs</a>
+                  <a onClick={() => scrollTo('hero')}>Centro de ayuda</a>
+                  <a onClick={() => scrollTo('hero')}>Reportar error</a>
+                </div>
+                <div className="landing-footer-col">
+                  <h4 className="landing-footer-col-title">Legal</h4>
+                  <a onClick={() => scrollTo('hero')}>Términos de uso</a>
+                  <a onClick={() => scrollTo('hero')}>Privacidad</a>
+                  <a onClick={() => scrollTo('hero')}>Contacto</a>
+                </div>
               </div>
-              <h3 className="landing-audience-title">{a.icon}</h3>
-              <ul className="landing-audience-list">
-                {a.items.map((item, j) => <li key={j}>{item}</li>)}
-              </ul>
+              <div className="landing-footer-bottom">
+                <p>VisionVial &mdash; HackData CTGI SENA 2026</p>
+              </div>
             </div>
-          ))}
+          </footer>
         </div>
-      </section>
-
-      <Testimonials />
-
-      <section className="landing-cta reveal">
-        <div className="landing-cta-card">
-          <div className="landing-cta-badge">GRATIS</div>
-          <h2 className="landing-cta-title">¿Listo para transformar tu movilidad?</h2>
-          <p className="landing-cta-text">Únete a VisionVial y comienza a moverte de forma más inteligente y segura.</p>
-          <div className="landing-cta-actions">
-            <button className="btn btn-primary btn-hero btn-cta" onClick={() => { setDropdownTrigger({ open: true, mode: 'register' }) }}>
-              Crear cuenta gratis
-              <svg className="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <footer className="landing-footer">
-        <div className="landing-footer-inner">
-          <div className="landing-footer-grid">
-            <div className="landing-footer-col landing-footer-brand-col">
-              <VisionVialLogo className="landing-footer-logo" />
-              <p className="landing-footer-desc">Plataforma de Movilidad Inteligente para Medellín. Datos en tiempo real, predicción ML y alertas personalizadas.</p>
-<div className="landing-footer-social">
-  <span className="social-icon">{SocialX}</span>
-  <span className="social-icon">{SocialLinkedIn}</span>
-  <span className="social-icon">{Play}</span>
-</div>
-            </div>
-            <div className="landing-footer-col">
-              <h4 className="landing-footer-col-title">Plataforma</h4>
-              <a onClick={() => scrollTo('hero')}>Inicio</a>
-              <a onClick={() => scrollTo('como-funciona')}>Cómo funciona</a>
-              <a onClick={() => scrollTo('funcionalidades')}>Funcionalidades</a>
-            </div>
-            <div className="landing-footer-col">
-              <h4 className="landing-footer-col-title">Recursos</h4>
-              <a onClick={() => scrollTo('hero')}>API Docs</a>
-              <a onClick={() => scrollTo('hero')}>Centro de ayuda</a>
-              <a onClick={() => scrollTo('hero')}>Reportar error</a>
-            </div>
-            <div className="landing-footer-col">
-              <h4 className="landing-footer-col-title">Legal</h4>
-              <a onClick={() => scrollTo('hero')}>Términos de uso</a>
-              <a onClick={() => scrollTo('hero')}>Privacidad</a>
-              <a onClick={() => scrollTo('hero')}>Contacto</a>
-            </div>
-          </div>
-          <div className="landing-footer-bottom">
-            <p>VisionVial &mdash; HackData CTGI SENA 2026</p>
-          </div>
-        </div>
-      </footer>
-      </div>
-    </div></AnimatedPage>
+      </div></AnimatedPage>
   )
 }

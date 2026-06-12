@@ -56,7 +56,7 @@ export default function LoginDropdown({ trigger, onTriggerDone }) {
   const handleRegister = async (e) => {
     e.preventDefault()
     if (!reg.username || !reg.email || !reg.password) { showError('Usuario, email y contraseña son obligatorios'); return }
-    if (reg.password.length < 3) { showError('La contraseña debe tener al menos 3 caracteres'); return }
+    if (reg.password.length < 8) { showError('La contraseña debe tener al menos 8 caracteres'); return }
     setLoading(true)
     try {
       await register(reg)
@@ -134,9 +134,9 @@ export default function LoginDropdown({ trigger, onTriggerDone }) {
                   <label className="form-label">Contraseña <span className="required">*</span></label>
                   <div className="input-icon-wrap">
                     <span className="input-icon">{Lock}</span>
-                    <input className="form-input" type="password" value={reg.password} onChange={e => setReg(p => ({ ...p, password: e.target.value }))} placeholder="Mínimo 3 caracteres" />
+                    <input className="form-input" type="password" value={reg.password} onChange={e => setReg(p => ({ ...p, password: e.target.value }))} placeholder="Mínimo 8 caracteres" />
                   </div>
-                  <span className="form-hint">Mínimo 3 caracteres</span>
+                  <span className="form-hint">Mínimo 8 caracteres</span>
                 </div>
                 <button className="btn btn-gradient btn-sm btn-submit" type="submit" disabled={loading}>
                   {loading ? 'Creando cuenta...' : 'Crear Cuenta'}

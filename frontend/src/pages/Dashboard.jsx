@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import api from '../services/api'
 import useProgressiveData from '../hooks/useProgressiveData'
 import { useSocket } from '../contexts/SocketContext'
@@ -7,6 +8,7 @@ import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
 import AnimatedNumber from '../components/common/AnimatedNumber'
 import Skeleton from '../components/common/Skeleton'
+import { getWeatherIcon } from '../utils/defaults'
 import { Sun, Droplet, CloudRain, Map as MapIcon } from '../icons'
 import {
   Chart as ChartJS,
@@ -33,8 +35,6 @@ const CARD_COLORS = {
 const SVG_ICONS = {
   zonas: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>,
   reportes: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>,
-  alertas: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>,
-  sos: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg>,
   favoritos: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>,
   total: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>,
 }
@@ -42,19 +42,18 @@ const SVG_ICONS = {
 const CARD_CONFIG = [
   { key: 'zonas_riesgo', icon: SVG_ICONS.zonas, label: 'ZONAS', colorKey: 'ZONAS' },
   { key: 'reportes_activos', icon: SVG_ICONS.reportes, label: 'REPORTES', colorKey: 'REPORTES' },
-  { key: 'alertas_no_leidas', icon: SVG_ICONS.alertas, label: 'ALERTAS', altKey: 'alertas_enviadas', colorKey: 'ALERTAS' },
-  { key: 'eventos_sos', icon: SVG_ICONS.sos, label: 'SOS', colorKey: 'SOS' },
   { key: 'favoritos', icon: SVG_ICONS.favoritos, label: 'FAVS', colorKey: 'FAVORITOS' },
   { key: 'total_reportes', icon: SVG_ICONS.total, label: 'TOTAL', colorKey: 'TOTAL' },
 ]
 
 export default function Dashboard() {
-  const stats = useProgressiveData(() => api.get('/api/v1/stats'))
-  const weather = useProgressiveData(() => api.get('/api/v1/weather'))
-  const forecast = useProgressiveData(() => api.get('/api/v1/predict/congestion/forecast'))
+  const stats = useProgressiveData('/api/v1/stats', { ttl: 30000 })
+  const weather = useProgressiveData('/api/v1/weather', { ttl: 120000 })
+  const forecast = useProgressiveData('/api/v1/predict/congestion/forecast', { ttl: 120000 })
   const [ticker, setTicker] = useState([])
   const [reportHistory, setReportHistory] = useState([])
   const [zoneHistory, setZoneHistory] = useState([])
+  const [chartsReady, setChartsReady] = useState(false)
   const socketStats = useSocket().stats
   const { user, logout } = useAuth()
   const { error: showError } = useToast()
@@ -86,6 +85,12 @@ export default function Dashboard() {
       setZoneHistory(prev => [...prev, { CRITICO: 0, ALTO: 0, MEDIO: 0, BAJO: 0, ...socketStats.zonas_por_nivel }].slice(-20))
     }
   }, [socketStats])
+
+  useEffect(() => {
+    if (forecast.data) { setChartsReady(true); return }
+    const timer = setTimeout(() => setChartsReady(true), 2000)
+    return () => clearTimeout(timer)
+  }, [forecast.data])
 
   const getVal = (s, cfg) => {
     let v = s?.[cfg.key]
@@ -167,7 +172,25 @@ export default function Dashboard() {
 
   return (
     <div className="dash-vision">
-      <div className="dash-bg-grid" />
+      {weather.data && createPortal(
+        <div className="topbar-weather">
+          <span>{getWeatherIcon(weather.data.weather_code)}</span>
+          <span>{weather.data.temp}°C</span>
+          <span className="ws-sep">·</span>
+          <span>{weather.data.condition}</span>
+          <span className="ws-sep">·</span>
+          <span>{Droplet} {weather.data.humidity}%</span>
+          <span className="ws-sep">·</span>
+          <span>{CloudRain} {weather.data.rain_prob !== undefined ? `${weather.data.rain_prob}%` : `${weather.data.precipitation || 0}mm`}</span>
+          <span className="ws-sep">·</span>
+          <span>💨 {weather.data.wind} km/h</span>
+        </div>,
+        document.getElementById('topbar-weather')
+      )}
+      {weather.data && createPortal(
+        <span>{getWeatherIcon(weather.data.weather_code)} {weather.data.temp}°C <span className="ws-sep">·</span> {weather.data.condition} <span className="ws-sep">·</span> {Droplet} {weather.data.humidity}% <span className="ws-sep">·</span> {CloudRain} {weather.data.rain_prob !== undefined ? `${weather.data.rain_prob}%` : `${weather.data.precipitation || 0}mm`}</span>,
+        document.getElementById('sidebar-weather')
+      )}
 
       {/* ── STATS ROW ── */}
       <div className="dash-stats">
@@ -212,19 +235,19 @@ export default function Dashboard() {
         <div className="chart-card">
           <span className="chart-title">REPORTES POR TIPO</span>
           <div className="chart-wrap">
-            {stats.isLoading ? <Skeleton variant="chart" /> : <Doughnut data={doughnutData} options={chartOpts()} />}
+            {!chartsReady ? <Skeleton variant="chart" /> : <Doughnut data={doughnutData} options={chartOpts()} />}
           </div>
         </div>
         <div className="chart-card">
           <span className="chart-title">ZONAS POR NIVEL</span>
           <div className="chart-wrap">
-            {stats.isLoading ? <Skeleton variant="chart" /> : <Bar data={barData} options={chartOpts('bar')} />}
+            {!chartsReady ? <Skeleton variant="chart" /> : <Bar data={barData} options={chartOpts('bar')} />}
           </div>
         </div>
         <div className="chart-card chart-card-wide">
           <span className="chart-title">CONGESTIÓN 24H</span>
           <div className="chart-wrap">
-            {forecast.isLoading ? <Skeleton variant="chart" /> : <Line data={lineData} options={chartOpts('line')} />}
+            {!chartsReady ? <Skeleton variant="chart" /> : <Line data={lineData} options={chartOpts('line')} />}
           </div>
         </div>
       </div>

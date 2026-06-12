@@ -65,3 +65,88 @@ def _calc_nivel(count: int) -> str:
     if count >= 3:
         return "medio"
     return "bajo"
+
+
+_EVENTO_TIPO_MAP = {
+    "inundacion": "INUNDACION",
+    "deslizamiento": "DESLIZAMIENTO",
+    "incendio": "OTRO",
+    "accidente_vial": "ACCIDENTE",
+    "monitoreo": "MONITOREO",
+    "inspeccion": "INSPECCION",
+    "cierre_vial": "CIERRE",
+}
+
+_FUENTES_REALES = ("arcgis_dagrd", "arcgis_cierres", "usuario", "simur", "dagrd")
+
+
+def auto_create_zonas(radio_km: float = 0.5) -> int:
+    """
+    Crea ZonaRiesgo automáticamente desde EventoRiesgo de fuentes reales.
+    Por cada evento sin zona cercana existente, crea una nueva.
+    Retorna cuantas zonas fueron creadas.
+    """
+    from django.utils import timezone
+    from django.db.models import Q
+    from apps.core.models import EventoRiesgo, ZonaRiesgo
+    from api.utils.geo import haversine
+
+    now = timezone.now()
+    eventos = list(EventoRiesgo.objects.filter(
+        activo=True,
+        fuente__in=_FUENTES_REALES,
+    ).filter(
+        Q(expira_en__isnull=True) | Q(expira_en__gte=now)
+    ).values("id", "tipo", "titulo", "descripcion", "latitud", "longitud",
+             "radio_impacto_metros", "fuente", "datos_raw"))
+
+    existing = list(ZonaRiesgo.objects.filter(activo=True).values(
+        "id", "latitud", "longitud", "radio_metros"))
+
+    creadas = 0
+    seen_coords = set()
+
+    for ev in eventos:
+        key = (round(ev["latitud"], 5), round(ev["longitud"], 5))
+        if key in seen_coords:
+            continue
+        seen_coords.add(key)
+
+        near = False
+        for z in existing:
+            d = haversine(ev["latitud"], ev["longitud"], z["latitud"], z["longitud"])
+            if d <= (z["radio_metros"] or 500) / 1000:
+                near = True
+                break
+
+        if near:
+            continue
+
+        comuna = ""
+        if ev.get("datos_raw") and isinstance(ev["datos_raw"], dict):
+            raw = ev["datos_raw"]
+            if raw.get("raw_properties"):
+                comuna = raw["raw_properties"].get("nombre_comuna_corr", "")
+
+        tipo_riesgo = _EVENTO_TIPO_MAP.get(ev["tipo"], "OTRO")
+
+        zona = ZonaRiesgo.objects.create(
+            nombre=ev["titulo"][:200] if ev["titulo"] else f"Zona - {ev['tipo']}",
+            comuna=str(comuna)[:100] if comuna else "",
+            descripcion=ev["descripcion"][:200] if ev["descripcion"] else "",
+            tipo_riesgo=tipo_riesgo,
+            nivel="MEDIO",
+            latitud=ev["latitud"],
+            longitud=ev["longitud"],
+            radio_metros=ev["radio_impacto_metros"] or 300,
+            activo=True,
+        )
+        existing.append({
+            "id": zona.id,
+            "latitud": zona.latitud,
+            "longitud": zona.longitud,
+            "radio_metros": zona.radio_metros,
+        })
+        creadas += 1
+
+    return creadas
