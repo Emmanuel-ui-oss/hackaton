@@ -1,11 +1,19 @@
 import { Source, Layer } from "react-map-gl/maplibre"
 import RainLayer from "./RainLayer"
 
+const MODE_COLORS = {
+  car: "#00d4ff",
+  moto: "#ff6b35",
+  transit: "#e30613",
+  walking: "#8bc34a",
+}
+
 export default function MapDataLayers({
   showTraffic, tomtomKey,
   showRadar,
   cone,
   destination, routeFast, routeSafe, routeType, routeTrimmed, routeCompleted,
+  transportMode, routeSegments,
   zonas, reportes, favoritos, paradas,
 }) {
   return (
@@ -30,14 +38,14 @@ export default function MapDataLayers({
       {destination && routeTrimmed && routeType === "fast" && (
         <Source id="route-fast" type="geojson" data={{ type: "Feature", geometry: { type: "LineString", coordinates: routeTrimmed } }}>
           <Layer id="route-fast-line" type="line" layout={{ "line-join": "round", "line-cap": "round" }}
-            paint={{ "line-color": "#00d4ff", "line-width": 5, "line-opacity": 0.9 }} />
+            paint={{ "line-color": MODE_COLORS[transportMode || "car"], "line-width": 5, "line-opacity": 0.9 }} />
         </Source>
       )}
 
       {destination && routeCompleted && routeType === "fast" && (
         <Source id="route-fast-trail" type="geojson" data={{ type: "Feature", geometry: { type: "LineString", coordinates: routeCompleted } }}>
           <Layer id="route-fast-trail-line" type="line" layout={{ "line-join": "round", "line-cap": "round" }}
-            paint={{ "line-color": "#00d4ff", "line-width": 4, "line-opacity": 0.15 }} />
+            paint={{ "line-color": MODE_COLORS[transportMode || "car"], "line-width": 4, "line-opacity": 0.15 }} />
         </Source>
       )}
 

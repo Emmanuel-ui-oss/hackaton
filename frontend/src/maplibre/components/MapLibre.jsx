@@ -97,9 +97,11 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
     const {
         routeFast, routeSafe, routeInfo,
         routeType, setRouteType,
+        transportMode, setTransportMode,
         routeLoading, destination,
         handleSelectDestino, fetchRoutes,
         stepsFast, stepsSafe,
+        routeSegments,
     } = useMapRoutes(ubicacion);
 
     const activeRoute = routeType === "fast" ? routeFast : routeSafe;
@@ -166,7 +168,7 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
 
     useEffect(() => {
         if (destination) fetchRoutes(destination);
-    }, [destination]);
+    }, [destination, fetchRoutes]);
 
     const ARRIVAL_ZONE_M = 50;
     const routeTrimmed = useMemo(() => {
@@ -353,6 +355,8 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
                     routeType={routeType}
                     routeTrimmed={routeTrimmed}
                     routeCompleted={routeCompleted}
+                    transportMode={transportMode}
+                    routeSegments={routeSegments}
                     zonas={zonas}
                     reportes={reportes}
                     favoritos={favoritos}
@@ -387,6 +391,12 @@ export default function MapMapLibre({ onMapClick, stats } = {}) {
                 routeFast={routeFast}
                 routeSafe={routeSafe}
                 destination={destination}
+                transportMode={transportMode}
+                setTransportMode={setTransportMode}
+                routeInfo={routeInfo}
+                routeLoading={routeLoading}
+                fetchRoutes={fetchRoutes}
+                routeSegments={routeSegments}
             />
 
             {routeLoading && <div className="FondoBackground">Calculando rutas...</div>}

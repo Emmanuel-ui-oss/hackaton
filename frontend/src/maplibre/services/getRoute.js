@@ -1,9 +1,9 @@
-export default async function getRoute(start, end) {
+export default async function getRoute(start, end, mode = "car") {
     if (!start || !end) return null;
     const params = new URLSearchParams({
         olat: start[0], olng: start[1],
         dlat: end[0],   dlng: end[1],
-        // Pedir steps=true por si el backend lo soporta (OSRM lo hace)
+        mode,
         steps: true,
     });
     const res = await fetch(`/api/v1/routes?${params}`);
@@ -19,7 +19,8 @@ export default async function getRoute(start, end) {
         geometry: { type: "LineString", coordinates: route.coords.map(c => [c[1], c[0]]) },
         distance: route.distance_m,
         duration: route.duration_s,
-        steps,  // <-- nuevo
+        steps,
+        segments: route.segments ?? null,
     };
 }
 
